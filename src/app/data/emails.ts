@@ -401,7 +401,7 @@ export const csrReview1: Email = {
   preview: 'Draft message ready. Request from Steve Landers needs clarification...',
   body: '',
   bodyBefore: `Draft message ready for customer. The following items need clarification before quoting:`,
-  bodyAfter: `Can you provide the information listed above so I can quote this accurately? Alternatively, I can make my best estimate to get you a quote based on reasonable assumptions.\n\nPlease let me know your preference.\n\nBest regards,\nMorgan\nApex Corp`,
+  bodyAfter: `Please let me know these details so I can provide accurate pricing.\n\nBest regards,\nMorgan\nApex Corp`,
   date: 'Jan 28, 2026',
   time: '11:18 AM',
   read: false,

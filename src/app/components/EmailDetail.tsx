@@ -228,9 +228,11 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
         </thead>
         <tbody>
           {items.map((item, i) => {
-            const needsReview = !item.matchedItem || item.confidence === '-' || item.unitPrice == null || item.quantity == null || parseFloat(item.confidence) < 90;
+            const lowConfidence = item.confidence !== '-' && parseFloat(item.confidence) < 90;
+            const qtyBelowMOQ = item.quantity != null && item.minOrderQty != null && item.quantity < item.minOrderQty;
+
             return (
-              <tr key={i} className={`border-b border-border ${needsReview ? 'bg-secondary/10 border-l-4 border-l-secondary' : ''}`}>
+              <tr key={i} className="border-b border-border">
                 <td className="py-2.5 pr-4 text-size-sm text-foreground/80">{item.requestedItem}</td>
                 <td className="py-2.5 pr-4 text-size-sm">
                   {item.matchedItem ? (
@@ -239,13 +241,13 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                         href={item.catalogUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-accent underline underline-offset-2 hover:text-accent/80 transition-colors"
+                        className={`inline-flex items-center gap-1 underline underline-offset-2 transition-colors ${lowConfidence ? 'text-secondary hover:text-secondary/80' : 'text-accent hover:text-accent/80'}`}
                       >
                         {item.matchedItem}
                         <ExternalLink size={12} className="flex-shrink-0" />
                       </a>
                     ) : (
-                      <span className="text-foreground/80">{item.matchedItem}</span>
+                      <span className={lowConfidence ? 'text-secondary font-w-medium' : 'text-foreground/80'}>{item.matchedItem}</span>
                     )
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
@@ -258,7 +260,7 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                 )}
                 <td className="py-2.5 px-4 text-right text-size-sm">
                   {item.quantity != null ? (
-                    <span className="text-foreground/80">{item.quantity.toLocaleString()}</span>
+                    <span className={qtyBelowMOQ ? 'text-secondary font-w-medium' : 'text-foreground/80'}>{item.quantity.toLocaleString()}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
@@ -691,7 +693,12 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       );
     }
     if (isReview && (reviewStage === 'composing' || reviewStage === 'sending')) {
-      return <span className="text-size-xs text-muted-foreground">{reviewStage === 'sending' ? 'Sending reply...' : 'Composing reply...'}</span>;
+      return (
+        <div className="flex items-center gap-2">
+          {reviewStage === 'sending' && <Loader2 size={14} className="text-accent animate-spin" />}
+          <span className="text-size-xs text-muted-foreground">{reviewStage === 'sending' ? 'Sending reply...' : 'Composing reply...'}</span>
+        </div>
+      );
     }
     // Direct quote pending: Forward highlighted
     if (isDirectQuote && forwardStage === 'pending') {
@@ -719,7 +726,12 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       return <span className="text-size-xs text-muted-foreground">Composing forward...</span>;
     }
     if (isDirectQuote && (forwardStage === 'sent' || forwardStage === 'processing')) {
-      return <span className="text-size-xs text-muted-foreground">{forwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>;
+      return (
+        <div className="flex items-center gap-2">
+          <Loader2 size={14} className="text-accent animate-spin" />
+          <span className="text-size-xs text-muted-foreground">{forwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>
+        </div>
+      );
     }
     // Default actions
     return (

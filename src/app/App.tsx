@@ -58,6 +58,9 @@ export default function App() {
   // ── Refresh queue — tracks which batch to reveal next ──
   const [nextBatchIndex, setNextBatchIndex] = useState(0);
 
+  // ── Refresh loading state ──
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // ── Demo hint visibility (toggle with ` backtick key) ──
   const [demoVisible, setDemoVisible] = useState(true);
 
@@ -108,19 +111,16 @@ export default function App() {
   // ── Refresh queue definition — each batch is revealed on refresh ──
   const refreshBatches = useMemo(() => {
     const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: WF1 - RCSCA auto-quote (3 emails: request → response → CC)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
+      // Batch 0: WF1 + WF4 - Both auto-quote workflows together (6 emails)
+      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
 
-      // Batch 1: WF4 - Tri-State auto-quote (3 emails: request → response → CC)
-      { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 2: WF2 - Stonite review request (2 emails: flagged request → review email)
+      // Batch 1: WF2 - Stonite review request (2 emails: flagged request → review email)
       { emailIds: ['eis-5', 'csr-review-1'] },
 
-      // Batch 3: WF3 - Herman's direct email (1 email)
+      // Batch 2: WF3 - Herman's direct email (1 email)
       { emailIds: ['csr-forward-1'] },
 
-      // Batch 4: Daily summary - view after completing all workflows
+      // Batch 3: Daily summary - view after completing all workflows
       { emailIds: ['csr-daily-summary'] },
     ];
 
@@ -130,6 +130,9 @@ export default function App() {
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
     if (nextBatchIndex >= refreshBatches.length) return; // No more batches
+
+    // Set refreshing state
+    setIsRefreshing(true);
 
     const batch = refreshBatches[nextBatchIndex];
     const emailIds = batch.emailIds;
@@ -143,6 +146,11 @@ export default function App() {
         // Auto-select first meaningful CSR email when it arrives
         if (emailId === 'csr-ai-1') {
           setSelectedCsrEmailId('csr-ai-1');
+        }
+
+        // Clear refreshing state after last email in batch
+        if (index === emailIds.length - 1) {
+          setTimeout(() => setIsRefreshing(false), 500);
         }
       }, delay);
     });
@@ -202,44 +210,38 @@ export default function App() {
 
   /* ── Build dynamic CSR email list ── */
   const effectiveCsrEmails = useMemo(() => {
+    // Map email IDs to workflow priority (higher = newer, appears first)
+    const workflowPriority: Record<string, number> = {
+      'csr-daily-summary': 100,    // Batch 3 - Daily summary (last/newest)
+      'csr-herman-reply': 90,       // WF3 final - Herman's reply after quote
+      'csr-motion-cc': 85,          // WF3 - Motion quote CC
+      'csr-forward-1': 80,          // Batch 2 - Herman's direct email
+      'csr-stonite-final-cc': 70,   // WF2 final - Stonite final CC
+      'csr-review-reply': 60,       // WF2 - Morgan's review reply
+      'csr-review-1': 50,           // Batch 1 - Stonite review request
+      'csr-ai-2': 40,               // Batch 0 - Tri-State CC
+      'csr-ai-1': 30,               // Batch 0 - RCSCA CC
+    };
+
     const list = [];
 
-    // Daily summary (from first refresh)
+    // Add emails (order doesn't matter, we'll sort by priority)
+    if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
+    if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
+    if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
+    if (arrivedEmails.has('csr-forward-1')) list.push(csrHermanDirect);
+    if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
+    if (arrivedEmails.has('csr-stonite-final-cc')) list.push(csrStoniteFinalCc);
+    if (forwardStage === 'quoted') list.push(csrMotionCc);
+    if (forwardStage === 'quoted') list.push(csrHermanReply);
     if (arrivedEmails.has('csr-daily-summary')) list.push(csrDailySummary);
 
-    // WF1: RCSCA CC notification
-    if (arrivedEmails.has('csr-ai-1')) list.unshift(csr1CC);
-
-    // WF4: Tri-State CC notification
-    if (arrivedEmails.has('csr-ai-2')) list.unshift(csr2CC);
-
-    // WF2: Stonite review request
-    if (arrivedEmails.has('csr-review-1')) list.unshift(csrReview1);
-
-    // WF3: Herman's direct email
-    if (arrivedEmails.has('csr-forward-1')) list.unshift(csrHermanDirect);
-
-    // WF2: Morgan's review reply (after send)
-    if (arrivedEmails.has('csr-review-reply')) {
-      list.unshift(csrReviewReplyEmail);
-    }
-
-    // WF2: Final Stonite CC (newest of WF2 pair)
-    if (arrivedEmails.has('csr-stonite-final-cc')) {
-      list.unshift(csrStoniteFinalCc);
-    }
-
-    // WF3: Motion quote CC
-    if (forwardStage === 'quoted') {
-      list.unshift(csrMotionCc);
-    }
-
-    // WF3: Herman's warm reply (newest)
-    if (forwardStage === 'quoted') {
-      list.unshift(csrHermanReply);
-    }
-
-    return list;
+    // Sort by workflow priority - higher priority appears first (newest at top)
+    return list.sort((a, b) => {
+      const priorityA = workflowPriority[a.id] || 0;
+      const priorityB = workflowPriority[b.id] || 0;
+      return priorityB - priorityA; // Descending order
+    });
   }, [arrivedEmails, forwardStage]);
 
   // Build the review folder email list from both inboxes
@@ -368,12 +370,6 @@ export default function App() {
     // ── Phase 1: Scenarios 1 & 2 — Auto-quotes in CSR inbox ──
     if (!reviewResolved && forwardStage === 'pending' && reviewStage === 'pending') {
       if (activeFolder === 'csr') {
-        // If more emails available via refresh, hint that first
-        if (nextBatchIndex < 3 && !arrivedEmails.has('csr-review-1')) {
-          // If viewing an email and next batch available, guide to refresh
-          if (selectedEmailId && hasNewMessages) return 'action:refresh';
-        }
-
         // Only hint once emails have arrived
         if (!arrivedEmails.has('csr-ai-1')) return null;
 
@@ -381,9 +377,8 @@ export default function App() {
         if (!selectedEmailId || (selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary')) {
           return 'email:csr-ai-1';
         }
-        // Viewing csr-ai-1 → hint: next email (if it has arrived) or refresh
+        // Viewing csr-ai-1 → hint: next email (csr-ai-2 arrives in same batch)
         if (selectedEmailId === 'csr-ai-1') {
-          if (!arrivedEmails.has('csr-ai-2') && hasNewMessages) return 'action:refresh';
           if (arrivedEmails.has('csr-ai-2')) return 'email:csr-ai-2';
         }
         // After viewing csr-ai-2 → hint: review email (if it has arrived) or refresh
@@ -464,6 +459,7 @@ export default function App() {
           newEmailIds={newEmailIds}
           hasNewMessages={hasNewMessages}
           onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
         <EmailDetail
           email={selectedEmailWithRead}

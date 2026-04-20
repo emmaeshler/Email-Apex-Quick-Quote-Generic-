@@ -1,4 +1,4 @@
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2 } from 'lucide-react';
 import { useRef, useEffect } from 'react';
 import { DemoDot } from './DemoGuide';
 
@@ -122,9 +122,9 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 disabled={!hasNewMessages || isRefreshing}
                 className={`relative p-1 rounded-[var(--radius)] transition-colors flex-shrink-0 ${
                   isRefreshing
-                    ? 'text-primary cursor-wait'
+                    ? 'text-accent cursor-wait bg-accent/10 border-l-2 border-l-accent'
                     : hasNewMessages
-                      ? 'hover:bg-muted text-primary hover:text-foreground'
+                      ? 'border-l-2 border-l-primary bg-primary/8 text-primary hover:bg-primary/10 hover:text-primary/90'
                       : 'text-muted-foreground/40 cursor-not-allowed'
                 }`}
                 title={isRefreshing ? 'Loading...' : hasNewMessages ? 'Check for new messages' : 'No new messages'}
@@ -144,11 +144,16 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         </div>
         <p className="text-size-sm text-muted-foreground mt-1">
           {emails.length} message{emails.length !== 1 ? 's' : ''}
-          {hasNewMessages && onRefresh && (
-            <span className="ml-2 text-primary font-w-medium">• New messages available</span>
-          )}
         </p>
       </div>
+
+      {/* Loading banner */}
+      {isRefreshing && (
+        <div className="px-4 py-2.5 bg-accent/10 border-b border-accent/20 flex items-center gap-2.5">
+          <Loader2 size={14} className="animate-spin text-accent flex-shrink-0" />
+          <span className="text-size-xs font-w-medium text-accent">Checking for new messages...</span>
+        </div>
+      )}
 
       {/* Email rows */}
       <div className="divide-y divide-border">

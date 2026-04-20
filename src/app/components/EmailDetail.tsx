@@ -866,8 +866,12 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                     </div>
                   </div>
                   {email.forwardNote && (
-                    <div className="mt-3 p-3 bg-muted/30 rounded-[var(--radius)] border border-border">
-                      <p className="text-size-sm text-foreground/80 whitespace-pre-wrap">{email.forwardNote}</p>
+                    <div className="mt-3">
+                      <textarea
+                        className="w-full min-h-[120px] p-3 bg-card border border-border rounded-[var(--radius)] text-size-sm text-foreground resize-y font-sans"
+                        defaultValue={email.forwardNote}
+                        placeholder="Add a message..."
+                      />
                     </div>
                   )}
                   <div className="flex items-center gap-2 pt-3 border-t border-border">

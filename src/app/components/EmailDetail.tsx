@@ -811,7 +811,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             subject={email.subject}
             prefillBody={reviewComposeMode === 'reply'
               ? email.reviewReply.body
-              : `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate quoting.\n\n[Review table items above]\n\n${email.bodyAfter || ''}`}
+              : `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Please review the below items and outstanding questions:\n\n[Review table items above]\n\n${email.bodyAfter || ''}`}
             onSend={onReviewSend}
             onDiscard={() => onReviewStageChange('pending')}
             hintSend={hintTarget === 'action:send'}
@@ -865,6 +865,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                       <span className="text-size-sm text-foreground">FW: {email.subject}</span>
                     </div>
                   </div>
+                  {email.forwardNote && (
+                    <div className="mt-3 p-3 bg-muted/30 rounded-[var(--radius)] border border-border">
+                      <p className="text-size-sm text-foreground/80 whitespace-pre-wrap">{email.forwardNote}</p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
                     <div className="relative">
                       <button

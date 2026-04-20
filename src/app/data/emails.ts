@@ -446,7 +446,7 @@ export const csrSteveClarification: Email = {
     fromEmail: 'morgan@apex-corp.com',
     to: 'slanders@stonitecoil.com',
     subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
-    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate quoting.\n\n[Details about quantities and gauges]\n\nCan you provide the information listed above so I can quote this accurately?`,
+    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Please review the below items and outstanding questions:\n\n[Details about quantities and gauges]`,
     date: 'Jan 28, 2026',
     time: '11:30 AM',
   },

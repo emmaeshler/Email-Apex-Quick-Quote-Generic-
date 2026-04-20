@@ -215,12 +215,12 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
                   <div className="mt-1.5">
-                    <CategoryTag label="Quoted" color="green" />
+                    <CategoryTag label="Sent to Customer" color="green" />
                   </div>
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
                   <div className="mt-1.5">
-                    <CategoryTag label="Needs Review" color="orange" />
+                    <CategoryTag label="Draft Ready" color="orange" />
                   </div>
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {

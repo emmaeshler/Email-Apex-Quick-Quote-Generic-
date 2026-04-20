@@ -20,6 +20,7 @@ import {
   eisForwardedEmail,
   eisMotionResponse,
   csrReviewReplyEmail,
+  csrSteveClarification,
   csrStoniteFinalCc,
   csrMotionCc,
   csrHermanReply,
@@ -39,6 +40,8 @@ export default function App() {
 
   // Workflow 2 review stage — lifted from EmailDetail so hint logic can read it
   const [reviewStage, setReviewStage] = useState<'pending' | 'composing' | 'sending' | 'resolved'>('pending');
+  const [reviewComposeMode, setReviewComposeMode] = useState<'reply' | 'forward'>('reply');
+  const [reviewForwardStage, setReviewForwardStage] = useState<'pending' | 'composing' | 'sent' | 'processing' | 'quoted'>('pending');
 
   // Workflow 3 forward stage: pending → composing → sent → processing → quoted
   const [forwardStage, setForwardStage] = useState<'pending' | 'composing' | 'sent' | 'processing' | 'quoted'>('pending');
@@ -212,15 +215,16 @@ export default function App() {
   const effectiveCsrEmails = useMemo(() => {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 100,    // Batch 3 - Daily summary (last/newest)
-      'csr-herman-reply': 90,       // WF3 final - Herman's reply after quote
-      'csr-motion-cc': 85,          // WF3 - Motion quote CC
-      'csr-forward-1': 80,          // Batch 2 - Herman's direct email
-      'csr-stonite-final-cc': 70,   // WF2 final - Stonite final CC
-      'csr-review-reply': 60,       // WF2 - Morgan's review reply
-      'csr-review-1': 50,           // Batch 1 - Stonite review request
-      'csr-ai-2': 40,               // Batch 0 - Tri-State CC
-      'csr-ai-1': 30,               // Batch 0 - RCSCA CC
+      'csr-daily-summary': 100,       // Batch 3 - Daily summary (last/newest)
+      'csr-herman-reply': 90,         // WF3 final - Herman's reply after quote
+      'csr-motion-cc': 85,            // WF3 - Motion quote CC
+      'csr-forward-1': 80,            // Batch 2 - Herman's direct email
+      'csr-stonite-final-cc': 70,     // WF2 final - Stonite final CC
+      'csr-steve-clarification': 65,  // WF2 forward - Steve's clarification response
+      'csr-review-reply': 60,         // WF2 reply - Morgan's review reply
+      'csr-review-1': 50,             // Batch 1 - Stonite review request
+      'csr-ai-2': 40,                 // Batch 0 - Tri-State CC
+      'csr-ai-1': 30,                 // Batch 0 - RCSCA CC
     };
 
     const list = [];
@@ -231,6 +235,7 @@ export default function App() {
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
     if (arrivedEmails.has('csr-forward-1')) list.push(csrHermanDirect);
     if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
+    if (arrivedEmails.has('csr-steve-clarification')) list.push(csrSteveClarification);
     if (arrivedEmails.has('csr-stonite-final-cc')) list.push(csrStoniteFinalCc);
     if (forwardStage === 'quoted') list.push(csrMotionCc);
     if (forwardStage === 'quoted') list.push(csrHermanReply);
@@ -325,25 +330,74 @@ export default function App() {
   const handleReviewSend = () => {
     setReviewStage('sending');
 
-    // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
-    setTimeout(() => {
-      markEmailArrived('csr-review-reply');
-    }, 800);
+    if (reviewComposeMode === 'reply') {
+      // ── Reply workflow: Morgan provides details internally ──
 
-    // Phase 2: EIS quote response arrives after 3-7s (system generated it)
-    const eisDelay = 3000 + Math.random() * 4000; // 3-7s
-    setTimeout(() => {
-      markEmailArrived('eis-stonite-response');
-    }, eisDelay);
+      // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
+      setTimeout(() => {
+        markEmailArrived('csr-review-reply');
+      }, 800);
 
-    // Phase 3: CSR CC notification arrives 1-2s after quote response
-    const ccDelay = eisDelay + 1000 + Math.random() * 1000; // +1-2s
+      // Phase 2: Original Stonite request transitions to processing (forwarded to quotes@)
+      setTimeout(() => {
+        markEmailArrived('eis-5'); // Original request now shows as being processed
+      }, 1500);
+
+      // Phase 3: EIS quote response arrives after 3-7s (system generated it)
+      const eisDelay = 3000 + Math.random() * 4000; // 3-7s
+      setTimeout(() => {
+        markEmailArrived('eis-stonite-response');
+      }, eisDelay);
+
+      // Phase 4: CSR CC notification arrives 1-2s after quote response
+      const ccDelay = eisDelay + 1000 + Math.random() * 1000; // +1-2s
+      setTimeout(() => {
+        markEmailArrived('csr-stonite-final-cc');
+        // Mark workflow complete after all arrivals
+        setReviewStage('resolved');
+        setReviewResolved(true);
+      }, ccDelay);
+    } else {
+      // ── Forward workflow: Morgan asks customer for clarification ──
+
+      // Phase 1: Customer (Steve) responds with details after 5-10s
+      // Morgan will need to manually forward Steve's response to quotes@
+      const customerDelay = 5000 + Math.random() * 5000; // 5-10s
+      setTimeout(() => {
+        markEmailArrived('csr-steve-clarification');
+        setReviewStage('pending'); // Reset to pending, waiting for Morgan to forward
+      }, customerDelay);
+    }
+  };
+
+  // Handle forwarding Steve's clarification to quotes@ (triggered by Forward button)
+  const handleReviewForwardSend = () => {
+    setReviewForwardStage('sent');
+
     setTimeout(() => {
-      markEmailArrived('csr-stonite-final-cc');
-      // Mark workflow complete after all arrivals
-      setReviewStage('resolved');
-      setReviewResolved(true);
-    }, ccDelay);
+      setReviewForwardStage('processing');
+
+      // Phase 1: Forwarded thread appears in EIS
+      setTimeout(() => {
+        markEmailArrived('eis-5');
+      }, 800);
+
+      // Phase 2: Final quote generated (3-7s)
+      const quoteDelay = 3000 + Math.random() * 4000;
+      setTimeout(() => {
+        setReviewForwardStage('quoted');
+        markEmailArrived('eis-stonite-response');
+      }, quoteDelay);
+
+      // Phase 3: CSR CC notification (1-2s after quote)
+      const ccDelay = quoteDelay + 1000 + Math.random() * 1000;
+      setTimeout(() => {
+        markEmailArrived('csr-stonite-final-cc');
+        setReviewStage('resolved');
+        setReviewResolved(true);
+        setScrollTrigger((n) => n + 1);
+      }, ccDelay);
+    }, 1500);
   };
 
   // Determine the effective folderType for EmailDetail rendering
@@ -374,7 +428,8 @@ export default function App() {
         if (!arrivedEmails.has('csr-ai-1')) return null;
 
         // No email selected yet, or a non-demo email selected → hint: first demo email
-        if (!selectedEmailId || (selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary')) {
+        // Exclude Steve's clarification from this check - it has its own workflow in Phase 2b
+        if (!selectedEmailId || (selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary' && selectedEmailId !== 'csr-steve-clarification')) {
           return 'email:csr-ai-1';
         }
         // Viewing csr-ai-1 → hint: next email (csr-ai-2 arrives in same batch)
@@ -391,13 +446,35 @@ export default function App() {
 
     // ── Phase 2: Scenario 3 — Stonite review workflow ──
     if (!reviewResolved && forwardStage === 'pending') {
-      if (selectedEmailId === 'csr-review-1') {
-        if (reviewStage === 'pending') return 'action:reply';
+      // ── Phase 2a: Initial review request handling ──
+      // Only show hints on the review request if Steve hasn't responded yet
+      if (selectedEmailId === 'csr-review-1' && !arrivedEmails.has('csr-steve-clarification')) {
+        // User can choose Reply or Forward - hint based on their choice
+        if (reviewStage === 'pending') {
+          // Default hint to Reply, but if they click Forward, the compose will show
+          return reviewComposeMode === 'reply' ? 'action:reply' : 'action:forward';
+        }
         if (reviewStage === 'composing') return 'action:send';
-        if (reviewStage === 'sending') return null; // processing, no hint
+        if (reviewStage === 'sending') return null; // processing, no hint while sending
       }
-      // If they navigated away from review-1 but haven't started review yet
-      if (activeFolder === 'csr' && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2') {
+
+      // ── Phase 2b: Steve's clarification response - forward to quotes@ ──
+      // Once Steve has responded, guide to forward his email to quotes@
+      if (arrivedEmails.has('csr-steve-clarification')) {
+        // Guide to Steve's clarification email if not viewing it
+        if (selectedEmailId !== 'csr-steve-clarification') {
+          return 'email:csr-steve-clarification';
+        }
+        // On Steve's clarification email, guide to forward action based on stage
+        if (selectedEmailId === 'csr-steve-clarification') {
+          if (reviewForwardStage === 'pending') return 'action:forward';
+          if (reviewForwardStage === 'composing') return 'action:send';
+          if (reviewForwardStage === 'sent' || reviewForwardStage === 'processing') return null; // processing
+        }
+      }
+
+      // If they navigated away from review-1 but haven't started review yet (and Steve hasn't responded)
+      if (activeFolder === 'csr' && !arrivedEmails.has('csr-steve-clarification') && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2') {
         return 'email:csr-review-1';
       }
     }
@@ -431,7 +508,7 @@ export default function App() {
     }
 
     return null; // demo complete (after viewing daily summary)
-  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, arrivedEmails]);
+  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, arrivedEmails, hasNewMessages]);
 
   return (
     <div className="size-full flex bg-background overflow-hidden">
@@ -468,7 +545,13 @@ export default function App() {
           onReviewResolve={() => setReviewResolved(true)}
           reviewStage={reviewStage}
           onReviewStageChange={setReviewStage}
+          reviewComposeMode={reviewComposeMode}
+          onReviewComposeModeChange={setReviewComposeMode}
           onReviewSend={handleReviewSend}
+          reviewForwardStage={reviewForwardStage}
+          onReviewForwardCompose={() => setReviewForwardStage('composing')}
+          onReviewForwardSend={handleReviewForwardSend}
+          onReviewForwardDiscard={() => setReviewForwardStage('pending')}
           forwardStage={forwardStage}
           onForwardCompose={() => setForwardStage('composing')}
           onForwardSend={handleForwardSend}

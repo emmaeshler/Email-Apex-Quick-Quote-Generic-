@@ -214,16 +214,9 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Number</th>
             {hasAnyDescription && <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Description</th>}
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Quantity</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
-            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Availability</th>
-            {hasAnyPricing && (
-              <>
-                <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>
-                <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total Price</th>
-              </>
-            )}
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Confidence</th>
+            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
+            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
+            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Details Needed</th>
           </tr>
         </thead>
         <tbody>
@@ -265,14 +258,14 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
-                <td className="py-2.5 px-4 text-right text-size-sm">
+                <td className="py-2.5 px-4 text-size-sm">
                   {item.minOrderQty != null ? (
                     <span className="text-foreground/80">{item.minOrderQty.toLocaleString()}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
-                <td className="py-2.5 px-4 text-right text-size-sm">
+                <td className="py-2.5 px-4 text-size-sm">
                   {item.qtyBreakIncrement != null ? (
                     <span className="text-foreground/80">{item.qtyBreakIncrement.toLocaleString()}</span>
                   ) : (
@@ -280,58 +273,23 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                   )}
                 </td>
                 <td className="py-2.5 px-4 text-size-sm">
-                  {item.stockStatus === 'in-stock' ? (
-                    <span className="text-foreground/80">In Stock | Ready to Ship</span>
-                  ) : item.stockStatus === 'lead-time' ? (
-                    <span className="text-foreground/80">
-                      Available to Order
-                      {item.leadTime && (
-                        <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '11px', lineHeight: '16px' }}>
-                          Est. {item.leadTime}
-                        </span>
-                      )}
-                    </span>
-                  ) : item.stockStatus === 'unavailable' ? (
-                    <span className="text-foreground/80">Unavailable</span>
+                  {item.details ? (
+                    <span className="text-secondary font-w-medium">{item.details}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
-                {hasAnyPricing && (
-                  <>
-                    <td className="py-2.5 px-4 text-right text-size-sm">
-                      {item.unitPrice != null ? (
-                        <span className="text-foreground/80">{fmt(item.unitPrice)}</span>
-                      ) : (
-                        <span className="text-muted-foreground italic">—</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 pl-4 text-right text-size-sm">
-                      {item.totalPrice != null ? (
-                        <span className="text-foreground/80">{fmt(item.totalPrice)}</span>
-                      ) : (
-                        <span className="text-muted-foreground italic">—</span>
-                      )}
-                    </td>
-                  </>
-                )}
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">{item.confidence}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
 
-      <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
-        <AlertTriangle size={14} className="text-secondary flex-shrink-0 mt-0.5" />
+      <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-accent/6" style={{ borderLeft: '3px solid var(--accent)' }}>
+        <AlertTriangle size={14} className="text-accent flex-shrink-0 mt-0.5" />
         <div className="text-size-xs text-foreground/70">
-          <p className="font-w-medium mb-1">Action required:</p>
-          <ul className="list-disc list-inside space-y-0.5">
-            {items.map((item, i) => (
-              <li key={i}>{item.details}</li>
-            ))}
-          </ul>
-          <p className="mt-2 text-muted-foreground">Items highlighted in orange require your confirmation before sending to customer.</p>
+          <p className="font-w-medium mb-1">Draft ready to send:</p>
+          <p className="text-muted-foreground">Review the customer request above. You can either <strong>provide the missing details yourself</strong> if you know them (reply with details), or <strong>forward this message to the customer</strong> asking for clarification. Once details are provided, the system will generate a complete quote.</p>
         </div>
       </div>
     </div>
@@ -429,14 +387,20 @@ function MessageHeader({ email }: { email: Email }) {
    Main component — Flat email detail (one email per view)
    ══════════════════════════════════════════════════════════════════════════ */
 
-export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, onReviewSend, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, onDeleteEmail, hintTarget }: {
+export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, onDeleteEmail, hintTarget }: {
   email: Email | null;
   folderType: 'csr' | 'eis';
   reviewResolved?: boolean;
   onReviewResolve?: () => void;
   reviewStage: 'pending' | 'composing' | 'sending' | 'resolved';
   onReviewStageChange: (stage: 'pending' | 'composing' | 'sending' | 'resolved') => void;
+  reviewComposeMode: 'reply' | 'forward';
+  onReviewComposeModeChange: (mode: 'reply' | 'forward') => void;
   onReviewSend: () => void;
+  reviewForwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
+  onReviewForwardCompose?: () => void;
+  onReviewForwardSend?: () => void;
+  onReviewForwardDiscard?: () => void;
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   onForwardCompose?: () => void;
   onForwardSend?: () => void;
@@ -460,14 +424,21 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
   // Auto-scroll to top when compose box appears (review reply or forward compose)
   useEffect(() => {
-    if ((reviewStage === 'composing' || forwardStage === 'composing') && contentScrollRef.current) {
+    if ((reviewStage === 'composing' || effectiveForwardStage === 'composing' || reviewForwardStage === 'composing') && contentScrollRef.current) {
       contentScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [reviewStage, forwardStage]);
+  }, [reviewStage, forwardStage, reviewForwardStage]);
 
   const isReview = email.isReviewRequest;
   const isDirectQuote = email.isDirectQuoteRequest;
   const isCc = email.isCcFromAi;
+  const isSteveClarification = email.id === 'csr-steve-clarification';
+
+  // Use reviewForwardStage for Steve's clarification, forwardStage for others
+  const effectiveForwardStage = isSteveClarification ? reviewForwardStage : forwardStage;
+  const effectiveOnForwardCompose = isSteveClarification ? onReviewForwardCompose : onForwardCompose;
+  const effectiveOnForwardSend = isSteveClarification ? onReviewForwardSend : onForwardSend;
+  const effectiveOnForwardDiscard = isSteveClarification ? onReviewForwardDiscard : onForwardDiscard;
   const hasInlineQuote = !!email.inlineQuoteTable;
   const hasCcQuote = !!email.isCcFromAiQuoteTable;
 
@@ -485,15 +456,15 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
     if (isCc) return <CategoryTag label="Auto-Quoted" color="green" />;
     // CSR review request
     if (isReview) {
-      if (reviewStage === 'sending') return <CategoryTag label="Processing" color="blue" />;
-      if (reviewStage === 'resolved') return <CategoryTag label="Resolved" color="green" />;
-      return <CategoryTag label="Needs Review" color="orange" />;
+      if (reviewStage === 'sending') return <CategoryTag label="Sending" color="blue" />;
+      if (reviewStage === 'resolved') return <CategoryTag label="Sent" color="green" />;
+      return <CategoryTag label="Draft Ready" color="orange" />;
     }
     // CSR direct quote
     if (isDirectQuote) {
-      if (forwardStage === 'quoted') return <CategoryTag label="Forwarded & Quoted" color="green" />;
-      if (forwardStage === 'processing' || forwardStage === 'sent') return <CategoryTag label="Forwarded" color="blue" />;
-      if (forwardStage === 'composing') return <CategoryTag label="Forwarding..." color="blue" />;
+      if (effectiveForwardStage === 'quoted') return <CategoryTag label="Forwarded & Quoted" color="green" />;
+      if (effectiveForwardStage === 'processing' || effectiveForwardStage === 'sent') return <CategoryTag label="Forwarded" color="blue" />;
+      if (effectiveForwardStage === 'composing') return <CategoryTag label="Forwarding..." color="blue" />;
       return <CategoryTag label="Quote Request" color="orange" />;
     }
     return null;
@@ -528,7 +499,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       if (reviewStage === 'sending') {
         return (
           <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
-            Processing your corrections and generating final quote for{' '}
+            Sending clarification request to{' '}
             <span className="font-w-medium">{email.originalSender}</span>...
           </InfoBar>
         );
@@ -536,21 +507,51 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       if (reviewStage === 'resolved') {
         return (
           <InfoBar icon={CheckCircle} iconColor="text-chart-3" bg="bg-chart-3/6" border="var(--chart-3)">
-            Quote resolved. You provided clarification and the final quote has been sent to{' '}
-            <span className="font-w-medium">{email.originalSender}</span>.
+            Clarification request sent. Waiting for response from{' '}
+            <span className="font-w-medium">{email.originalSender}</span> with additional details.
           </InfoBar>
         );
       }
       return (
         <InfoBar icon={AlertTriangle} iconColor="text-secondary" bg="bg-secondary/6" border="var(--secondary)">
-          This quote requires your review. A partial quote was prepared for{' '}
-          <span className="font-w-medium">{email.originalSender}</span> but some items could not be resolved automatically.
+          Draft message ready. Request from{' '}
+          <span className="font-w-medium">{email.originalSender}</span> needs clarification. You can provide the details yourself or forward the draft to the customer.
+        </InfoBar>
+      );
+    }
+    // Steve's clarification info bars
+    if (isSteveClarification) {
+      if (effectiveForwardStage === 'quoted') {
+        return (
+          <InfoBar icon={CheckCircle} iconColor="text-chart-3" bg="bg-chart-3/6" border="var(--chart-3)">
+            Customer clarification forwarded. A quote has been generated and sent to{' '}
+            <span className="font-w-medium">Steve Landers (Stonite Coil Corp)</span>. You've been CC'd on the response.
+          </InfoBar>
+        );
+      }
+      if (effectiveForwardStage === 'processing') {
+        return (
+          <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
+            Forwarded to quotes@apex-corp.com. Generating a quote with customer clarifications...
+          </InfoBar>
+        );
+      }
+      if (effectiveForwardStage === 'sent') {
+        return (
+          <InfoBar icon={CheckCircle} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)">
+            Forwarded to quotes@apex-corp.com. Waiting for processing...
+          </InfoBar>
+        );
+      }
+      return (
+        <InfoBar icon={Info} iconColor="text-secondary" bg="bg-secondary/6" border="var(--secondary)">
+          Customer provided clarification details. Forward this to <span className="font-w-medium">quotes@apex-corp.com</span> for quoting.
         </InfoBar>
       );
     }
     // CSR direct quote info bars
     if (isDirectQuote) {
-      if (forwardStage === 'quoted') {
+      if (effectiveForwardStage === 'quoted') {
         return (
           <InfoBar icon={CheckCircle} iconColor="text-chart-3" bg="bg-chart-3/6" border="var(--chart-3)">
             Forwarded to quotes@apex-corp.com. A quote has been generated and sent to{' '}
@@ -558,7 +559,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           </InfoBar>
         );
       }
-      if (forwardStage === 'processing') {
+      if (effectiveForwardStage === 'processing') {
         return (
           <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
             Forwarded to quotes@apex-corp.com. Generating a quote for{' '}
@@ -566,7 +567,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           </InfoBar>
         );
       }
-      if (forwardStage === 'sent') {
+      if (effectiveForwardStage === 'sent') {
         return (
           <InfoBar icon={CheckCircle} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)">
             Forwarded to quotes@apex-corp.com. Waiting for processing...
@@ -633,7 +634,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         {email.quotedPrevious && <QuotedPreviousBlock quoted={email.quotedPrevious} />}
 
         {/* WF3: Show the auto-generated quote inline once the forward is complete */}
-        {isDirectQuote && forwardStage === 'quoted' && email.forwardAiResponse && (
+        {isDirectQuote && effectiveForwardStage === 'quoted' && email.forwardAiResponse && (
           <div className="mt-8 border-t-2 border-foreground/15 pt-6">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-size-sm">
@@ -671,24 +672,34 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   /* ── Actions ── */
 
   const renderActions = () => {
-    // Review pending: Reply opens compose
+    // Review pending: Forward highlighted to send draft to customer
     if (isReview && reviewStage === 'pending') {
       return (
         <>
+          <button
+            onClick={() => {
+              onReviewComposeModeChange('reply');
+              onReviewStageChange('composing');
+            }}
+            className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm"
+          >
+            <Reply size={16} /> Reply
+          </button>
+          <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
+            <ReplyAll size={16} /> Reply All
+          </button>
           <div className="relative">
             <button
-              onClick={() => onReviewStageChange('composing')}
+              onClick={() => {
+                onReviewComposeModeChange('forward');
+                onReviewStageChange('composing');
+              }}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
-              <Reply size={16} /> Reply
+              <Forward size={16} /> Forward
             </button>
             {hintTarget === 'action:reply' && <DemoDot />}
           </div>
-          {[{ icon: ReplyAll, label: 'Reply All' }, { icon: Forward, label: 'Forward' }].map(({ icon: Icon, label }) => (
-            <button key={label} className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
-              <Icon size={16} /> {label}
-            </button>
-          ))}
         </>
       );
     }
@@ -696,12 +707,12 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       return (
         <div className="flex items-center gap-2">
           {reviewStage === 'sending' && <Loader2 size={14} className="text-accent animate-spin" />}
-          <span className="text-size-xs text-muted-foreground">{reviewStage === 'sending' ? 'Sending reply...' : 'Composing reply...'}</span>
+          <span className="text-size-xs text-muted-foreground">{reviewStage === 'sending' ? 'Sending to customer...' : 'Composing message...'}</span>
         </div>
       );
     }
-    // Direct quote pending: Forward highlighted
-    if (isDirectQuote && forwardStage === 'pending') {
+    // Steve's clarification or Direct quote pending: Forward highlighted
+    if ((isSteveClarification || isDirectQuote) && effectiveForwardStage === 'pending') {
       return (
         <>
           <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
@@ -712,7 +723,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           </button>
           <div className="relative">
             <button
-              onClick={() => onForwardCompose?.()}
+              onClick={() => effectiveOnForwardCompose?.()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
               <Forward size={16} /> Forward
@@ -722,14 +733,14 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         </>
       );
     }
-    if (isDirectQuote && forwardStage === 'composing') {
+    if ((isSteveClarification || isDirectQuote) && effectiveForwardStage === 'composing') {
       return <span className="text-size-xs text-muted-foreground">Composing forward...</span>;
     }
-    if (isDirectQuote && (forwardStage === 'sent' || forwardStage === 'processing')) {
+    if ((isSteveClarification || isDirectQuote) && (effectiveForwardStage === 'sent' || effectiveForwardStage === 'processing')) {
       return (
         <div className="flex items-center gap-2">
           <Loader2 size={14} className="text-accent animate-spin" />
-          <span className="text-size-xs text-muted-foreground">{forwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>
+          <span className="text-size-xs text-muted-foreground">{effectiveForwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>
         </div>
       );
     }
@@ -796,9 +807,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         {/* ── Review composing: Show compose box above message ── */}
         {isReview && reviewStage === 'composing' && email.reviewReply && (
           <ComposeBox
-            toEmail={email.fromEmail}
+            toEmail={reviewComposeMode === 'reply' ? 'quotes@apex-corp.com' : 'slanders@stonitecoil.com'}
             subject={email.subject}
-            prefillBody={email.reviewReply.body}
+            prefillBody={reviewComposeMode === 'reply'
+              ? email.reviewReply.body
+              : `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate quoting.\n\n[Review table items above]\n\n${email.bodyAfter || ''}`}
             onSend={onReviewSend}
             onDiscard={() => onReviewStageChange('pending')}
             hintSend={hintTarget === 'action:send'}
@@ -810,14 +823,23 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           <div className="flex-1 flex items-center justify-center py-12">
             <div className="text-center">
               <Loader2 size={32} className="mx-auto mb-3 text-accent animate-spin" />
-              <p className="text-size-sm text-foreground/80 font-w-medium">Processing your corrections...</p>
-              <p className="text-size-xs text-muted-foreground mt-1">Generating the final quote for {email.originalSender}</p>
+              {reviewComposeMode === 'reply' ? (
+                <>
+                  <p className="text-size-sm text-foreground/80 font-w-medium">Processing your corrections...</p>
+                  <p className="text-size-xs text-muted-foreground mt-1">Generating the final quote for {email.originalSender}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-size-sm text-foreground/80 font-w-medium">Sending clarification request...</p>
+                  <p className="text-size-xs text-muted-foreground mt-1">Waiting for response from {email.originalSender}</p>
+                </>
+              )}
             </div>
           </div>
         ) : (
           <>
             {/* ── Forward composing: Show forward compose box above message ── */}
-            {isDirectQuote && forwardStage === 'composing' && (
+            {(isSteveClarification || isDirectQuote) && effectiveForwardStage === 'composing' && (
               <div className="border-b border-border">
                 <div className="flex items-center justify-between px-6 py-2 bg-muted border-b border-border">
                   <div className="flex items-center gap-2">
@@ -825,7 +847,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                     <span className="text-size-xs text-muted-foreground">Forwarding</span>
                   </div>
                   <button
-                    onClick={() => onForwardDiscard?.()}
+                    onClick={() => effectiveOnForwardDiscard?.()}
                     className="p-1 hover:bg-border/40 rounded-[var(--radius)] transition-colors"
                     title="Discard"
                   >
@@ -846,7 +868,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
                     <div className="relative">
                       <button
-                        onClick={() => onForwardSend?.()}
+                        onClick={() => effectiveOnForwardSend?.()}
                         className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
                       >
                         <Send size={14} /> Send
@@ -854,7 +876,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                       {hintTarget === 'action:send' && <DemoDot />}
                     </div>
                     <button
-                      onClick={() => onForwardDiscard?.()}
+                      onClick={() => effectiveOnForwardDiscard?.()}
                       className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors text-size-sm"
                     >
                       Discard

@@ -391,16 +391,17 @@ export const eis5Stonite: Email = {
   quoteStatus: 'review',
 };
 
-// WF2: Review request in CSR inbox
+// WF2: Review request in CSR inbox - Draft forward to customer
 export const csrReview1: Email = {
   id: 'csr-review-1',
   from: 'Apex Quoting',
   fromEmail: 'quotes@apex-corp.com',
   to: 'morgan@apex-corp.com',
-  subject: 'Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
-  preview: 'Quote requires your attention. A partial quote was prepared but needs confirmation on quantity and gauge substitution...',
+  subject: 'Review Needed: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+  preview: 'Draft message ready. Request from Steve Landers needs clarification...',
   body: '',
-  bodyBefore: `The below quote requires your attention. A partial quote was prepared for Steve Landers (Stonite Coil Corp) but some items need confirmation.`,
+  bodyBefore: `Draft message ready for customer. The following items need clarification before quoting:`,
+  bodyAfter: `Can you provide the information listed above so I can quote this accurately? Alternatively, I can make my best estimate to get you a quote based on reasonable assumptions.\n\nPlease let me know your preference.\n\nBest regards,\nMorgan\nApex Corp`,
   date: 'Jan 28, 2026',
   time: '11:18 AM',
   read: false,
@@ -419,9 +420,35 @@ export const csrReview1: Email = {
     time: '11:15 AM',
   },
   reviewReply: {
-    body: `The #27 HPL match is correct — MW27HPLRT is what Steve orders. Adjust quantity to 25 to meet MOQ.\n\nFor #24 SDPZ — we carry #22.5 SDPZ which aligns with what he typically orders for this application. Use SDPZ-22.5-RT. Quote 100 units.\n\n- Morgan`,
+    body: `Please provide the missing details for the items listed in the table above:\n\n[Provide corrections or clarifications for each item that needs review]\n\nFor example:\n- Item 1: [Confirm correct item number, adjust quantity if needed]\n- Item 2: [Specify correct gauge or alternative, provide quantity]\n\n- Morgan`,
     date: 'Jan 28, 2026',
     time: '11:42 AM',
+  },
+};
+
+// WF2: Steve's response providing clarification (after Morgan forwards draft to him)
+export const csrSteveClarification: Email = {
+  id: 'csr-steve-clarification',
+  from: 'Steve Landers',
+  fromEmail: 'slanders@stonitecoil.com',
+  to: 'morgan@apex-corp.com',
+  subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+  preview: 'Thanks for checking. For the #27 HPL, we need 25 units. For #24 SDPZ...',
+  body: `Hi Morgan,\n\nThanks for checking on this.\n\nFor the #27 HPL round tapers - we can do 25 units to meet your MOQ.\n\nFor the #24 SDPZ - yes, we can use #22.5 gauge instead. Please quote 100 units of that.\n\nThanks,\nSteve`,
+  date: 'Jan 28, 2026',
+  time: '11:38 AM',
+  read: false,
+  // This is Steve's response to the review forward - needs to be forwarded to quotes@
+  forwardTo: 'quotes@apex-corp.com',
+  forwardNote: `Steve provided clarification on the Stonite quote request — forwarding for quoting.\n\n- Morgan`,
+  quotedPrevious: {
+    from: 'Morgan',
+    fromEmail: 'morgan@apex-corp.com',
+    to: 'slanders@stonitecoil.com',
+    subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate quoting.\n\n[Details about quantities and gauges]\n\nCan you provide the information listed above so I can quote this accurately?`,
+    date: 'Jan 28, 2026',
+    time: '11:30 AM',
   },
 };
 

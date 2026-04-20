@@ -1,0 +1,600 @@
+/* ── Types ── */
+
+export interface QuoteLineItem {
+  sku: string;
+  description?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  minOrderQty: number;
+  qtyBreakIncrement: number;
+  requestedQty?: number;
+  stockStatus?: 'in-stock' | 'lead-time';
+  leadTime?: string;
+}
+
+export interface QuoteTable {
+  quoteNumber: string;
+  validThrough: string;
+  customerName: string;
+  lineItems: QuoteLineItem[];
+  total: number;
+  shipping?: {
+    method: string;
+    cost: number;
+    note?: string;
+  };
+}
+
+export interface ReviewMatchItem {
+  requestedItem: string;
+  matchedItem: string;
+  confidence: string;
+  details: string;
+  catalogUrl?: string;
+}
+
+export interface EmailThread {
+  from: string;
+  fromEmail: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  bodyBefore: string;
+  bodyAfter: string;
+  quoteTable?: QuoteTable;
+  date: string;
+  time: string;
+  isAiGenerated?: boolean;
+}
+
+export interface QuotedPrevious {
+  from: string;
+  fromEmail: string;
+  date: string;
+  time: string;
+  subject?: string;
+  body: string;
+}
+
+export interface Email {
+  id: string;
+  from: string;
+  fromEmail: string;
+  to: string;
+  cc?: string;
+  subject: string;
+  preview: string;
+  body: string;
+  date: string;
+  time: string;
+  read: boolean;
+  quoteStatus?: 'processing' | 'quoted' | 'review';
+  inlineQuoteTable?: QuoteTable;
+  bodyBefore?: string;
+  bodyAfter?: string;
+  quotedPrevious?: QuotedPrevious;
+  isCcFromAi?: boolean;
+  isCcFromAiQuoteTable?: QuoteTable;
+  originalSender?: string;
+  isReviewRequest?: boolean;
+  reviewFlaggedItems?: { description: string; reason: string }[];
+  reviewMatchItems?: ReviewMatchItem[];
+  reviewQuoteNumber?: string;
+  reviewCustomerAccount?: string;
+  reviewOriginalEmail?: {
+    from: string;
+    fromEmail: string;
+    to: string;
+    subject: string;
+    body: string;
+    date: string;
+    time: string;
+  };
+  reviewReply?: {
+    body: string;
+    date: string;
+    time: string;
+  };
+  isDirectQuoteRequest?: boolean;
+  forwardTo?: string;
+  forwardNote?: string;
+  aiResponse?: EmailThread;
+  reviewFinalQuote?: EmailThread;
+  forwardAiResponse?: EmailThread;
+  customerReply?: {
+    from: string;
+    fromEmail: string;
+    to: string;
+    cc?: string;
+    subject: string;
+    body: string;
+    date: string;
+    time: string;
+  };
+  threadedQuoteResponse?: {
+    from: string;
+    fromEmail: string;
+    to: string;
+    cc?: string;
+    date: string;
+    time: string;
+    subject: string;
+    bodyBefore: string;
+    bodyAfter: string;
+    quoteTable: QuoteTable;
+    quotedPrevious: QuotedPrevious;
+  };
+}
+
+/* ── Quote data for workflows ── */
+
+const rcscaQuote: QuoteTable = {
+  quoteNumber: 'Q-1093928',
+  validThrough: 'Feb 27, 2026',
+  customerName: 'RCSCA',
+  lineItems: [
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock' },
+  ],
+  total: 192.01,
+  shipping: {
+    method: 'Cold Pack — Air Shipment',
+    cost: 24.75,
+    note: 'Temperature-sensitive adhesives require cold packing and overnight air delivery.',
+  },
+};
+
+const stoniteFinalQuote: QuoteTable = {
+  quoteNumber: 'Q-8320281',
+  validThrough: 'Feb 27, 2026',
+  customerName: 'Stonite Coil Corp',
+  lineItems: [
+    { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 100, unitPrice: 14.25, totalPrice: 1425, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'in-stock' },
+    { sku: 'SDPZ-24-RT', description: 'Round Taper, #24 AWG, SDPZ Coating', quantity: 100, unitPrice: 18.50, totalPrice: 1850, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'lead-time', leadTime: '3–5 weeks' },
+    { sku: 'SDPZ-19-RT', description: 'Round Taper, #19 AWG, SDPZ Coating', quantity: 100, unitPrice: 22.75, totalPrice: 2275, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'lead-time', leadTime: '3–5 weeks' },
+  ],
+  total: 5895.00,
+  shipping: {
+    method: 'LTL Truck',
+    cost: 345.00,
+    note: 'Heavyweight wire shipment via designated carrier.',
+  },
+};
+
+const motionQuote: QuoteTable = {
+  quoteNumber: 'Q-3018483',
+  validThrough: 'Feb 27, 2026',
+  customerName: 'Motion Industries Inc.',
+  lineItems: [
+    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
+  ],
+  total: 545.50,
+  shipping: {
+    method: 'Ground',
+    cost: 27.50,
+  },
+};
+
+const taperedReelQuote: QuoteTable = {
+  quoteNumber: 'Q-4150772',
+  validThrough: 'Mar 14, 2026',
+  customerName: 'Tri-State Coil Winding',
+  lineItems: [
+    { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 916.84, totalPrice: 9168.40, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 1024.13, totalPrice: 10241.30, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 923.28, totalPrice: 9232.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 928.38, totalPrice: 9283.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 941.52, totalPrice: 9415.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 954.39, totalPrice: 9543.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+  ],
+  total: 57660.40,
+  shipping: {
+    method: 'LTL Truck',
+    cost: 775.00,
+    note: 'Heavyweight cubic volume shipment. Carrier to be selected based on destination.',
+  },
+};
+
+const stoniteMatchItems: ReviewMatchItem[] = [
+  { requestedItem: '# 27 HPL - round tapers', matchedItem: 'MW27HPLRT', confidence: '25%', details: "No 'round taper' profile variant found in catalog", catalogUrl: 'https://www.apex-supply.com/catalog/magnet-wire/round-magnet-wire' },
+  { requestedItem: '# 24 SDPZ - round tapers', matchedItem: '', confidence: '-', details: 'SDPZ exists at other gauges (22.5, 32.5, 34.5, 40, 41, 43) but not at #24 gauge' },
+  { requestedItem: '# 19 SDPZ - round tapers', matchedItem: '', confidence: '-', details: 'SDPZ exists at other gauges (22.5, 32.5, 34.5, 40, 41, 43) but not at #19 gauge' },
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUOTE INBOX — Starts empty; emails arrive dynamically during demo
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const eisEmails: Email[] = [];
+
+/* ── Dynamic emails that appear based on workflow state ── */
+
+export const eisStoniteResponse: Email = {
+  id: 'eis-5-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'slanders@stonitecoil.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Magnet Wire Pricing — HPL & SDP Round Tapers',
+  preview: 'Quote #Q-8320281 — $5,895.00 for Stonite Coil Corp...',
+  body: '',
+  bodyBefore: `Hi Steve,\n\nThank you for your quote request. Based on your specifications and current pricing, I've prepared the following quote:`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  date: 'Jan 28, 2026',
+  time: '11:45 AM',
+  read: false,
+  quoteStatus: 'quoted',
+  inlineQuoteTable: stoniteFinalQuote,
+  quotedPrevious: {
+    from: 'Steve Landers',
+    fromEmail: 'slanders@stonitecoil.com',
+    date: 'Jan 28, 2026',
+    time: '11:15 AM',
+    subject: 'Magnet Wire Pricing — HPL & SDP Round Tapers',
+    body: 'Good morning, I need pricing for the below:\n\n# 27 HPL - round tapers\n# 24 SDPZ - round tapers\n# 19 SDPZ - round tapers',
+  },
+};
+
+export const eisForwardedEmail: Email = {
+  id: 'eis-forward-1',
+  from: 'Morgan (Forwarded)',
+  fromEmail: 'morgan@apex-corp.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'FW: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+  preview: 'Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting...',
+  body: `Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting.\n\n- Morgan`,
+  date: 'Jan 28, 2026',
+  time: '9:48 AM',
+  read: false,
+  quoteStatus: 'processing',
+  quotedPrevious: {
+    from: 'Herman',
+    fromEmail: 'hemnant@motion.com',
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?`,
+  },
+};
+
+export const eisMotionResponse: Email = {
+  id: 'eis-forward-1-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'hemnant@motion.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+  preview: 'Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
+  body: '',
+  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'Jan 28, 2026',
+  time: '9:52 AM',
+  read: false,
+  quoteStatus: 'quoted',
+  inlineQuoteTable: motionQuote,
+  quotedPrevious: {
+    from: 'Herman',
+    fromEmail: 'hemnant@motion.com',
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CSR INBOX — Starts with only yesterday's daily summary
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const csrEmails: Email[] = [
+  // Daily summary email (from yesterday — always visible)
+  {
+    id: 'csr-daily-summary',
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    to: 'jschahal@rcsca.com',
+    cc: 'creisch@apex-corp.com',
+    subject: 're: Adhesive & Activator Pricing',
+    preview: 'Auto-quoted: Quote #Q-1093928 — $192.01 for RCSCA...',
+    body: '',
+    bodyBefore: `Jawinder, Please see below for details of your requested quote.`,
+    bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+    date: 'Jan 28, 2026',
+    time: '10:33 AM',
+    read: false,
+    isCcFromAi: true,
+    originalSender: 'Jawinder Schahal (RCSCA)',
+    isCcFromAiQuoteTable: rcscaQuote,
+    quotedPrevious: {
+      from: 'Jawinder Schahal',
+      fromEmail: 'jschahal@rcsca.com',
+      date: 'Jan 28, 2026',
+      time: '10:30 AM',
+      subject: 'Adhesive & Activator Pricing',
+      body: 'Please advise price for ADH-X315 and ACT-Z788 activator',
+    },
+  },
+
+  // WF4: CC of Tapered Reel quote
+  {
+    id: 'csr-ai-2',
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    to: 'dmorrison@tristatecoil.com',
+    cc: 'morgan@apex-corp.com',
+    subject: 'Re: Tapered Reel & Spool Packaging — 6 Configurations',
+    preview: 'Auto-quoted: Quote #Q-4150772 — $57,660.40 for Tri-State Coil Winding...',
+    body: '',
+    bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request. Pricing is per 100 US pounds.`,
+    bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+    date: 'Jan 28, 2026',
+    time: '10:09 AM',
+    read: false,
+    isCcFromAi: true,
+    originalSender: 'Dave Morrison (Tri-State Coil Winding)',
+    isCcFromAiQuoteTable: taperedReelQuote,
+    quotedPrevious: {
+      from: 'Dave Morrison',
+      fromEmail: 'dmorrison@tristatecoil.com',
+      date: 'Jan 28, 2026',
+      time: '10:05 AM',
+      subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
+      body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool configurations you carry.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
+    },
+  },
+
+  // WF2: Review request
+  {
+    id: 'csr-review-1',
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    to: 'morgan@apex-corp.com',
+    subject: 'Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
+    preview: 'Quote requires your attention. Quote Agent was not able to identify exact SKU matches for all items...',
+    body: '',
+    bodyBefore: `The below quote requires your attention. Quote Agent was not able to identify exact SKU matches for all items.`,
+    date: 'Jan 28, 2026',
+    time: '11:18 AM',
+    read: false,
+    isReviewRequest: true,
+    originalSender: 'Steve Landers (Stonite Coil Corp)',
+    reviewCustomerAccount: 'Stonite Coil Corp',
+    reviewQuoteNumber: 'Q-8320281',
+    reviewMatchItems: stoniteMatchItems,
+    reviewOriginalEmail: {
+      from: 'Steve Landers',
+      fromEmail: 'slanders@stonitecoil.com',
+      to: 'quotes@apex-corp.com',
+      subject: 'Magnet Wire Pricing — HPL & SDP Round Tapers',
+      body: `Good morning, I need pricing for the below:\n\n# 27 HPL - round tapers\n# 24 SDPZ - round tapers\n# 19 SDPZ - round tapers\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
+      date: 'Jan 28, 2026',
+      time: '11:15 AM',
+    },
+    reviewReply: {
+      body: `The #27 HPL match is correct — MW27HPLRT is what Steve orders. It's a round taper profile even though the catalog description doesn't say so.\n\nFor #24 SDPZ and #19 SDPZ — those are custom round tapers. Use SDPZ-24-RT and SDPZ-19-RT. We added those SKUs last quarter for Stonite. Standard pricing applies.\n\nQuote all three at 100 units each — that's his usual order quantity. MOQ is 25 with breaks of 25 so 100 is fine.\n\n- Morgan`,
+      date: 'Jan 28, 2026',
+      time: '11:42 AM',
+    },
+  },
+
+  // WF3: Herman's direct email
+  {
+    id: 'csr-forward-1',
+    from: 'Herman',
+    fromEmail: 'hemnant@motion.com',
+    to: 'morgan@apex-corp.com',
+    subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
+    preview: 'Hi Morgan, we spoke at the trade show last month about your sleeving line...',
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    read: false,
+    isDirectQuoteRequest: true,
+    forwardTo: 'quotes@apex-corp.com',
+    forwardNote: `Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting.\n\n- Morgan`,
+    originalSender: 'Herman (Motion)',
+    forwardAiResponse: {
+      from: 'Apex Quoting',
+      fromEmail: 'quotes@apex-corp.com',
+      to: 'hemnant@motion.com',
+      cc: 'morgan@apex-corp.com',
+      subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+      date: 'Jan 28, 2026',
+      time: '9:52 AM',
+      isAiGenerated: true,
+      bodyBefore: `Herman, Please see below for details of your requested quote.`,
+      bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+      quoteTable: motionQuote,
+    },
+  },
+
+  // Daily summary email
+  {
+    id: 'csr-daily-summary',
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    to: 'morgan@apex-corp.com',
+    subject: 'Daily Quoting Summary — January 27, 2026',
+    preview: '12 quotes sent across 9 customers. Total quoted value: $47,850.00. Avg quote size: $3,987.50...',
+    body: `Hi Morgan,\n\nHere is your quoting activity summary for Monday, January 27, 2026.\n\n══════════════════════════════════════\n  QUOTING ACTIVITY OVERVIEW\n══════════════════════════════════════\n\n  Quotes Sent:            12\n  Customers Quoted:        9\n  Total Quoted Value:     $47,850.00\n  Average Quote Size:     $3,987.50\n  Largest Quote:          $8,420.00\n  Smallest Quote:         $385.00\n\n══════════════════════════════════════\n  STATUS BREAKDOWN\n══════════════════════════════════════\n\n  Auto-Quoted:             9  (75%)\n  Flagged for Review:      2  (17%)\n  Pending Processing:      1  ( 8%)\n\n══════════════════════════════════════\n  TOP QUOTES BY VALUE\n══════════════════════════════════════\n\n  1. Midwest Power Generators     $8,420.00\n     Motor rewind materials, Class H insulation, bearings\n\n  2. Summit Electric Motor Svc    $6,715.00\n     Slot liner, NMN laminate, VPI resin, bearings\n\n  3. Pace Ranixter                $5,370.00\n     Braided sleeving, grommet strips\n\n  4. Atlantic Fabricators          $4,960.00\n     Custom die-cut gaskets, fish paper, tooling\n\n  5. Consolidated Power Svc       $3,210.00\n     Kapton tape, thermal pads, dielectric grease\n\n══════════════════════════════════════\n  ITEMS FLAGGED FOR REVIEW\n══════════════════════════════════════\n\n  • Stonite Coil Corp — 3 unmatched SKUs\n    (round tapers: #27 HPL, #24 SDPZ, #19 SDPZ)\n\n  • Delta Transformer Corp — custom spec needed\n    (non-standard laminate thickness request)\n\n══════════════════════════════════════\n  PRODUCT CATEGORY BREAKDOWN\n══════════════════════════════════════\n\n  Electrical Insulation:    34%   ($16,269)\n  Bearings & Bushings:      18%   ($8,613)\n  Adhesives & Sealants:     14%   ($6,699)\n  Industrial Tapes:         12%   ($5,742)\n  Sleeving & Tubing:         9%   ($4,307)\n  Custom Fabrication:         8%   ($3,828)\n  MRO Supplies:              5%   ($2,392)\n\n══════════════════════════════════════\n\nThis summary is generated automatically at the end of each business day. For detailed quote records, visit the Apex Quote Inbox.\n\nBest regards,\nApex Quoting System`,
+    date: 'Jan 28, 2026',
+    time: '7:00 AM',
+    read: true,
+  },
+];
+
+/* ── Dynamic CSR emails ── */
+
+export const csrReviewReplyEmail: Email = {
+  id: 'csr-review-reply',
+  from: 'Morgan',
+  fromEmail: 'morgan@apex-corp.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'Re: Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
+  preview: 'The #27 HPL match is correct — MW27HPLRT is what Steve orders...',
+  body: `The #27 HPL match is correct — MW27HPLRT is what Steve orders. It's a round taper profile even though the catalog description doesn't say so.\n\nFor #24 SDPZ and #19 SDPZ — those are custom round tapers. Use SDPZ-24-RT and SDPZ-19-RT. We added those SKUs last quarter for Stonite. Standard pricing applies.\n\nQuote all three at 100 units each — that's his usual order quantity. MOQ is 25 with breaks of 25 so 100 is fine.\n\n- Morgan`,
+  date: 'Jan 28, 2026',
+  time: '11:42 AM',
+  read: true,
+  quotedPrevious: {
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    date: 'Jan 28, 2026',
+    time: '11:18 AM',
+    subject: 'Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
+    body: 'The below quote requires your attention. Quote Agent was not able to identify exact SKU matches for all items.',
+  },
+};
+
+export const csrStoniteFinalCc: Email = {
+  id: 'csr-stonite-final-cc',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'slanders@stonitecoil.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Need Pricing on Round Tapers',
+  preview: 'Resolved: Quote #Q-8320281 — $5,895.00 for Stonite Coil Corp...',
+  body: '',
+  bodyBefore: `Hi Steve,\n\nThank you for your quote request. Based on your specifications and current pricing, I've prepared the following quote:`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  date: 'Jan 28, 2026',
+  time: '11:45 AM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Steve Landers (Stonite Coil Corp)',
+  isCcFromAiQuoteTable: stoniteFinalQuote,
+  quotedPrevious: {
+    from: 'Morgan',
+    fromEmail: 'morgan@apex-corp.com',
+    date: 'Jan 28, 2026',
+    time: '11:42 AM',
+    subject: 'Re: Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
+    body: 'The #27 HPL match is correct — MW27HPLRT is what Steve orders...\nQuote all three at 100 units each — that\'s his usual order quantity.',
+  },
+};
+
+export const csrMotionCc: Email = {
+  id: 'csr-forward-cc',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'hemnant@motion.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+  preview: 'Auto-quoted: Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
+  body: '',
+  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'Jan 28, 2026',
+  time: '9:52 AM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Herman (Motion)',
+  isCcFromAiQuoteTable: motionQuote,
+  quotedPrevious: {
+    from: 'Herman',
+    fromEmail: 'hemnant@motion.com',
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+  },
+};
+
+export const csrHermanReply: Email = {
+  id: 'csr-herman-reply',
+  from: 'Herman',
+  fromEmail: 'hemnant@motion.com',
+  to: 'quotes@apex-corp.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+  preview: 'Hey Morgan! Thanks for getting that quote over so quickly...',
+  body: `Hey Morgan!\n\nThanks for getting that quote over so quickly — really appreciate the fast turnaround. I'm going to review it with our purchasing team and should have an answer for you by end of week.\n\nLet's catch up next time you're in town! It was great talking at the show.\n\nTalk soon,\nHerman`,
+  date: 'Jan 28, 2026',
+  time: '2:17 PM',
+  read: false,
+  threadedQuoteResponse: {
+    from: 'Apex Quoting',
+    fromEmail: 'quotes@apex-corp.com',
+    to: 'hemnant@motion.com',
+    cc: 'morgan@apex-corp.com',
+    date: 'Jan 28, 2026',
+    time: '9:52 AM',
+    subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
+    bodyBefore: `Herman, Please see below for details of your requested quote.`,
+    bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+    quoteTable: motionQuote,
+    quotedPrevious: {
+      from: 'Herman',
+      fromEmail: 'hemnant@motion.com',
+      date: 'Jan 28, 2026',
+      time: '9:45 AM',
+      subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
+      body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+    },
+  },
+};
+
+/* ── Folder definitions ── */
+
+export interface InboxFolderDef {
+  id: string;
+  label: string;
+  sublabel?: string;
+  icon: 'inbox' | 'zap' | 'flag';
+  count: number;
+  unreadCount: number;
+  children?: InboxFolderDef[];
+}
+
+export const inboxFolders: InboxFolderDef[] = [
+  {
+    id: 'csr',
+    label: 'CSR Inbox',
+    sublabel: 'morgan@apex-corp.com',
+    icon: 'inbox' as const,
+    count: csrEmails.length,
+    unreadCount: csrEmails.filter((e) => !e.read).length,
+    children: [
+      {
+        id: 'csr-oem',
+        label: 'OEM',
+        icon: 'inbox' as const,
+        count: 0,
+        unreadCount: 0,
+      },
+      {
+        id: 'csr-am-mro',
+        label: 'AM/MRO',
+        icon: 'inbox' as const,
+        count: 0,
+        unreadCount: 0,
+      },
+    ],
+  },
+  {
+    id: 'eis',
+    label: 'Apex Quote Inbox',
+    sublabel: 'quotes@apex-corp.com',
+    icon: 'zap' as const,
+    count: eisEmails.length,
+    unreadCount: eisEmails.filter((e) => !e.read).length,
+  },
+  {
+    id: 'review',
+    label: 'Flagged for Review',
+    sublabel: 'Apex Quoting',
+    icon: 'flag' as const,
+    count: (() => {
+      const eisReview = eisEmails.filter((e) => e.quoteStatus === 'review');
+      const csrReview = csrEmails.filter((e) => e.isReviewRequest);
+      return eisReview.length + csrReview.length;
+    })(),
+    unreadCount: (() => {
+      const eisReview = eisEmails.filter((e) => e.quoteStatus === 'review' && !e.read);
+      const csrReview = csrEmails.filter((e) => e.isReviewRequest && !e.read);
+      return eisReview.length + csrReview.length;
+    })(),
+  },
+];

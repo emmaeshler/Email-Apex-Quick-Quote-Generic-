@@ -698,7 +698,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             >
               <Forward size={16} /> Forward
             </button>
-            {hintTarget === 'action:reply' && <DemoDot />}
+            {hintTarget === 'action:forward' && <DemoDot />}
           </div>
         </>
       );

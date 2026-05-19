@@ -391,6 +391,20 @@ export const eis5Stonite: Email = {
   quoteStatus: 'review',
 };
 
+// WF2: Steve's original request to Morgan (arrives first, missing details)
+export const csrSteveOriginal: Email = {
+  id: 'csr-steve-original',
+  from: 'Steve Landers',
+  fromEmail: 'slanders@stonitecoil.com',
+  to: 'morgan@apex-corp.com',
+  subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+  preview: 'Good morning, I need pricing for the below: # 27 HPL - round tapers...',
+  body: `Good morning Morgan,\n\nI need pricing for the below:\n\n# 27 HPL - round tapers (15 units)\n# 24 SDPZ - round tapers\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
+  date: 'Jan 28, 2026',
+  time: '11:15 AM',
+  read: false,
+};
+
 // WF2: Review request in CSR inbox - Draft forward to customer
 export const csrReview1: Email = {
   id: 'csr-review-1',

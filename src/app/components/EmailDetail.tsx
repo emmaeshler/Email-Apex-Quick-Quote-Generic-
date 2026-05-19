@@ -425,7 +425,10 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   // Auto-scroll to top when compose box appears (review reply or forward compose)
   useEffect(() => {
     if ((reviewStage === 'composing' || effectiveForwardStage === 'composing' || reviewForwardStage === 'composing') && contentScrollRef.current) {
-      contentScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      // Small delay to ensure compose box has rendered before scrolling
+      setTimeout(() => {
+        contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 50);
     }
   }, [reviewStage, forwardStage, reviewForwardStage]);
 

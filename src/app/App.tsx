@@ -334,8 +334,8 @@ export default function App() {
       setTimeout(() => {
         setForwardStage('quoted');
         setScrollTrigger((n) => n + 1);
-      }, 2500);
-    }, 1500);
+      }, 1800);
+    }, 1000);
   };
 
   // Handle the review send — orchestrate staggered email arrivals
@@ -348,21 +348,21 @@ export default function App() {
       // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
       setTimeout(() => {
         markEmailArrived('csr-review-reply');
-      }, 800);
+      }, 500);
 
       // Phase 2: Original Stonite request transitions to processing (forwarded to quotes@)
       setTimeout(() => {
         markEmailArrived('eis-5'); // Original request now shows as being processed
-      }, 1500);
+      }, 1000);
 
-      // Phase 3: EIS quote response arrives after 3-7s (system generated it)
-      const eisDelay = 3000 + Math.random() * 4000; // 3-7s
+      // Phase 3: EIS quote response arrives after 2-5s (system generated it)
+      const eisDelay = 2000 + Math.random() * 3000; // 2-5s
       setTimeout(() => {
         markEmailArrived('eis-stonite-response');
       }, eisDelay);
 
-      // Phase 4: CSR CC notification arrives 1-2s after quote response
-      const ccDelay = eisDelay + 1000 + Math.random() * 1000; // +1-2s
+      // Phase 4: CSR CC notification arrives 0.7-1.5s after quote response
+      const ccDelay = eisDelay + 700 + Math.random() * 800; // +0.7-1.5s
       setTimeout(() => {
         markEmailArrived('csr-stonite-final-cc');
         // Mark workflow complete after all arrivals
@@ -372,9 +372,9 @@ export default function App() {
     } else {
       // ── Forward workflow: Morgan asks customer for clarification ──
 
-      // Phase 1: Customer (Steve) responds with details after 5-10s
+      // Phase 1: Customer (Steve) responds with details after 3-7s
       // Morgan will need to manually forward Steve's response to quotes@
-      const customerDelay = 5000 + Math.random() * 5000; // 5-10s
+      const customerDelay = 3000 + Math.random() * 4000; // 3-7s
       setTimeout(() => {
         markEmailArrived('csr-steve-clarification');
         setReviewStage('pending'); // Reset to pending, waiting for Morgan to forward
@@ -392,7 +392,7 @@ export default function App() {
       // Phase 1: Forwarded thread appears in EIS
       setTimeout(() => {
         markEmailArrived('eis-5');
-      }, 800);
+      }, 500);
 
       // Quote will arrive when user clicks Refresh for Batch 2
       // Stay in 'processing' state until then

@@ -394,8 +394,13 @@ export default function App() {
         markEmailArrived('eis-5');
       }, 500);
 
-      // Quote will arrive when user clicks Refresh for Batch 2
-      // Stay in 'processing' state until then
+      // Phase 2: Auto-quote generated and sent (2-5s)
+      const quoteDelay = 2000 + Math.random() * 3000; // 2-5s
+      setTimeout(() => {
+        setReviewForwardStage('quoted');
+        markEmailArrived('eis-stonite-response');
+        markEmailArrived('csr-stonite-final-cc'); // Morgan gets CC'd
+      }, quoteDelay);
 
       // Phase 3: CSR CC notification (1-2s after quote)
       const ccDelay = quoteDelay + 1000 + Math.random() * 1000;

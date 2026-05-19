@@ -14,7 +14,6 @@ import {
   eis6Response,
   csr2CC,
   eis5Stonite,
-  csrSteveOriginal,
   csrReview1,
   csrHermanDirect,
   eisStoniteResponse,
@@ -115,8 +114,9 @@ export default function App() {
   // ── Refresh queue definition — each batch is revealed on refresh ──
   const refreshBatches = useMemo(() => {
     const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: WF2 - Steve's original request + review flag (Phase 1: opens demo — AI knows its limits)
-      { emailIds: ['csr-steve-original', 'csr-review-1'] },
+      // Batch 0: WF2 - Review flag (Phase 1: opens demo — AI knows its limits)
+      // Note: Steve's original email is part of the review thread, not a separate list item
+      { emailIds: ['csr-review-1'] },
 
       // Note: csr-steve-clarification (Phase 1b) arrives automatically 3-7s after sending review - no batch needed
       // Note: csr-stonite-final-cc (Phase 1c) arrives automatically when forwarded to quotes@ - no batch needed
@@ -234,8 +234,7 @@ export default function App() {
       'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
       'csr-steve-clarification': 65,  // Auto-delivered - Steve's clarification (Phase 1b)
       'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
-      'csr-review-1': 55,             // Batch 0 - Stonite review flag (Phase 1 opener)
-      'csr-steve-original': 50,       // Batch 0 - Steve's original request (Phase 1 opener)
+      'csr-review-1': 55,             // Batch 0 - Review email (Steve's original is in thread)
     };
 
     const list = [];
@@ -243,7 +242,6 @@ export default function App() {
     // Add emails (order doesn't matter, we'll sort by priority)
     if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
-    if (arrivedEmails.has('csr-steve-original')) list.push(csrSteveOriginal);
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
     if (arrivedEmails.has('csr-forward-1')) list.push(csrHermanDirect);
     if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);

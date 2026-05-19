@@ -841,4 +841,12 @@ export const inboxFolders: InboxFolderDef[] = [
       return eisReview.length + csrReview.length;
     })(),
   },
+  {
+    id: 'workflow',
+    label: 'Deleted',
+    sublabel: 'Workflow Config',
+    icon: 'trash' as const,
+    count: 0,
+    unreadCount: 0,
+  },
 ];

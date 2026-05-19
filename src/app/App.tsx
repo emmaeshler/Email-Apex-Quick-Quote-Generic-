@@ -404,9 +404,9 @@ export default function App() {
       const ccDelay = quoteDelay + 1000 + Math.random() * 1000;
       setTimeout(() => {
         markEmailArrived('csr-stonite-final-cc');
-        setReviewStage('resolved');
-        setReviewResolved(true);
         setScrollTrigger((n) => n + 1);
+        // Don't set reviewResolved here - let the hint logic handle it
+        // when user views the email (lines 488-490)
       }, ccDelay);
     }, 1500);
   };
@@ -534,7 +534,7 @@ export default function App() {
     }
 
     return null; // demo complete (after viewing daily summary)
-  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, arrivedEmails, hasNewMessages]);
+  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, arrivedEmails, hasNewMessages, nextBatchIndex]);
 
   return (
     <div className="size-full flex bg-background overflow-hidden">

@@ -162,7 +162,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof Cl
 /* ── Outlook-style quoted previous message ── */
 
 function QuotedPreviousBlock({ quoted }: { quoted: QuotedPrevious }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   return (
     <div className="mt-6 border-t border-border pt-4">
       <button

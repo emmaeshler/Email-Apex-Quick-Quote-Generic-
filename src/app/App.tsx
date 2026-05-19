@@ -452,20 +452,17 @@ export default function App() {
       }
     }
 
-    // ── Phase 1b: Steve Responds ──
-    if (!reviewResolved && forwardStage === 'pending' && arrivedEmails.has('csr-steve-clarification')) {
-      // Guide to Steve's clarification email if not viewing it
-      if (selectedEmailId !== 'csr-steve-clarification' && reviewForwardStage === 'pending') {
-        // Check if we need to refresh first
-        if (!arrivedEmails.has('csr-steve-clarification') && hasNewMessages) return 'action:refresh';
-        return 'email:csr-steve-clarification';
-      }
+    // ── Phase 1b: Steve Responds (Priority: handle this regardless of other state) ──
+    if (arrivedEmails.has('csr-steve-clarification') && selectedEmailId === 'csr-steve-clarification' && reviewForwardStage !== 'quoted') {
       // On Steve's clarification email, guide to forward action based on stage
-      if (selectedEmailId === 'csr-steve-clarification') {
-        if (reviewForwardStage === 'pending') return 'action:forward';
-        if (reviewForwardStage === 'composing') return 'action:send';
-        if (reviewForwardStage === 'sent' || reviewForwardStage === 'processing') return null; // processing
-      }
+      if (reviewForwardStage === 'pending') return 'action:forward';
+      if (reviewForwardStage === 'composing') return 'action:send';
+      if (reviewForwardStage === 'sent' || reviewForwardStage === 'processing') return null; // processing
+    }
+
+    // Guide to Steve's email if not viewing it yet
+    if (arrivedEmails.has('csr-steve-clarification') && selectedEmailId !== 'csr-steve-clarification' && !reviewResolved && reviewForwardStage === 'pending') {
+      return 'email:csr-steve-clarification';
     }
 
     // ── Phase 1c: Quote Comes Back Auto-Generated ──

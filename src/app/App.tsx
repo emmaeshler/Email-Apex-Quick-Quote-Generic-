@@ -114,16 +114,22 @@ export default function App() {
   // ── Refresh queue definition — each batch is revealed on refresh ──
   const refreshBatches = useMemo(() => {
     const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: WF1 + WF4 - Both auto-quote workflows together (6 emails)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 1: WF2 - Stonite review request (2 emails: flagged request → review email)
+      // Batch 0: WF2 - Stonite review request (Phase 1: opens demo — AI knows its limits)
       { emailIds: ['eis-5', 'csr-review-1'] },
 
-      // Batch 2: WF3 - Herman's direct email (1 email)
+      // Batch 1: WF2 - Steve's clarification (Phase 1b: arrives after Morgan forwards to Steve)
+      { emailIds: ['csr-steve-clarification'] },
+
+      // Batch 2: WF2 - Final quote (Phase 1c: arrives after forwarding to quotes@)
+      { emailIds: ['csr-stonite-final-cc'] },
+
+      // Batch 3: WF1 + WF4 - Auto-quote workflows (Phase 2: payoff — shows automation at scale)
+      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
+
+      // Batch 4: WF3 - Herman's direct email (optional additional workflow)
       { emailIds: ['csr-forward-1'] },
 
-      // Batch 3: Daily summary - view after completing all workflows
+      // Batch 5: Daily summary (Phase 3: closer — full picture)
       { emailIds: ['csr-daily-summary'] },
     ];
 
@@ -147,8 +153,8 @@ export default function App() {
         markEmailArrived(emailId);
 
         // Auto-select first meaningful CSR email when it arrives
-        if (emailId === 'csr-ai-1') {
-          setSelectedCsrEmailId('csr-ai-1');
+        if (emailId === 'csr-review-1') {
+          setSelectedCsrEmailId('csr-review-1');
         }
 
         // Clear refreshing state after last email in batch
@@ -215,16 +221,16 @@ export default function App() {
   const effectiveCsrEmails = useMemo(() => {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 100,       // Batch 3 - Daily summary (last/newest)
-      'csr-herman-reply': 90,         // WF3 final - Herman's reply after quote
-      'csr-motion-cc': 85,            // WF3 - Motion quote CC
-      'csr-forward-1': 80,            // Batch 2 - Herman's direct email
-      'csr-stonite-final-cc': 70,     // WF2 final - Stonite final CC
-      'csr-steve-clarification': 65,  // WF2 forward - Steve's clarification response
-      'csr-review-reply': 60,         // WF2 reply - Morgan's review reply
-      'csr-review-1': 50,             // Batch 1 - Stonite review request
-      'csr-ai-2': 40,                 // Batch 0 - Tri-State CC
-      'csr-ai-1': 30,                 // Batch 0 - RCSCA CC
+      'csr-daily-summary': 100,       // Batch 5 - Daily summary (last/newest)
+      'csr-herman-reply': 95,         // WF3 final - Herman's reply after quote
+      'csr-motion-cc': 90,            // WF3 - Motion quote CC
+      'csr-forward-1': 85,            // Batch 4 - Herman's direct email
+      'csr-ai-2': 80,                 // Batch 3 - Tri-State auto-quote
+      'csr-ai-1': 75,                 // Batch 3 - RCSCA auto-quote
+      'csr-stonite-final-cc': 70,     // Batch 2 - Stonite final CC (Phase 1c)
+      'csr-steve-clarification': 65,  // Batch 1 - Steve's clarification (Phase 1b)
+      'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
+      'csr-review-1': 55,             // Batch 0 - Stonite review request (Phase 1 opener)
     };
 
     const list = [];
@@ -411,100 +417,113 @@ export default function App() {
 
   /* ══════════════════════════════════════════════════════════════════════════
      Demo Hint — compute which element gets the pulsing dot
-     Returns a target string like "email:csr-ai-2" or "action:forward"
+     Returns a target string like "email:csr-review-1" or "action:forward"
      ══════════════════════════════════════════════════════════════════════════ */
   const hintTarget = useMemo<string | null>(() => {
     if (!demoVisible) return null;
 
     // ── Phase 0: Guide to refresh if inbox is empty ──
-    if (nextBatchIndex === 0 && !arrivedEmails.has('csr-ai-1')) {
+    if (nextBatchIndex === 0 && !arrivedEmails.has('csr-review-1')) {
       return 'action:refresh';
     }
 
-    // ── Phase 1: Scenarios 1 & 2 — Auto-quotes in CSR inbox ──
+    // ── Phase 1: Review-Needed Scenario — Opens the demo, establishes AI knows its limits ──
     if (!reviewResolved && forwardStage === 'pending' && reviewStage === 'pending') {
       if (activeFolder === 'csr') {
-        // Only hint once emails have arrived
-        if (!arrivedEmails.has('csr-ai-1')) return null;
+        // Only hint once review email has arrived
+        if (!arrivedEmails.has('csr-review-1')) return null;
 
-        // No email selected yet, or a non-demo email selected → hint: first demo email
-        // Exclude Steve's clarification from this check - it has its own workflow in Phase 2b
-        if (!selectedEmailId || (selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary' && selectedEmailId !== 'csr-steve-clarification')) {
-          return 'email:csr-ai-1';
+        // No email selected yet, or a non-demo email selected → hint: review email (demo opener)
+        if (!selectedEmailId || (selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-steve-clarification' && selectedEmailId !== 'csr-stonite-final-cc' && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary')) {
+          return 'email:csr-review-1';
         }
-        // Viewing csr-ai-1 → hint: next email (csr-ai-2 arrives in same batch)
-        if (selectedEmailId === 'csr-ai-1') {
-          if (arrivedEmails.has('csr-ai-2')) return 'email:csr-ai-2';
-        }
-        // After viewing csr-ai-2 → hint: review email (if it has arrived) or refresh
-        if (selectedEmailId === 'csr-ai-2') {
-          if (!arrivedEmails.has('csr-review-1') && hasNewMessages) return 'action:refresh';
-          if (arrivedEmails.has('csr-review-1')) return 'email:csr-review-1';
+        // Viewing csr-review-1 → hint: Forward button (Phase 1a)
+        if (selectedEmailId === 'csr-review-1') {
+          return 'action:forward';
         }
       }
     }
 
-    // ── Phase 2: Scenario 3 — Stonite review workflow ──
-    if (!reviewResolved && forwardStage === 'pending') {
-      // ── Phase 2a: Initial review request handling ──
-      // Only show hints on the review request if Steve hasn't responded yet
-      if (selectedEmailId === 'csr-review-1' && !arrivedEmails.has('csr-steve-clarification')) {
-        // User can choose Reply or Forward - hint based on their choice
-        if (reviewStage === 'pending') {
-          // Default hint to Reply, but if they click Forward, the compose will show
-          return reviewComposeMode === 'reply' ? 'action:reply' : 'action:forward';
-        }
+    // ── Phase 1a: Forward to Steve for Clarification ──
+    if (!reviewResolved && forwardStage === 'pending' && arrivedEmails.has('csr-review-1') && !arrivedEmails.has('csr-steve-clarification')) {
+      if (selectedEmailId === 'csr-review-1') {
         if (reviewStage === 'composing') return 'action:send';
         if (reviewStage === 'sending') return null; // processing, no hint while sending
       }
+    }
 
-      // ── Phase 2b: Steve's clarification response - forward to quotes@ ──
-      // Once Steve has responded, guide to forward his email to quotes@
-      if (arrivedEmails.has('csr-steve-clarification')) {
-        // Guide to Steve's clarification email if not viewing it
-        if (selectedEmailId !== 'csr-steve-clarification') {
-          return 'email:csr-steve-clarification';
-        }
-        // On Steve's clarification email, guide to forward action based on stage
-        if (selectedEmailId === 'csr-steve-clarification') {
-          if (reviewForwardStage === 'pending') return 'action:forward';
-          if (reviewForwardStage === 'composing') return 'action:send';
-          if (reviewForwardStage === 'sent' || reviewForwardStage === 'processing') return null; // processing
-        }
+    // ── Phase 1b: Steve Responds ──
+    if (!reviewResolved && forwardStage === 'pending' && arrivedEmails.has('csr-steve-clarification')) {
+      // Guide to Steve's clarification email if not viewing it
+      if (selectedEmailId !== 'csr-steve-clarification' && reviewForwardStage === 'pending') {
+        // Check if we need to refresh first
+        if (!arrivedEmails.has('csr-steve-clarification') && hasNewMessages) return 'action:refresh';
+        return 'email:csr-steve-clarification';
       }
-
-      // If they navigated away from review-1 but haven't started review yet (and Steve hasn't responded)
-      if (activeFolder === 'csr' && !arrivedEmails.has('csr-steve-clarification') && selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2') {
-        return 'email:csr-review-1';
+      // On Steve's clarification email, guide to forward action based on stage
+      if (selectedEmailId === 'csr-steve-clarification') {
+        if (reviewForwardStage === 'pending') return 'action:forward';
+        if (reviewForwardStage === 'composing') return 'action:send';
+        if (reviewForwardStage === 'sent' || reviewForwardStage === 'processing') return null; // processing
       }
     }
 
-    // ── Phase 3: Scenario 4 — View Stonite final CC, then Herman forward workflow ──
-    if (reviewResolved && forwardStage === 'pending') {
-      // First, guide to the new Stonite CC email (only if it has arrived)
-      if (arrivedEmails.has('csr-stonite-final-cc') && selectedEmailId !== 'csr-stonite-final-cc' && selectedEmailId !== 'csr-forward-1') {
+    // ── Phase 1c: Quote Comes Back Auto-Generated ──
+    if (reviewForwardStage === 'quoted' && !reviewResolved) {
+      // Guide to the final quote email (the "aha" moment)
+      if (!arrivedEmails.has('csr-stonite-final-cc') && hasNewMessages) return 'action:refresh';
+      if (arrivedEmails.has('csr-stonite-final-cc') && selectedEmailId !== 'csr-stonite-final-cc') {
         return 'email:csr-stonite-final-cc';
       }
-      // After viewing the Stonite CC, check if Herman's email available
+      // After viewing the final quote, move to Phase 2
       if (selectedEmailId === 'csr-stonite-final-cc') {
-        if (!arrivedEmails.has('csr-forward-1') && hasNewMessages) return 'action:refresh';
-        if (arrivedEmails.has('csr-forward-1')) return 'email:csr-forward-1';
+        // Mark review as resolved so we can move to auto-quotes
+        if (!reviewResolved) {
+          setReviewResolved(true);
+        }
+        // Guide to refresh for auto-quotes
+        if (!arrivedEmails.has('csr-ai-1') && hasNewMessages) return 'action:refresh';
+        if (arrivedEmails.has('csr-ai-1')) return 'email:csr-ai-1';
       }
-      // On Herman's email, guide to forward action
-      if (selectedEmailId === 'csr-forward-1') return 'action:forward';
+    }
+
+    // ── Phase 2: Auto-Quoted Emails (Payoff — shows automation at scale) ──
+    if (reviewResolved && forwardStage === 'pending') {
+      if (activeFolder === 'csr') {
+        // Guide to first auto-quote if not viewing it
+        if (arrivedEmails.has('csr-ai-1') && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary') {
+          return 'email:csr-ai-1';
+        }
+        // After viewing csr-ai-1, guide to csr-ai-2
+        if (selectedEmailId === 'csr-ai-1' && arrivedEmails.has('csr-ai-2')) {
+          return 'email:csr-ai-2';
+        }
+        // After viewing csr-ai-2, check for Herman's email or daily summary
+        if (selectedEmailId === 'csr-ai-2') {
+          // Optional: Herman's forward workflow
+          if (!arrivedEmails.has('csr-forward-1') && hasNewMessages) return 'action:refresh';
+          if (arrivedEmails.has('csr-forward-1')) return 'email:csr-forward-1';
+        }
+        // On Herman's email, guide to forward action
+        if (selectedEmailId === 'csr-forward-1') return 'action:forward';
+      }
     }
     if (reviewResolved && forwardStage === 'composing') return 'action:send';
     if (forwardStage === 'sent' || forwardStage === 'processing') return null; // waiting
 
-    // ── Phase 4: View Herman's reply thread ──
-    if (forwardStage === 'quoted' && selectedEmailId !== 'csr-herman-reply' && selectedEmailId !== 'csr-daily-summary') {
+    // ── Phase 2b: View Herman's reply thread (optional) ──
+    if (forwardStage === 'quoted' && selectedEmailId !== 'csr-herman-reply' && selectedEmailId !== 'csr-daily-summary' && arrivedEmails.has('csr-herman-reply')) {
       return 'email:csr-herman-reply';
     }
 
-    // ── Phase 5: Refresh to get Daily Summary, then view it ──
-    if (forwardStage === 'quoted' && selectedEmailId === 'csr-herman-reply') {
+    // ── Phase 3: Daily Summary (Closer — full picture) ──
+    if (forwardStage === 'quoted' || (reviewResolved && selectedEmailId === 'csr-ai-2')) {
+      // Guide to refresh for daily summary
       if (!arrivedEmails.has('csr-daily-summary') && hasNewMessages) return 'action:refresh';
-      if (arrivedEmails.has('csr-daily-summary')) return 'email:csr-daily-summary';
+      // Guide to daily summary if not viewing it
+      if (arrivedEmails.has('csr-daily-summary') && selectedEmailId !== 'csr-daily-summary') {
+        return 'email:csr-daily-summary';
+      }
     }
 
     return null; // demo complete (after viewing daily summary)

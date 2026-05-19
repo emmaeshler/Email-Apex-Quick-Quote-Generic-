@@ -121,16 +121,15 @@ export default function App() {
       // Batch 1: WF2 - Steve's clarification (Phase 1b: arrives after Morgan forwards to Steve)
       { emailIds: ['csr-steve-clarification'] },
 
-      // Batch 2: WF2 - Final quote (Phase 1c: arrives after forwarding to quotes@)
-      { emailIds: ['csr-stonite-final-cc'] },
+      // Note: csr-stonite-final-cc (Phase 1c) arrives automatically when forwarded to quotes@ - no batch needed
 
-      // Batch 3: WF1 + WF4 - Auto-quote workflows (Phase 2: payoff — shows automation at scale)
+      // Batch 2: WF1 + WF4 - Auto-quote workflows (Phase 2: payoff — shows automation at scale)
       { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
 
-      // Batch 4: WF3 - Herman's direct email (optional additional workflow)
+      // Batch 3: WF3 - Herman's direct email (optional additional workflow)
       { emailIds: ['csr-forward-1'] },
 
-      // Batch 5: Daily summary (Phase 3: closer — full picture)
+      // Batch 4: Daily summary (Phase 3: closer — full picture)
       { emailIds: ['csr-daily-summary'] },
     ];
 
@@ -228,13 +227,13 @@ export default function App() {
   const effectiveCsrEmails = useMemo(() => {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 100,       // Batch 5 - Daily summary (last/newest)
+      'csr-daily-summary': 100,       // Batch 4 - Daily summary (last/newest)
       'csr-herman-reply': 95,         // WF3 final - Herman's reply after quote
       'csr-motion-cc': 90,            // WF3 - Motion quote CC
-      'csr-forward-1': 85,            // Batch 4 - Herman's direct email
-      'csr-ai-2': 80,                 // Batch 3 - Tri-State auto-quote
-      'csr-ai-1': 75,                 // Batch 3 - RCSCA auto-quote
-      'csr-stonite-final-cc': 70,     // Batch 2 - Stonite final CC (Phase 1c)
+      'csr-forward-1': 85,            // Batch 3 - Herman's direct email
+      'csr-ai-2': 80,                 // Batch 2 - Tri-State auto-quote
+      'csr-ai-1': 75,                 // Batch 2 - RCSCA auto-quote
+      'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
       'csr-steve-clarification': 65,  // Batch 1 - Steve's clarification (Phase 1b)
       'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
       'csr-review-1': 55,             // Batch 0 - Stonite review flag (Phase 1 opener)

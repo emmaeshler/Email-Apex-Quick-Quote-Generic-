@@ -442,8 +442,8 @@ export default function App() {
         if (!selectedEmailId || (selectedEmailId !== 'csr-review-1' && selectedEmailId !== 'csr-steve-clarification' && selectedEmailId !== 'csr-stonite-final-cc' && selectedEmailId !== 'csr-ai-1' && selectedEmailId !== 'csr-ai-2' && selectedEmailId !== 'csr-forward-1' && selectedEmailId !== 'csr-daily-summary')) {
           return 'email:csr-review-1';
         }
-        // Viewing csr-review-1 → hint: Forward button (Phase 1a)
-        if (selectedEmailId === 'csr-review-1') {
+        // Viewing csr-review-1 → hint: Forward button (Phase 1a) - only if Steve hasn't been contacted yet
+        if (selectedEmailId === 'csr-review-1' && !arrivedEmails.has('csr-steve-clarification')) {
           return 'action:forward';
         }
       }

@@ -440,7 +440,7 @@ export const csrSteveClarification: Email = {
   read: false,
   // This is Steve's response to the review forward - needs to be forwarded to quotes@
   forwardTo: 'quotes@apex-corp.com',
-  forwardNote: `[Add Custom Message to auto quote]\n\nHi Steve - great to hear from you! Here is your quote as requested.`,
+  forwardNote: `[Add Custom Message to auto quote - if not edited, will not be visible to customer]\n\nHi Steve - great to hear from you! Here is your quote as requested.`,
   quotedPrevious: {
     from: 'Morgan',
     fromEmail: 'morgan@apex-corp.com',

@@ -157,6 +157,12 @@ export default function App() {
           setSelectedCsrEmailId('csr-review-1');
         }
 
+        // Batch 2: Final quote arrives - change state to 'quoted'
+        if (emailId === 'csr-stonite-final-cc') {
+          setReviewForwardStage('quoted');
+          markEmailArrived('eis-stonite-response'); // Also mark EIS email as arrived
+        }
+
         // Clear refreshing state after last email in batch
         if (index === emailIds.length - 1) {
           setTimeout(() => setIsRefreshing(false), 500);
@@ -388,12 +394,8 @@ export default function App() {
         markEmailArrived('eis-5');
       }, 800);
 
-      // Phase 2: Final quote generated (3-7s)
-      const quoteDelay = 3000 + Math.random() * 4000;
-      setTimeout(() => {
-        setReviewForwardStage('quoted');
-        markEmailArrived('eis-stonite-response');
-      }, quoteDelay);
+      // Quote will arrive when user clicks Refresh for Batch 2
+      // Stay in 'processing' state until then
 
       // Phase 3: CSR CC notification (1-2s after quote)
       const ccDelay = quoteDelay + 1000 + Math.random() * 1000;
@@ -463,6 +465,11 @@ export default function App() {
     // Guide to Steve's email if not viewing it yet
     if (arrivedEmails.has('csr-steve-clarification') && selectedEmailId !== 'csr-steve-clarification' && !reviewResolved && reviewForwardStage === 'pending') {
       return 'email:csr-steve-clarification';
+    }
+
+    // ── Phase 1c: Wait for quote to be generated (guide to refresh) ──
+    if (reviewForwardStage === 'processing' && !arrivedEmails.has('csr-stonite-final-cc') && hasNewMessages) {
+      return 'action:refresh';
     }
 
     // ── Phase 1c: Quote Comes Back Auto-Generated ──

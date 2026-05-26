@@ -369,9 +369,8 @@ export default function App() {
       const ccDelay = eisDelay + 700 + Math.random() * 800; // +0.7-1.5s
       setTimeout(() => {
         markEmailArrived('csr-stonite-final-cc');
-        // Mark workflow complete after all arrivals
-        setReviewStage('resolved');
-        setReviewResolved(true);
+        // Note: reviewResolved is set when user VIEWS the email (see hintTarget useMemo)
+        // This allows hints to guide user: view quote → refresh → see auto-quotes
       }, ccDelay);
     } else {
       // ── Forward workflow: Morgan asks customer for clarification ──

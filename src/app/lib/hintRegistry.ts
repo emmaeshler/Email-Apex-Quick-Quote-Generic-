@@ -181,7 +181,7 @@ export const hintRules: HintRule[] = [
     phase: 'Phase 1c→2: After viewing quote, guide to refresh for auto-quotes',
     conditions: {
       reviewForwardStage: 'quoted',
-      reviewResolved: false,
+      reviewResolved: true, // ← Changed: true because it's set when viewing the email
       selectedEmailId: 'csr-stonite-final-cc',
       emailsNotArrived: ['csr-ai-1'],
       hasNewMessages: true,

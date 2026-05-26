@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
-import { WorkflowFlowchart } from '@/app/components/WorkflowFlowchart';
-import { selectHint, validateHintCoverage } from './lib/hintRegistry';
+// TEMPORARILY DISABLED FOR TESTING:
+// import { WorkflowFlowchart } from '@/app/components/WorkflowFlowchart';
+// import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import {
   eisEmails,
   csrEmails,

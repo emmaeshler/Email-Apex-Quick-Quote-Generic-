@@ -15,6 +15,7 @@ interface Email {
   isCcFromAi?: boolean;
   isReviewRequest?: boolean;
   isDirectQuoteRequest?: boolean;
+  isApprovalHold?: boolean;
   inlineQuoteTable?: object;
 }
 
@@ -29,6 +30,7 @@ interface EmailListProps {
   onToggleCollapse: () => void;
   reviewResolved?: boolean;
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
+  approvalStage?: 'pending' | 'reviewing' | 'approved' | 'sent';
   hintTarget?: string | null;
   scrollTrigger?: number;
   newEmailIds?: Set<string>;
@@ -43,6 +45,7 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
     orange: 'bg-secondary text-secondary-foreground',
     blue: 'bg-accent text-accent-foreground',
     green: 'bg-chart-3 text-primary-foreground',
+    grey: 'bg-muted text-muted-foreground',
   };
   return (
     <span className={`inline-block px-1.5 py-px font-w-medium ${colors[color] || colors.blue}`} style={{ fontSize: '10px', lineHeight: '16px' }}>
@@ -57,7 +60,7 @@ const STATUS_TAG: Record<string, { label: string; color: string }> = {
   review: { label: 'Needs Review', color: 'orange' },
 };
 
-export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false }: EmailListProps) {
+export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false }: EmailListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll the hinted email into view whenever hintTarget changes
@@ -214,14 +217,14 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                     <div className="mt-1.5">
                       <CategoryTag
                         label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"}
-                        color={wasReviewed ? "blue" : "green"}
+                        color={wasReviewed ? "grey" : "green"}
                       />
                     </div>
                   );
                 })()}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
                   <div className="mt-1.5">
-                    <CategoryTag label="Sent to Customer" color="green" />
+                    <CategoryTag label="Sent to Customer" color="grey" />
                   </div>
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
@@ -231,7 +234,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
                   if (forwardStage === 'quoted') return (
-                    <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="green" /></div>
+                    <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
                   );
                   if (forwardStage === 'processing' || forwardStage === 'sent') return (
                     <div className="mt-1.5"><CategoryTag label="Forwarded" color="blue" /></div>
@@ -241,6 +244,17 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                   );
                   return (
                     <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
+                  );
+                })()}
+                {(folderType === 'csr') && email.isApprovalHold && (() => {
+                  if (approvalStage === 'sent') return (
+                    <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
+                  );
+                  if (approvalStage === 'approved') return (
+                    <div className="mt-1.5"><CategoryTag label="Sending..." color="blue" /></div>
+                  );
+                  return (
+                    <div className="mt-1.5"><CategoryTag label="Pending Approval" color="orange" /></div>
                   );
                 })()}
               </div>

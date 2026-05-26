@@ -10,7 +10,6 @@ import {
   csrDailySummary,
   eis1Jawinder,
   eis1Response,
-  csr1CC,
   eis6Dave,
   eis6Response,
   csr2CC,
@@ -25,6 +24,12 @@ import {
   csrStoniteFinalCc,
   csrMotionCc,
   csrHermanReply,
+  eis7MidwestPower,
+  csrApprovalHold,
+  csrApprovalSentCc,
+  eis8Rush,
+  eis8RushResponse,
+  csr3RushCc,
 } from './data/emails';
 
 // Re-export types so existing imports from './App' still work
@@ -46,6 +51,9 @@ export default function App() {
 
   // Workflow 3 forward stage: pending → composing → sent → processing → quoted
   const [forwardStage, setForwardStage] = useState<'pending' | 'composing' | 'sent' | 'processing' | 'quoted'>('pending');
+
+  // Approval hold stage: pending → reviewing → approved → sent
+  const [approvalStage, setApprovalStage] = useState<'pending' | 'reviewing' | 'approved' | 'sent'>('pending');
 
   // Demo "delete" — just hides emails from the list; resets on refresh
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
@@ -125,22 +133,25 @@ export default function App() {
   }, []);
 
   // ── Refresh queue definition — each batch is revealed on refresh ──
+  // Flow: most human involvement → least (auto-quote payoff at end)
   const refreshBatches = useMemo(() => {
     const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: WF2 - Review flag (Phase 1: opens demo — AI knows its limits)
-      // Note: Steve's original email is part of the review thread, not a separate list item
+      // Batch 0: WF2 - Review flag (Phase 1: vague inputs → identified items, highest human involvement)
       { emailIds: ['csr-review-1'] },
 
-      // Note: csr-steve-clarification (Phase 1b) arrives automatically 3-7s after sending review - no batch needed
-      // Note: csr-stonite-final-cc (Phase 1c) arrives automatically when forwarded to quotes@ - no batch needed
+      // Batch 1: Approval hold (Phase 2: large dollar quote needs sales rep approval)
+      { emailIds: ['csr-approval-hold'] },
 
-      // Batch 1: WF3 - Herman's direct email (Phase 2: direct customer workflow)
+      // Batch 2: WF3 - Herman's direct email (Phase 3: CSR forwards to quotes@)
       { emailIds: ['csr-forward-1'] },
 
-      // Batch 2: WF1 + WF4 - Auto-quote workflows (Phase 3: payoff — shows automation at scale)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
+      // Batch 3: Rush re-quote (Phase 4: price comparison — standard vs rush, auto-generated)
+      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc'] },
 
-      // Batch 3: Daily summary (Phase 4: closer — full picture)
+      // Batch 4: WF1 + WF4 - Auto-quote workflows (Phase 5: full automation payoff)
+      { emailIds: ['eis-1', 'eis-1-response', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
+
+      // Batch 5: Daily summary (Phase 6: closer — full picture)
       { emailIds: ['csr-daily-summary'] },
     ];
 
@@ -166,6 +177,9 @@ export default function App() {
         // Auto-select first meaningful CSR email when it arrives
         if (emailId === 'csr-review-1') {
           setSelectedCsrEmailId('csr-review-1');
+        }
+        if (emailId === 'csr-approval-hold') {
+          setSelectedCsrEmailId('csr-approval-hold');
         }
 
         // Batch 2: Final quote arrives - change state to 'quoted'
@@ -230,7 +244,13 @@ export default function App() {
       list.unshift(eisMotionResponse);
     }
 
-    // Sort by time (newest first) - unshift operations already handle WF3
+    // Approval hold: Midwest Power original request
+    if (arrivedEmails.has('eis-7-midwest')) list.push(eis7MidwestPower);
+
+    // Rush re-quote: Jawinder rush emails
+    if (arrivedEmails.has('eis-8-rush')) list.push(eis8Rush);
+    if (arrivedEmails.has('eis-8-rush-response')) list.push(eis8RushResponse);
+
     return list;
   }, [arrivedEmails, forwardStage]);
 
@@ -238,22 +258,23 @@ export default function App() {
   const effectiveCsrEmails = useMemo(() => {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 100,       // Batch 3 - Daily summary (last/newest)
-      'csr-ai-2': 95,                 // Batch 2 - Tri-State auto-quote (newest when arrives)
-      'csr-ai-1': 90,                 // Batch 2 - RCSCA auto-quote (newest when arrives)
-      'csr-herman-reply': 85,         // Batch 1 - Herman's reply after quote
-      'csr-motion-cc': 80,            // Batch 1 - Motion quote CC
-      'csr-forward-1': 75,            // Batch 1 - Herman's direct email
+      'csr-daily-summary': 120,       // Batch 5 - Daily summary (last/newest)
+      'csr-ai-2': 115,                // Batch 4 - Tri-State auto-quote
+      'csr-rush-cc': 105,             // Batch 3 - Rush re-quote CC
+      'csr-herman-reply': 95,         // Batch 2 - Herman's reply after quote
+      'csr-forward-1': 85,            // Batch 2 - Herman's direct email
+      'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
+      'csr-forward-cc': 78,           // Batch 2 - Motion quote CC (below original request)
+      'csr-approval-hold': 75,        // Batch 1 - Approval hold notification
       'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
       'csr-steve-clarification': 65,  // Auto-delivered - Steve's clarification (Phase 1b)
       'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
-      'csr-review-1': 55,             // Batch 0 - Review email (Steve's original is in thread)
+      'csr-review-1': 55,             // Batch 0 - Review email
     };
 
     const list = [];
 
     // Add emails (order doesn't matter, we'll sort by priority)
-    if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
     if (arrivedEmails.has('csr-forward-1')) list.push(csrHermanDirect);
@@ -262,6 +283,9 @@ export default function App() {
     if (arrivedEmails.has('csr-stonite-final-cc')) list.push(csrStoniteFinalCc);
     if (forwardStage === 'quoted') list.push(csrMotionCc);
     if (forwardStage === 'quoted') list.push(csrHermanReply);
+    if (arrivedEmails.has('csr-approval-hold')) list.push(csrApprovalHold);
+    if (approvalStage === 'sent') list.push(csrApprovalSentCc);
+    if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
     if (arrivedEmails.has('csr-daily-summary')) list.push(csrDailySummary);
 
     // Sort by workflow priority - higher priority appears first (newest at top)
@@ -270,7 +294,7 @@ export default function App() {
       const priorityB = workflowPriority[b.id] || 0;
       return priorityB - priorityA; // Descending order
     });
-  }, [arrivedEmails, forwardStage]);
+  }, [arrivedEmails, forwardStage, approvalStage]);
 
   // Build the review folder email list from both inboxes
   const reviewEmails = useMemo(() => {
@@ -337,6 +361,17 @@ export default function App() {
     ? (readIds.has(selectedEmail.id) ? { ...selectedEmail, read: true } : selectedEmail)
     : null;
 
+  // Handle approval send: approve quote and trigger CC delivery
+  const handleApprovalSend = () => {
+    setApprovalStage('approved');
+    setTimeout(() => {
+      setApprovalStage('sent');
+      markEmailArrived('csr-approval-cc');
+      markEmailArrived('eis-7-midwest');
+      setScrollTrigger((n) => n + 1);
+    }, 1500);
+  };
+
   // Handle the forward send: animate through stages
   const handleForwardSend = () => {
     setForwardStage('sent');
@@ -344,6 +379,7 @@ export default function App() {
       setForwardStage('processing');
       setTimeout(() => {
         setForwardStage('quoted');
+        markEmailArrived('csr-herman-reply');
         setScrollTrigger((n) => n + 1);
       }, 1800);
     }, 1000);
@@ -448,6 +484,7 @@ export default function App() {
       reviewStage,
       reviewForwardStage,
       forwardStage,
+      approvalStage,
       arrivedEmails,
       hasNewMessages,
       isRefreshing,
@@ -458,7 +495,7 @@ export default function App() {
     // to avoid race conditions with hint computation
 
     return hint;
-  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, arrivedEmails, hasNewMessages, isRefreshing, nextBatchIndex]);
+  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, approvalStage, arrivedEmails, hasNewMessages, isRefreshing, nextBatchIndex]);
 
   // ── Debug hint changes (dev mode only) ──
   useEffect(() => {
@@ -499,6 +536,7 @@ export default function App() {
           onToggleCollapse={() => setEmailListCollapsed(!emailListCollapsed)}
           reviewResolved={reviewResolved}
           forwardStage={forwardStage}
+          approvalStage={approvalStage}
           hintTarget={hintTarget}
           scrollTrigger={scrollTrigger}
           newEmailIds={newEmailIds}
@@ -524,6 +562,8 @@ export default function App() {
           onForwardCompose={() => setForwardStage('composing')}
           onForwardSend={handleForwardSend}
           onForwardDiscard={() => setForwardStage('pending')}
+          approvalStage={approvalStage}
+          onApprovalSend={handleApprovalSend}
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />

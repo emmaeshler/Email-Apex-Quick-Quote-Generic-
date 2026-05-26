@@ -11,6 +11,9 @@ export interface QuoteLineItem {
   requestedQty?: number;
   stockStatus?: 'in-stock' | 'lead-time';
   leadTime?: string;
+  standardUnitPrice?: number;
+  standardTotalPrice?: number;
+  priceChangeReason?: string;
 }
 
 export interface QuoteTable {
@@ -23,7 +26,12 @@ export interface QuoteTable {
     method: string;
     cost: number;
     note?: string;
+    standardMethod?: string;
+    standardCost?: number;
   };
+  isRushOrder?: boolean;
+  comparisonNote?: string;
+  standardTotal?: number;
 }
 
 export interface ReviewMatchItem {
@@ -105,6 +113,11 @@ export interface Email {
     date: string;
     time: string;
   };
+  isApprovalHold?: boolean;
+  approvalReason?: string;
+  approvalQuoteTable?: QuoteTable;
+  approvalCustomerEmail?: string;
+  approvalCustomerName?: string;
   isDirectQuoteRequest?: boolean;
   forwardTo?: string;
   forwardNote?: string;
@@ -189,18 +202,18 @@ const taperedReelQuote: QuoteTable = {
   validThrough: 'Mar 14, 2026',
   customerName: 'Tri-State Coil Winding',
   lineItems: [
-    { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 916.84, totalPrice: 9168.40, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 1024.13, totalPrice: 10241.30, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
-    { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 923.28, totalPrice: 9232.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 928.38, totalPrice: 9283.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
-    { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 941.52, totalPrice: 9415.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 954.39, totalPrice: 9543.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 14.68, totalPrice: 146.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 11.25, totalPrice: 112.50, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 15.32, totalPrice: 153.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 15.48, totalPrice: 154.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 16.92, totalPrice: 169.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 17.39, totalPrice: 173.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
   ],
-  total: 57660.40,
+  total: 945.90,
   shipping: {
-    method: 'LTL Truck',
-    cost: 775.00,
-    note: 'Heavyweight cubic volume shipment. Carrier to be selected based on destination.',
+    method: 'Ground',
+    cost: 35.50,
+    note: 'Standard packaging shipment.',
   },
 };
 
@@ -233,6 +246,50 @@ const stoniteMatchItems: ReviewMatchItem[] = [
     totalPrice: undefined
   },
 ];
+
+/* ── Quote data for approval hold workflow (Midwest Power) ── */
+
+const midwestPowerQuote: QuoteTable = {
+  quoteNumber: 'Q-5571039',
+  validThrough: 'Feb 27, 2026',
+  customerName: 'Midwest Power Generators',
+  lineItems: [
+    { sku: 'INS-H220-NMN', description: 'NMN Laminate, Class H, 0.020" Sheet', quantity: 50, unitPrice: 89.40, totalPrice: 4470.00, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'VPI-1260-5GAL', description: 'VPI Resin 1260, 5-Gallon Pail', quantity: 4, unitPrice: 312.00, totalPrice: 1248.00, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
+    { sku: 'BRG-6205-2RS', description: 'Ball Bearing 6205-2RS, Sealed', quantity: 24, unitPrice: 18.50, totalPrice: 444.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock' },
+    { sku: 'SLT-NMN-14', description: 'Slot Liner, NMN, 14" Cut Length', quantity: 200, unitPrice: 3.85, totalPrice: 770.00, minOrderQty: 100, qtyBreakIncrement: 50, stockStatus: 'in-stock' },
+    { sku: 'KAP-HN-1MIL', description: 'Kapton Tape HN, 1mil × 1" × 36yd', quantity: 36, unitPrice: 142.50, totalPrice: 5130.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'lead-time', leadTime: '1–2 weeks' },
+  ],
+  total: 12247.00,
+  shipping: {
+    method: 'LTL Truck',
+    cost: 185.00,
+    note: 'Mixed hazmat/non-hazmat shipment. VPI resin requires hazmat documentation.',
+  },
+};
+
+/* ── Quote data for rush re-quote workflow (RCSCA rush) ── */
+
+const rushRcscaQuote: QuoteTable = {
+  quoteNumber: 'Q-1094215',
+  validThrough: 'Feb 3, 2026',
+  customerName: 'RCSCA',
+  isRushOrder: true,
+  comparisonNote: 'Rush pricing compared to standard quote Q-1093928',
+  standardTotal: 192.01,
+  lineItems: [
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 24.70, totalPrice: 49.40, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', standardUnitPrice: 19.76, standardTotalPrice: 39.52, priceChangeReason: 'Rush surcharge (25%)' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 26.61, totalPrice: 159.66, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', standardUnitPrice: 21.29, standardTotalPrice: 127.74, priceChangeReason: 'Rush surcharge (25%)' },
+  ],
+  total: 258.06,
+  shipping: {
+    method: 'Priority Overnight — Cold Pack',
+    cost: 49.00,
+    note: 'Temperature-sensitive adhesives require cold packing. Expedited to meet Friday delivery.',
+    standardMethod: 'Cold Pack — Air Shipment',
+    standardCost: 24.75,
+  },
+};
 
 /* ══════════════════════════════════════════════════════════════════════════
    WORKFLOW 1 & 4 EMAIL DEFINITIONS — Arrive at demo start
@@ -329,9 +386,9 @@ export const eis6Response: Email = {
   to: 'dmorrison@tristatecoil.com',
   cc: 'morgan@apex-corp.com',
   subject: 'Re: Tapered Reel & Spool Packaging — 6 Configurations',
-  preview: 'Quote #Q-4150772 — $57,660.40 for Tri-State Coil Winding...',
+  preview: 'Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
-  bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request. Pricing is per 100 US pounds.`,
+  bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
   bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '10:09 AM',
@@ -344,7 +401,7 @@ export const eis6Response: Email = {
     date: 'Jan 28, 2026',
     time: '10:05 AM',
     subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
-    body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request. Pricing is per 100 US pounds.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
+    body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
   },
 };
 
@@ -356,9 +413,9 @@ export const csr2CC: Email = {
   to: 'dmorrison@tristatecoil.com',
   cc: 'morgan@apex-corp.com',
   subject: 'Re: Tapered Reel & Spool Packaging — 6 Configurations',
-  preview: 'Auto-quoted: Quote #Q-4150772 — $57,660.40 for Tri-State Coil Winding...',
+  preview: 'Auto-quoted: Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
-  bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request. Pricing is per 100 US pounds.`,
+  bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
   bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '10:09 AM',
@@ -372,7 +429,7 @@ export const csr2CC: Email = {
     date: 'Jan 28, 2026',
     time: '10:05 AM',
     subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
-    body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request. Pricing is per 100 US pounds.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
+    body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
   },
 };
 
@@ -466,6 +523,155 @@ export const csrSteveClarification: Email = {
   },
 };
 
+/* ══════════════════════════════════════════════════════════════════════════
+   APPROVAL HOLD WORKFLOW — Large dollar quote held for sales rep review
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// Original customer request (referenced in approval hold)
+export const eis7MidwestPower: Email = {
+  id: 'eis-7-midwest',
+  from: 'Gary Tillman',
+  fromEmail: 'gtillman@midwestpower.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'Motor Rewind Materials — Full Kit Pricing',
+  preview: 'We need a quote on a full rewind kit for our 500HP motor overhaul program...',
+  body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program. Here's what we need:\n\n- NMN laminate sheets, Class H, 0.020" — 50 sheets\n- VPI resin, 5-gallon pails — 4 pails\n- 6205-2RS sealed bearings — 24 units\n- Slot liners, NMN, 14" cut — 200 pcs\n- Kapton tape HN 1mil, 1" × 36yd — 36 rolls\n\nPlease provide pricing and availability. We'd like to get this ordered this week if possible.\n\nThanks,\nGary Tillman\nMaintenance Manager\nMidwest Power Generators`,
+  date: 'Jan 28, 2026',
+  time: '9:45 AM',
+  read: false,
+};
+
+// Approval hold notification in CSR inbox
+export const csrApprovalHold: Email = {
+  id: 'csr-approval-hold',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'morgan@apex-corp.com',
+  subject: 'Approval Required: Motor Rewind Materials — Midwest Power Generators',
+  preview: 'Quote #Q-5571039 ($12,247.00) requires approval before sending. Quote exceeds auto-send threshold...',
+  body: '',
+  bodyBefore: `A quote has been generated for Midwest Power Generators but requires your approval before sending to the customer.\n\nThis quote was held because it exceeds the $10,000 auto-send threshold. Please review the quote below and approve, edit, or reject.`,
+  bodyAfter: `Once approved, this quote will be sent directly to the customer with you CC'd.\n\nOriginal request from Gary Tillman (gtillman@midwestpower.com) received Jan 28, 2026 at 9:45 AM.`,
+  date: 'Jan 28, 2026',
+  time: '9:48 AM',
+  read: false,
+  isApprovalHold: true,
+  approvalReason: 'Quote exceeds $10,000 auto-send threshold',
+  approvalQuoteTable: midwestPowerQuote,
+  approvalCustomerEmail: 'gtillman@midwestpower.com',
+  approvalCustomerName: 'Gary Tillman',
+  originalSender: 'Gary Tillman (Midwest Power Generators)',
+  quotedPrevious: {
+    from: 'Gary Tillman',
+    fromEmail: 'gtillman@midwestpower.com',
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    subject: 'Motor Rewind Materials — Full Kit Pricing',
+    body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program. Here's what we need:\n\n- NMN laminate sheets, Class H, 0.020" — 50 sheets\n- VPI resin, 5-gallon pails — 4 pails\n- 6205-2RS sealed bearings — 24 units\n- Slot liners, NMN, 14" cut — 200 pcs\n- Kapton tape HN 1mil, 1" × 36yd — 36 rolls`,
+  },
+};
+
+// CC confirmation after approval
+export const csrApprovalSentCc: Email = {
+  id: 'csr-approval-cc',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'gtillman@midwestpower.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Motor Rewind Materials — Full Kit Pricing',
+  preview: 'Approved & Sent: Quote #Q-5571039 — $12,247.00 for Midwest Power Generators...',
+  body: '',
+  bodyBefore: `Gary, Please see below for details of your requested quote for the 500HP motor rewind kit.\n\nAll requested items have been matched and priced. Kapton tape has a 1–2 week lead time; all other items are in stock and ready to ship.`,
+  bodyAfter: `Please note that VPI resin shipments require hazmat documentation, which will be included with your order.\n\nPlease reply to confirm your order or if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'Jan 28, 2026',
+  time: '9:51 AM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Gary Tillman (Midwest Power Generators)',
+  isCcFromAiQuoteTable: midwestPowerQuote,
+  quotedPrevious: {
+    from: 'Gary Tillman',
+    fromEmail: 'gtillman@midwestpower.com',
+    date: 'Jan 28, 2026',
+    time: '9:45 AM',
+    subject: 'Motor Rewind Materials — Full Kit Pricing',
+    body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program...`,
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   RUSH RE-QUOTE WORKFLOW — Price comparison (standard vs rush)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// Rush request from Jawinder (same customer as WF1)
+export const eis8Rush: Email = {
+  id: 'eis-8-rush',
+  from: 'Jawinder Schahal',
+  fromEmail: 'jschahal@rcsca.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
+  preview: 'Hi, we need to expedite our previous order. Same items (ADH-X315 and ACT-Z788)...',
+  body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.\n\nThanks,\nJawinder Schahal\nRCSCA`,
+  date: 'Jan 28, 2026',
+  time: '2:10 PM',
+  read: false,
+};
+
+// Rush auto-quote response with price comparison
+export const eis8RushResponse: Email = {
+  id: 'eis-8-rush-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'jschahal@rcsca.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
+  preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
+  body: '',
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'Jan 28, 2026',
+  time: '2:13 PM',
+  read: false,
+  quoteStatus: 'quoted',
+  inlineQuoteTable: rushRcscaQuote,
+  quotedPrevious: {
+    from: 'Jawinder Schahal',
+    fromEmail: 'jschahal@rcsca.com',
+    date: 'Jan 28, 2026',
+    time: '2:10 PM',
+    subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
+    body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.`,
+  },
+};
+
+// Rush CC notification in CSR inbox
+export const csr3RushCc: Email = {
+  id: 'csr-rush-cc',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'jschahal@rcsca.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
+  preview: 'Auto-quoted (Rush): Quote #Q-1094215 — $258.06 for RCSCA...',
+  body: '',
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'Jan 28, 2026',
+  time: '2:13 PM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Jawinder Schahal (RCSCA)',
+  isCcFromAiQuoteTable: rushRcscaQuote,
+  quotedPrevious: {
+    from: 'Jawinder Schahal',
+    fromEmail: 'jschahal@rcsca.com',
+    date: 'Jan 28, 2026',
+    time: '2:10 PM',
+    subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
+    body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.`,
+  },
+};
+
 // WF3: Herman's direct email
 export const csrHermanDirect: Email = {
   id: 'csr-forward-1',
@@ -514,7 +720,7 @@ export const eisStoniteResponse: Email = {
   subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
   preview: 'Quote #Q-8320281 — $2,231.25 for Stonite Coil Corp...',
   body: '',
-  bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nBased on your specifications and current pricing, I've prepared the following quote:\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
+  bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nBased on Steve's request, we matched the following items from your catalog:\n\n• "#27 HPL - round tapers" → MW27HPLRT (Round Taper, #27 AWG, HPL Coating) — high confidence match\n• "#24 SDPZ - round tapers" → SDPZ-22.5-RT (Round Taper, #22.5 AWG, SDPZ Coating) — closest available gauge is #22.5, adjusted accordingly\n\nI've adjusted the #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application.`,
   bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'Jan 28, 2026',
   time: '11:45 AM',
@@ -701,7 +907,7 @@ export const csrStoniteFinalCc: Email = {
   subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
   preview: 'Resolved: Quote #Q-8320281 — $2,231.25 for Stonite Coil Corp...',
   body: '',
-  bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nBased on your specifications and current pricing, I've prepared the following quote:\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
+  bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nBased on Steve's request, we matched the following items from your catalog:\n\n• "#27 HPL - round tapers" → MW27HPLRT (Round Taper, #27 AWG, HPL Coating) — high confidence match\n• "#24 SDPZ - round tapers" → SDPZ-22.5-RT (Round Taper, #22.5 AWG, SDPZ Coating) — closest available gauge is #22.5, adjusted accordingly\n\nI've adjusted the #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application.`,
   bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'Jan 28, 2026',
   time: '11:45 AM',

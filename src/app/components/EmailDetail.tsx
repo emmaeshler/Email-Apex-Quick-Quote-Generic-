@@ -19,18 +19,32 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasAdjustments = table.lineItems.some((item) => item.requestedQty != null);
   const hasDescriptions = table.lineItems.some((item) => item.description);
   const hasStock = table.lineItems.some((item) => item.stockStatus);
+  const hasComparison = table.lineItems.some((item) => item.standardUnitPrice != null);
   const baseColCount = hasDescriptions ? 7 : 6;
-  const colCount = hasStock ? baseColCount + 1 : baseColCount;
+  const comparisonExtra = hasComparison ? 1 : 0;
+  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + comparisonExtra;
   return (
     <div className="my-4">
       <div className="mb-3 pb-2 border-b-2 border-foreground/20">
         <div className="flex items-center justify-between">
-          <span className="text-size-sm font-w-medium text-foreground">Quote #{table.quoteNumber}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-size-sm font-w-medium text-foreground">Quote #{table.quoteNumber}</span>
+            {table.isRushOrder && (
+              <span className="inline-block px-1.5 py-px font-w-medium bg-secondary text-secondary-foreground" style={{ fontSize: '10px', lineHeight: '16px' }}>
+                RUSH
+              </span>
+            )}
+          </div>
           <span className="text-size-xs text-muted-foreground">Valid through: {table.validThrough}</span>
         </div>
         <div className="mt-1">
           <span className="text-size-sm text-foreground/80"><span className="font-w-medium">Customer Account</span>: {table.customerName}</span>
         </div>
+        {table.comparisonNote && (
+          <div className="mt-1">
+            <span className="text-size-xs text-muted-foreground italic">{table.comparisonNote}</span>
+          </div>
+        )}
       </div>
       <table className="w-full border-collapse">
         <thead>
@@ -41,8 +55,9 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
             {hasStock && <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Availability</th>}
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>
-            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total Price</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Price' : 'Unit Price'}</th>
+            {hasComparison && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground/60">Standard Total</th>}
+            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Total' : 'Total Price'}</th>
           </tr>
         </thead>
         <tbody>
@@ -82,7 +97,19 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                     )}
                   </td>
                 )}
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">{fmt(item.unitPrice)}</td>
+                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
+                  {fmt(item.unitPrice)}
+                  {item.priceChangeReason && (
+                    <span className="block text-size-xs text-secondary" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      {item.priceChangeReason}
+                    </span>
+                  )}
+                </td>
+                {hasComparison && (
+                  <td className="py-2.5 px-4 text-right text-size-sm text-foreground/40 line-through">
+                    {item.standardTotalPrice != null ? fmt(item.standardTotalPrice) : '—'}
+                  </td>
+                )}
                 <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">{fmt(item.totalPrice)}</td>
               </tr>
             );
@@ -98,6 +125,9 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
               <tr>
                 <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
                   <span>Shipping — {table.shipping.method}</span>
+                  {table.shipping.standardMethod && (
+                    <span className="block text-size-xs text-foreground/40 mt-0.5">Standard: {table.shipping.standardMethod} ({fmt(table.shipping.standardCost!)})</span>
+                  )}
                   {table.shipping.note && (
                     <span className="block text-size-xs text-muted-foreground mt-0.5">{table.shipping.note}</span>
                   )}
@@ -107,11 +137,20 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             </>
           )}
           <tr className="border-t-2 border-foreground/20">
-            <td colSpan={colCount - 1} className="py-2.5 pr-4 text-size-sm font-w-medium text-foreground">TOTAL</td>
-            <td className="py-2.5 pl-4 text-right text-size-sm font-w-medium text-foreground">{fmt(table.total)}</td>
+            <td colSpan={colCount - 1} className="py-3 pr-4 text-size-base font-w-medium text-foreground">TOTAL</td>
+            <td className="py-3 pl-4 text-right text-size-base font-w-medium text-foreground">{fmt(table.total)}</td>
           </tr>
         </tfoot>
       </table>
+      {hasComparison && table.standardTotal != null && (
+        <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
+          <Info size={14} className="text-secondary flex-shrink-0 mt-0.5" />
+          <span className="text-size-xs text-foreground/70">
+            <span className="font-w-medium">Price comparison:</span>{' '}
+            Standard {fmt(table.standardTotal)} → Rush {fmt(table.total)} (+{(((table.total - table.standardTotal) / table.standardTotal) * 100).toFixed(1)}%)
+          </span>
+        </div>
+      )}
       {hasAdjustments && (
         <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
           <ArrowUpCircle size={14} className="text-secondary flex-shrink-0 mt-0.5" />
@@ -145,6 +184,7 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
     orange: 'bg-secondary text-secondary-foreground',
     blue: 'bg-accent text-accent-foreground',
     green: 'bg-chart-3 text-primary-foreground',
+    grey: 'bg-muted text-muted-foreground',
   };
   return (
     <span className={`inline-block px-1.5 py-px font-w-medium flex-shrink-0 ${colors[color] || colors.blue}`} style={{ fontSize: '10px', lineHeight: '16px' }}>
@@ -212,16 +252,20 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
           <tr className="border-b border-foreground/20">
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Requested Item</th>
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Number</th>
+            <th className="py-2 text-center px-4 text-size-sm font-w-medium text-foreground">Confidence</th>
             {hasAnyDescription && <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Description</th>}
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Quantity</th>
-            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
-            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
+            {hasAnyPricing && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>}
+            {hasAnyPricing && <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Est. Total</th>}
             <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Details Needed</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, i) => {
             const lowConfidence = item.confidence !== '-' && parseFloat(item.confidence) < 90;
+            const highConfidence = item.confidence !== '-' && parseFloat(item.confidence) >= 90;
             const qtyBelowMOQ = item.quantity != null && item.minOrderQty != null && item.quantity < item.minOrderQty;
 
             return (
@@ -246,6 +290,15 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
+                <td className="py-2.5 px-4 text-center text-size-sm">
+                  {item.confidence !== '-' ? (
+                    <span className={`inline-block px-1.5 py-px font-w-medium ${highConfidence ? 'bg-chart-3/15 text-chart-3' : 'bg-secondary/15 text-secondary'}`} style={{ fontSize: '10px', lineHeight: '16px' }}>
+                      {item.confidence}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground italic">—</span>
+                  )}
+                </td>
                 {hasAnyDescription && (
                   <td className="py-2.5 pr-4 text-size-sm text-foreground/80">
                     {item.description || <span className="text-muted-foreground italic">—</span>}
@@ -258,20 +311,30 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
-                <td className="py-2.5 px-4 text-size-sm">
+                <td className="py-2.5 px-4 text-right text-size-sm">
                   {item.minOrderQty != null ? (
                     <span className="text-foreground/80">{item.minOrderQty.toLocaleString()}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
-                <td className="py-2.5 px-4 text-size-sm">
+                <td className="py-2.5 px-4 text-right text-size-sm">
                   {item.qtyBreakIncrement != null ? (
                     <span className="text-foreground/80">{item.qtyBreakIncrement.toLocaleString()}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
                 </td>
+                {hasAnyPricing && (
+                  <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
+                    {item.unitPrice != null ? fmt(item.unitPrice) : <span className="text-muted-foreground italic">—</span>}
+                  </td>
+                )}
+                {hasAnyPricing && (
+                  <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">
+                    {item.totalPrice != null ? fmt(item.totalPrice) : <span className="text-muted-foreground italic">—</span>}
+                  </td>
+                )}
                 <td className="py-2.5 px-4 text-size-sm">
                   {item.details ? (
                     <span className="text-secondary font-w-medium">{item.details}</span>
@@ -283,6 +346,18 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
             );
           })}
         </tbody>
+        {hasAnyPricing && (() => {
+          const estimatedTotal = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+          return (
+            <tfoot>
+              <tr className="border-t-2 border-foreground/20">
+                <td colSpan={hasAnyDescription ? 8 : 7} className="py-2.5 pr-4 text-right text-size-sm font-w-medium text-foreground">Estimated Total</td>
+                <td className="py-2.5 pl-4 text-right text-size-sm font-w-medium text-foreground">{fmt(estimatedTotal)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          );
+        })()}
       </table>
 
       <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-accent/6" style={{ borderLeft: '3px solid var(--accent)' }}>
@@ -387,7 +462,7 @@ function MessageHeader({ email }: { email: Email }) {
    Main component — Flat email detail (one email per view)
    ══════════════════════════════════════════════════════════════════════════ */
 
-export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, onDeleteEmail, hintTarget }: {
+export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, approvalStage, onApprovalSend, onDeleteEmail, hintTarget }: {
   email: Email | null;
   folderType: 'csr' | 'eis';
   reviewResolved?: boolean;
@@ -405,6 +480,8 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   onForwardCompose?: () => void;
   onForwardSend?: () => void;
   onForwardDiscard?: () => void;
+  approvalStage?: 'pending' | 'reviewing' | 'approved' | 'sent';
+  onApprovalSend?: () => void;
   onDeleteEmail?: (id: string) => void;
   hintTarget?: string | null;
 }) {
@@ -436,6 +513,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   const isDirectQuote = email.isDirectQuoteRequest;
   const isCc = email.isCcFromAi;
   const isSteveClarification = email.id === 'csr-steve-clarification';
+  const isApprovalHold = email.isApprovalHold;
 
   // Use reviewForwardStage for Steve's clarification, forwardStage for others
   const effectiveForwardStage = isSteveClarification ? reviewForwardStage : forwardStage;
@@ -459,20 +537,26 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
     if (isCc) {
       // Check if this was reviewed by a rep before being sent
       const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
-      return <CategoryTag label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"} color={wasReviewed ? "blue" : "green"} />;
+      return <CategoryTag label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"} color={wasReviewed ? "grey" : "green"} />;
     }
     // CSR review request
     if (isReview) {
       if (reviewStage === 'sending') return <CategoryTag label="Sending" color="blue" />;
-      if (reviewStage === 'resolved') return <CategoryTag label="Sent" color="green" />;
+      if (reviewStage === 'resolved') return <CategoryTag label="Sent" color="grey" />;
       return <CategoryTag label="Draft Ready" color="orange" />;
     }
     // CSR direct quote
     if (isDirectQuote) {
-      if (effectiveForwardStage === 'quoted') return <CategoryTag label="Forwarded & Quoted" color="green" />;
+      if (effectiveForwardStage === 'quoted') return <CategoryTag label="Forwarded & Quoted" color="grey" />;
       if (effectiveForwardStage === 'processing' || effectiveForwardStage === 'sent') return <CategoryTag label="Forwarded" color="blue" />;
       if (effectiveForwardStage === 'composing') return <CategoryTag label="Forwarding..." color="blue" />;
       return <CategoryTag label="Quote Request" color="orange" />;
+    }
+    // Approval hold
+    if (isApprovalHold) {
+      if (approvalStage === 'sent') return <CategoryTag label="Approved & Sent" color="grey" />;
+      if (approvalStage === 'approved') return <CategoryTag label="Sending..." color="blue" />;
+      return <CategoryTag label="Pending Approval" color="orange" />;
     }
     return null;
   };
@@ -556,6 +640,31 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         </InfoBar>
       );
     }
+    // Approval hold info bars
+    if (isApprovalHold) {
+      if (approvalStage === 'sent') {
+        return (
+          <InfoBar icon={CheckCircle} iconColor="text-chart-3" bg="bg-chart-3/6" border="var(--chart-3)">
+            Quote approved and sent to{' '}
+            <span className="font-w-medium">{email.approvalCustomerName || 'the customer'}</span>. You've been CC'd on the response.
+          </InfoBar>
+        );
+      }
+      if (approvalStage === 'approved') {
+        return (
+          <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
+            Sending approved quote to{' '}
+            <span className="font-w-medium">{email.approvalCustomerName || 'the customer'}</span>...
+          </InfoBar>
+        );
+      }
+      return (
+        <InfoBar icon={AlertTriangle} iconColor="text-secondary" bg="bg-secondary/6" border="var(--secondary)">
+          {email.approvalReason || 'This quote requires approval before sending.'}. Review the quote below and approve or edit before sending to{' '}
+          <span className="font-w-medium">{email.approvalCustomerName || 'the customer'}</span>.
+        </InfoBar>
+      );
+    }
     // CSR direct quote info bars
     if (isDirectQuote) {
       if (effectiveForwardStage === 'quoted') {
@@ -609,6 +718,17 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
               body: email.reviewOriginalEmail.body,
             }} />
           )}
+        </>
+      );
+    }
+    // Approval hold: show quote table for review
+    if (isApprovalHold && email.approvalQuoteTable) {
+      return (
+        <>
+          {email.bodyBefore && <p className="whitespace-pre-wrap text-size-sm text-foreground/80">{email.bodyBefore}</p>}
+          <QuoteTableView table={email.approvalQuoteTable} />
+          {email.bodyAfter && <p className="whitespace-pre-wrap text-size-sm text-foreground/80">{email.bodyAfter}</p>}
+          {email.quotedPrevious && <QuotedPreviousBlock quoted={email.quotedPrevious} />}
         </>
       );
     }
@@ -748,6 +868,33 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         <div className="flex items-center gap-2">
           <Loader2 size={14} className="text-accent animate-spin" />
           <span className="text-size-xs text-muted-foreground">{effectiveForwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>
+        </div>
+      );
+    }
+    // Approval hold: Approve & Send / Edit
+    if (isApprovalHold && (approvalStage === 'pending' || approvalStage === 'reviewing')) {
+      return (
+        <>
+          <div className="relative">
+            <button
+              onClick={() => onApprovalSend?.()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+            >
+              <CheckCircle size={16} /> Approve & Send
+            </button>
+            {hintTarget === 'action:approve' && <DemoDot />}
+          </div>
+          <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
+            <Forward size={16} /> Edit Before Sending
+          </button>
+        </>
+      );
+    }
+    if (isApprovalHold && approvalStage === 'approved') {
+      return (
+        <div className="flex items-center gap-2">
+          <Loader2 size={14} className="text-accent animate-spin" />
+          <span className="text-size-xs text-muted-foreground">Sending approved quote to customer...</span>
         </div>
       );
     }

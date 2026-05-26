@@ -134,13 +134,13 @@ export default function App() {
       // Note: csr-steve-clarification (Phase 1b) arrives automatically 3-7s after sending review - no batch needed
       // Note: csr-stonite-final-cc (Phase 1c) arrives automatically when forwarded to quotes@ - no batch needed
 
-      // Batch 1: WF1 + WF4 - Auto-quote workflows (Phase 2: payoff — shows automation at scale)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 2: WF3 - Herman's direct email (optional additional workflow)
+      // Batch 1: WF3 - Herman's direct email (Phase 2: direct customer workflow)
       { emailIds: ['csr-forward-1'] },
 
-      // Batch 3: Daily summary (Phase 3: closer — full picture)
+      // Batch 2: WF1 + WF4 - Auto-quote workflows (Phase 3: payoff — shows automation at scale)
+      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
+
+      // Batch 3: Daily summary (Phase 4: closer — full picture)
       { emailIds: ['csr-daily-summary'] },
     ];
 

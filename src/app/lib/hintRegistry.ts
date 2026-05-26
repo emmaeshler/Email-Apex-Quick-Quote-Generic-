@@ -178,97 +178,60 @@ export const hintRules: HintRule[] = [
   {
     id: 'stonite-transition-refresh',
     priority: 790,
-    phase: 'Phase 1c→2: After viewing quote, guide to refresh for auto-quotes',
+    phase: 'Phase 1c→2: After viewing quote, guide to refresh for Herman',
     conditions: {
       reviewForwardStage: 'quoted',
-      reviewResolved: true, // ← Changed: true because it's set when viewing the email
-      selectedEmailId: 'csr-stonite-final-cc',
-      emailsNotArrived: ['csr-ai-1'],
-      hasNewMessages: true,
-    },
-    target: 'action:refresh',
-  },
-
-  {
-    id: 'stonite-to-first-autoquote',
-    priority: 780,
-    phase: 'Phase 1c→2: After viewing quote, guide to first auto-quote if already loaded',
-    conditions: {
-      selectedEmailId: 'csr-stonite-final-cc',
-      emailsArrived: ['csr-ai-1'],
-    },
-    target: 'email:csr-ai-1',
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  //  PHASE 2: AUTO-QUOTED EMAILS
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'autoquote-1-email',
-    priority: 700,
-    phase: 'Phase 2: Guide to first auto-quote',
-    conditions: {
       reviewResolved: true,
-      forwardStage: 'pending',
-      activeFolder: 'csr',
-      emailsArrived: ['csr-ai-1'],
-      selectedEmailIdNot: ['csr-ai-1', 'csr-ai-2', 'csr-forward-1', 'csr-daily-summary'],
-    },
-    target: 'email:csr-ai-1',
-  },
-
-  {
-    id: 'autoquote-2-email',
-    priority: 690,
-    phase: 'Phase 2: After viewing first auto-quote, guide to second',
-    conditions: {
-      selectedEmailId: 'csr-ai-1',
-      emailsArrived: ['csr-ai-2'],
-    },
-    target: 'email:csr-ai-2',
-  },
-
-  {
-    id: 'autoquote-to-herman-refresh',
-    priority: 680,
-    phase: 'Phase 2→3: After viewing second auto-quote, guide to refresh for Herman',
-    conditions: {
-      selectedEmailId: 'csr-ai-2',
+      selectedEmailId: 'csr-stonite-final-cc',
       emailsNotArrived: ['csr-forward-1'],
       hasNewMessages: true,
-      isRefreshing: false,
     },
     target: 'action:refresh',
   },
 
   {
-    id: 'autoquote-to-herman-email',
-    priority: 675,
-    phase: 'Phase 2→3: After viewing second auto-quote, guide to Herman if already loaded',
+    id: 'stonite-to-herman',
+    priority: 780,
+    phase: 'Phase 1c→2: After viewing quote, guide to Herman if already loaded',
     conditions: {
-      selectedEmailId: 'csr-ai-2',
+      selectedEmailId: 'csr-stonite-final-cc',
       emailsArrived: ['csr-forward-1'],
     },
     target: 'email:csr-forward-1',
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 3: HERMAN WORKFLOW
+  //  PHASE 2: HERMAN WORKFLOW
   // ═══════════════════════════════════════════════════════════
   {
     id: 'herman-email',
-    priority: 670,
-    phase: 'Phase 3: Guide to Herman\'s direct email',
+    priority: 700,
+    phase: 'Phase 2: Guide to Herman\'s direct email',
+    conditions: {
+      reviewResolved: true,
+      forwardStage: 'pending',
+      activeFolder: 'csr',
+      emailsArrived: ['csr-forward-1'],
+      selectedEmailIdNot: ['csr-forward-1', 'csr-herman-reply', 'csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
+    },
+    target: 'email:csr-forward-1',
+  },
+
+  {
+    id: 'herman-forward-button',
+    priority: 690,
+    phase: 'Phase 2: Guide to Forward button on Herman email',
     conditions: {
       selectedEmailId: 'csr-forward-1',
+      forwardStage: 'pending',
     },
     target: 'action:forward',
   },
 
   {
     id: 'herman-send-button',
-    priority: 660,
-    phase: 'Phase 3: Guide to Send button when forwarding Herman\'s email',
+    priority: 680,
+    phase: 'Phase 2: Guide to Send button when forwarding Herman\'s email',
     conditions: {
       reviewResolved: true,
       forwardStage: 'composing',
@@ -278,14 +241,66 @@ export const hintRules: HintRule[] = [
 
   {
     id: 'herman-reply-email',
-    priority: 650,
-    phase: 'Phase 3: After Herman quote, guide to his reply',
+    priority: 670,
+    phase: 'Phase 2: After Herman quote, guide to his reply',
     conditions: {
       forwardStage: 'quoted',
       selectedEmailIdNot: ['csr-herman-reply', 'csr-daily-summary'],
       emailsArrived: ['csr-herman-reply'],
     },
     target: 'email:csr-herman-reply',
+  },
+
+  {
+    id: 'herman-to-autoquotes-refresh',
+    priority: 660,
+    phase: 'Phase 2→3: After Herman reply, guide to refresh for auto-quotes',
+    conditions: {
+      selectedEmailId: 'csr-herman-reply',
+      emailsNotArrived: ['csr-ai-1'],
+      hasNewMessages: true,
+      isRefreshing: false,
+    },
+    target: 'action:refresh',
+  },
+
+  {
+    id: 'herman-to-first-autoquote',
+    priority: 655,
+    phase: 'Phase 2→3: After Herman reply, guide to first auto-quote if already loaded',
+    conditions: {
+      selectedEmailId: 'csr-herman-reply',
+      emailsArrived: ['csr-ai-1'],
+    },
+    target: 'email:csr-ai-1',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 3: AUTO-QUOTED EMAILS
+  // ═══════════════════════════════════════════════════════════
+  {
+    id: 'autoquote-1-email',
+    priority: 650,
+    phase: 'Phase 3: Guide to first auto-quote',
+    conditions: {
+      reviewResolved: true,
+      forwardStage: 'quoted',
+      activeFolder: 'csr',
+      emailsArrived: ['csr-ai-1'],
+      selectedEmailIdNot: ['csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
+    },
+    target: 'email:csr-ai-1',
+  },
+
+  {
+    id: 'autoquote-2-email',
+    priority: 640,
+    phase: 'Phase 3: After viewing first auto-quote, guide to second',
+    conditions: {
+      selectedEmailId: 'csr-ai-1',
+      emailsArrived: ['csr-ai-2'],
+    },
+    target: 'email:csr-ai-2',
   },
 
   // ═══════════════════════════════════════════════════════════

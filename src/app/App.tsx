@@ -88,6 +88,13 @@ export default function App() {
     if (reviewResolved) setReviewStage('resolved');
   }, [reviewResolved]);
 
+  // ── Mark review as resolved when user views final quote ──
+  useEffect(() => {
+    if (selectedEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
+      setReviewResolved(true);
+    }
+  }, [selectedCsrEmailId, reviewForwardStage, reviewResolved]);
+
   // Validate hint coverage on mount (development only)
   useEffect(() => {
     validateHintCoverage();
@@ -447,14 +454,29 @@ export default function App() {
       nextBatchIndex,
     });
 
-    // Side effect: Mark review as resolved when user views the final quote
-    // This needs to stay here as it's an action triggered by viewing the email
-    if (selectedEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
-      setReviewResolved(true);
-    }
+    // Note: reviewResolved state update moved to dedicated useEffect (line 92)
+    // to avoid race conditions with hint computation
 
     return hint;
   }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, arrivedEmails, hasNewMessages, isRefreshing, nextBatchIndex]);
+
+  // ── Debug hint changes (dev mode only) ──
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[Hint Changed]', {
+        target: hintTarget,
+        state: {
+          selectedEmailId,
+          reviewResolved,
+          reviewForwardStage,
+          forwardStage,
+          arrivedCount: arrivedEmails.size,
+          hasNewMessages,
+          isRefreshing,
+        },
+      });
+    }
+  }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
   return (
     <div className="size-full flex bg-background overflow-hidden">

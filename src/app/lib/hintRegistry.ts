@@ -399,14 +399,40 @@ export function selectHint(state: WorkflowState): HintTarget {
 export function validateHintCoverage(): void {
   if (!import.meta.env.DEV) return;
 
+  const validTargetPatterns = [
+    /^action:(refresh|forward|send)$/,
+    /^email:[\w-]+$/,
+    /^folder:[\w-]+$/,
+  ];
+
+  const issues: string[] = [];
   const phases = ['Phase 0', 'Phase 1a', 'Phase 1b', 'Phase 1c', 'Phase 2', 'Phase 3', 'Phase 4'];
 
+  // Check phase coverage
   console.group('[Hint Coverage Validation]');
   phases.forEach(phase => {
     const phaseRules = hintRules.filter(r => r.phase.startsWith(phase));
     const status = phaseRules.length > 0 ? '✓' : '⚠';
     console.log(`${status} ${phase}: ${phaseRules.length} rules`);
   });
+
+  // Check target validity
+  hintRules.forEach(rule => {
+    const isValid = validTargetPatterns.some(pattern =>
+      rule.target && pattern.test(rule.target)
+    );
+    if (!isValid) {
+      issues.push(`Rule "${rule.id}" has invalid target format: "${rule.target}"`);
+    }
+  });
+
   console.log(`Total rules: ${hintRules.length}`);
+
+  if (issues.length > 0) {
+    console.error('❌ Target Format Issues:', issues);
+  } else {
+    console.log('✓ All targets use valid formats');
+  }
+
   console.groupEnd();
 }

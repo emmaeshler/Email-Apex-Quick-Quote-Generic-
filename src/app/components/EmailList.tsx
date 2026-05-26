@@ -208,14 +208,17 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                     </div>
                   );
                 })()}
-                {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (
-                  <div className="mt-1.5">
-                    <CategoryTag
-                      label={email.quotedPrevious?.fromEmail?.includes('@apex-corp.com') ? "Reviewed & Quoted" : "Auto-Quoted"}
-                      color="green"
-                    />
-                  </div>
-                )}
+                {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
+                  const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
+                  return (
+                    <div className="mt-1.5">
+                      <CategoryTag
+                        label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"}
+                        color={wasReviewed ? "blue" : "green"}
+                      />
+                    </div>
+                  );
+                })()}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
                   <div className="mt-1.5">
                     <CategoryTag label="Sent to Customer" color="green" />

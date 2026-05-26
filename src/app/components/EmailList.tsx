@@ -210,7 +210,10 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 })()}
                 {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (
                   <div className="mt-1.5">
-                    <CategoryTag label="Auto-Quoted" color="green" />
+                    <CategoryTag
+                      label={email.quotedPrevious?.fromEmail?.includes('@apex-corp.com') ? "Reviewed & Quoted" : "Auto-Quoted"}
+                      color="green"
+                    />
                   </div>
                 )}
                 {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (

@@ -456,7 +456,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       if (cfg) return <CategoryTag label={cfg.label} color={cfg.color} />;
     }
     // CSR CC
-    if (isCc) return <CategoryTag label="Auto-Quoted" color="green" />;
+    if (isCc) {
+      // Check if this was reviewed by a rep before being sent
+      const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
+      return <CategoryTag label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"} color="green" />;
+    }
     // CSR review request
     if (isReview) {
       if (reviewStage === 'sending') return <CategoryTag label="Sending" color="blue" />;

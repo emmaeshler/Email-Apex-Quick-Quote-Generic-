@@ -240,6 +240,17 @@ export const hintRules: HintRule[] = [
   },
 
   {
+    id: 'herman-reply-arrived',
+    priority: 675,
+    phase: 'Phase 2: When Herman reply arrives, guide to it immediately',
+    conditions: {
+      emailsArrived: ['csr-herman-reply'],
+      selectedEmailIdNot: ['csr-herman-reply'],
+    },
+    target: 'email:csr-herman-reply',
+  },
+
+  {
     id: 'herman-reply-email',
     priority: 670,
     phase: 'Phase 2: After Herman quote, guide to his reply',

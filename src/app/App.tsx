@@ -239,11 +239,11 @@ export default function App() {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
       'csr-daily-summary': 100,       // Batch 3 - Daily summary (last/newest)
-      'csr-herman-reply': 95,         // WF3 final - Herman's reply after quote
-      'csr-motion-cc': 90,            // WF3 - Motion quote CC
-      'csr-forward-1': 85,            // Batch 2 - Herman's direct email
-      'csr-ai-2': 80,                 // Batch 1 - Tri-State auto-quote
-      'csr-ai-1': 75,                 // Batch 1 - RCSCA auto-quote
+      'csr-ai-2': 95,                 // Batch 2 - Tri-State auto-quote (newest when arrives)
+      'csr-ai-1': 90,                 // Batch 2 - RCSCA auto-quote (newest when arrives)
+      'csr-herman-reply': 85,         // Batch 1 - Herman's reply after quote
+      'csr-motion-cc': 80,            // Batch 1 - Motion quote CC
+      'csr-forward-1': 75,            // Batch 1 - Herman's direct email
       'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
       'csr-steve-clarification': 65,  // Auto-delivered - Steve's clarification (Phase 1b)
       'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)

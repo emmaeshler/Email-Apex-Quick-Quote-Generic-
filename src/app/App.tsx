@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
-import { WorkflowFlowchart } from '@/app/components/WorkflowFlowchart';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import {
   eisEmails,
@@ -32,7 +31,7 @@ import {
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
 
 export default function App() {
-  const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review' | 'workflow'>('csr');
+  const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
   const [selectedReviewEmailId, setSelectedReviewEmailId] = useState<string | null>(null);
@@ -303,10 +302,10 @@ export default function App() {
   // Set default selection for review folder
   const effectiveReviewEmailId = selectedReviewEmailId ?? (reviewEmails.length > 0 ? reviewEmails[0].id : null);
 
-  const currentEmails = activeFolder === 'csr' ? effectiveCsrEmails : activeFolder === 'eis' ? effectiveEisEmails : activeFolder === 'review' ? reviewEmails : [];
+  const currentEmails = activeFolder === 'csr' ? effectiveCsrEmails : activeFolder === 'eis' ? effectiveEisEmails : reviewEmails;
   const visibleEmails = currentEmails.filter((e) => !hiddenIds.has(e.id));
-  const selectedEmailId = activeFolder === 'csr' ? selectedCsrEmailId : activeFolder === 'eis' ? selectedEisEmailId : activeFolder === 'review' ? effectiveReviewEmailId : null;
-  const setSelectedEmailId = activeFolder === 'csr' ? setSelectedCsrEmailId : activeFolder === 'eis' ? setSelectedEisEmailId : activeFolder === 'review' ? setSelectedReviewEmailId : () => {};
+  const selectedEmailId = activeFolder === 'csr' ? selectedCsrEmailId : activeFolder === 'eis' ? selectedEisEmailId : effectiveReviewEmailId;
+  const setSelectedEmailId = activeFolder === 'csr' ? setSelectedCsrEmailId : activeFolder === 'eis' ? setSelectedEisEmailId : setSelectedReviewEmailId;
   const selectedEmail = visibleEmails.find((e) => e.id === selectedEmailId) || null;
 
   // Mark emails as read when selected
@@ -463,16 +462,12 @@ export default function App() {
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
-          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'review' | 'workflow')}
+          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'review')}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           hintTarget={hintTarget}
         />
-        {activeFolder === 'workflow' ? (
-          <WorkflowFlowchart />
-        ) : (
-          <>
-            <EmailList
+        <EmailList
           emails={visibleEmailsWithRead}
           selectedEmailId={selectedEmailId}
           onSelectEmail={handleSelectEmail}
@@ -511,8 +506,6 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-          </>
-        )}
     </div>
   );
 }

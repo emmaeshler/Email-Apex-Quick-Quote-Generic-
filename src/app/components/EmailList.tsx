@@ -62,6 +62,7 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
 const STATUS_TAG: Record<string, { label: string; color: string }> = {
   processing: { label: 'Processing', color: 'blue' },
   quoted: { label: 'Quoted', color: 'green' },
+  'auto-quoted': { label: 'Auto-Quote', color: 'green' },
   review: { label: 'Needs Review', color: 'orange' },
 };
 

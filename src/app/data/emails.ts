@@ -29,6 +29,12 @@ export interface QuoteTable {
     standardMethod?: string;
     standardCost?: number;
   };
+  discount?: {
+    label: string;
+    percentage: number;
+    amount: number;
+    note?: string;
+  };
   isRushOrder?: boolean;
   comparisonNote?: string;
   standardTotal?: number;
@@ -86,7 +92,7 @@ export interface Email {
   date: string;
   time: string;
   read: boolean;
-  quoteStatus?: 'processing' | 'quoted' | 'review';
+  quoteStatus?: 'processing' | 'quoted' | 'auto-quoted' | 'review';
   inlineQuoteTable?: QuoteTable;
   bodyBefore?: string;
   bodyAfter?: string;
@@ -260,11 +266,17 @@ const midwestPowerQuote: QuoteTable = {
     { sku: 'SLT-NMN-14', description: 'Slot Liner, NMN, 14" Cut Length', quantity: 200, unitPrice: 3.85, totalPrice: 770.00, minOrderQty: 100, qtyBreakIncrement: 50, stockStatus: 'in-stock' },
     { sku: 'KAP-HN-1MIL', description: 'Kapton Tape HN, 1mil × 1" × 36yd', quantity: 36, unitPrice: 142.50, totalPrice: 5130.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'lead-time', leadTime: '1–2 weeks' },
   ],
-  total: 12247.00,
+  total: 11328.00,
   shipping: {
     method: 'LTL Truck',
     cost: 185.00,
     note: 'Mixed hazmat/non-hazmat shipment. VPI resin requires hazmat documentation.',
+  },
+  discount: {
+    label: 'Truckload Discount',
+    percentage: 7.5,
+    amount: 919.00,
+    note: 'You\'re saving here because shipping a full truckload reduces the per-unit cost to get your order out the door. We calculated 7.5% based on what we actually save on freight and handling at that volume.',
   },
 };
 
@@ -324,7 +336,7 @@ export const eis1Response: Email = {
   date: 'May 28, 2026',
   time: '10:33 AM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: rcscaQuote,
   quotedPrevious: {
     from: 'Jawinder Schahal',
@@ -393,7 +405,7 @@ export const eis6Response: Email = {
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: taperedReelQuote,
   quotedPrevious: {
     from: 'Dave Morrison',
@@ -548,7 +560,7 @@ export const csrApprovalHold: Email = {
   fromEmail: 'quotes@apex-corp.com',
   to: 'morgan@apex-corp.com',
   subject: 'Approval Required: Motor Rewind Materials — Midwest Power Generators',
-  preview: 'Quote #Q-5571039 ($12,247.00) requires approval before sending. Quote exceeds auto-send threshold...',
+  preview: 'Quote #Q-5571039 ($11,328.00) requires approval before sending. Quote exceeds auto-send threshold...',
   body: '',
   bodyBefore: `A quote has been generated for Midwest Power Generators but requires your approval before sending to the customer.\n\nThis quote was held because it exceeds the $10,000 auto-send threshold. Please review the quote below and approve, edit, or reject.`,
   bodyAfter: `Once approved, this quote will be sent directly to the customer with you CC'd.\n\nOriginal request from Gary Tillman (gtillman@midwestpower.com) received May 28, 2026 at 9:45 AM.`,
@@ -579,7 +591,7 @@ export const csrApprovalSentCc: Email = {
   to: 'gtillman@midwestpower.com',
   cc: 'morgan@apex-corp.com',
   subject: 'Re: Motor Rewind Materials — Full Kit Pricing',
-  preview: 'Approved & Sent: Quote #Q-5571039 — $12,247.00 for Midwest Power Generators...',
+  preview: 'Approved & Sent: Quote #Q-5571039 — $11,328.00 for Midwest Power Generators...',
   body: '',
   bodyBefore: `Gary, Please see below for details of your requested quote for the 500HP motor rewind kit.\n\nAll requested items have been matched and priced. Kapton tape has a 1–2 week lead time; all other items are in stock and ready to ship.`,
   bodyAfter: `Please note that VPI resin shipments require hazmat documentation, which will be included with your order.\n\nPlease reply to confirm your order or if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
@@ -632,7 +644,7 @@ export const eis8RushResponse: Email = {
   date: 'May 28, 2026',
   time: '2:13 PM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: rushRcscaQuote,
   quotedPrevious: {
     from: 'Jawinder Schahal',

@@ -1065,6 +1065,43 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
               {renderBody()}
             </div>
 
+            {/* Agent auto-pickup notification — threaded below Steve's clarification */}
+            {isSteveClarification && (effectiveForwardStage === 'processing' || effectiveForwardStage === 'quoted') && (
+              <div className="border-t-2 border-foreground/10">
+                <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
+                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-size-sm">
+                    Q
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="text-size-sm font-w-medium text-foreground truncate">Apex Quoting</span>
+                        <span className="text-size-xs text-muted-foreground truncate">&lt;quotes@apex-corp.com&gt;</span>
+                      </div>
+                      <span className="text-size-xs text-muted-foreground flex-shrink-0 ml-3">May 28, 2026 11:39 AM</span>
+                    </div>
+                    <div className="text-size-xs text-muted-foreground mt-0.5">
+                      To: morgan@apex-corp.com
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 py-5">
+                  {effectiveForwardStage === 'processing' ? (
+                    <div className="flex items-start gap-2.5">
+                      <Loader2 size={15} className="text-accent animate-spin flex-shrink-0 mt-0.5" />
+                      <p className="whitespace-pre-wrap text-size-sm text-foreground/80">
+                        Received — Steve's updated details have been picked up automatically since quotes@apex-corp.com was CC'd on his reply. Generating quote now. You'll be CC'd on the response.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap text-size-sm text-foreground/80">
+                      Received — Steve's updated details have been picked up automatically since quotes@apex-corp.com was CC'd on his reply.{'\n\n'}Quote <span className="font-w-medium">#Q-8320281</span> has been generated and sent to Steve Landers (slanders@stonitecoil.com). You've been CC'd on the response.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Threaded quote response — renders as a separate message in the conversation */}
             {email.threadedQuoteResponse && (() => {
               const thr = email.threadedQuoteResponse;

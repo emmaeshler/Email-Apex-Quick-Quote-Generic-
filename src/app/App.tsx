@@ -417,47 +417,32 @@ export default function App() {
       }, ccDelay);
     } else {
       // ── Forward workflow: Morgan asks customer for clarification ──
+      // Steve's reply CCs quotes@apex-corp.com, so the agent auto-processes it
 
       // Phase 1: Customer (Steve) responds with details after 3-7s
-      // Morgan will need to manually forward Steve's response to quotes@
       const customerDelay = 3000 + Math.random() * 4000; // 3-7s
       setTimeout(() => {
         markEmailArrived('csr-steve-clarification');
-        setReviewStage('pending'); // Reset to pending, waiting for Morgan to forward
+        setReviewStage('resolved');
+        setReviewForwardStage('processing');
+
+        // Phase 2: Original Stonite request shows as being processed
+        setTimeout(() => {
+          markEmailArrived('eis-5');
+        }, 500);
+
+        // Phase 3: Auto-quote generated (2-5s)
+        const quoteDelay = 2000 + Math.random() * 3000;
+        setTimeout(() => {
+          setReviewForwardStage('quoted');
+          markEmailArrived('eis-stonite-response');
+          markEmailArrived('csr-stonite-final-cc');
+          setScrollTrigger((n) => n + 1);
+        }, quoteDelay);
       }, customerDelay);
     }
   };
 
-  // Handle forwarding Steve's clarification to quotes@ (triggered by Forward button)
-  const handleReviewForwardSend = () => {
-    setReviewForwardStage('sent');
-
-    setTimeout(() => {
-      setReviewForwardStage('processing');
-
-      // Phase 1: Forwarded thread appears in EIS
-      setTimeout(() => {
-        markEmailArrived('eis-5');
-      }, 500);
-
-      // Phase 2: Auto-quote generated and sent (2-5s)
-      const quoteDelay = 2000 + Math.random() * 3000; // 2-5s
-      setTimeout(() => {
-        setReviewForwardStage('quoted');
-        markEmailArrived('eis-stonite-response');
-        markEmailArrived('csr-stonite-final-cc'); // Morgan gets CC'd
-      }, quoteDelay);
-
-      // Phase 3: CSR CC notification (1-2s after quote)
-      const ccDelay = quoteDelay + 1000 + Math.random() * 1000;
-      setTimeout(() => {
-        markEmailArrived('csr-stonite-final-cc');
-        setScrollTrigger((n) => n + 1);
-        // Don't set reviewResolved here - let the hint logic handle it
-        // when user views the email (lines 488-490)
-      }, ccDelay);
-    }, 1500);
-  };
 
   // Determine the effective folderType for EmailDetail rendering
   const getEmailFolderType = (emailId: string | null): 'csr' | 'eis' => {
@@ -555,9 +540,6 @@ export default function App() {
           onReviewComposeModeChange={setReviewComposeMode}
           onReviewSend={handleReviewSend}
           reviewForwardStage={reviewForwardStage}
-          onReviewForwardCompose={() => setReviewForwardStage('composing')}
-          onReviewForwardSend={handleReviewForwardSend}
-          onReviewForwardDiscard={() => setReviewForwardStage('pending')}
           forwardStage={forwardStage}
           onForwardCompose={() => setForwardStage('composing')}
           onForwardSend={handleForwardSend}

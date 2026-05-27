@@ -79,7 +79,7 @@ export function InboxSidebar({
   const [morganExpanded, setMorganExpanded] = useState(true);
   const [quotesExpanded, setQuotesExpanded] = useState(true);
   const [reviewExpanded, setReviewExpanded] = useState(false);
-  const [favoritesExpanded, setFavoritesExpanded] = useState(true);
+  const [favoritesExpanded, setFavoritesExpanded] = useState(false);
 
   if (collapsed) {
     return (

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Reply, ReplyAll, Forward, Archive, Trash2, MoreVertical,
-  ChevronDown, ChevronUp, Pin, Printer, Mail, Info,
+  ChevronDown, ChevronUp, Pin, Printer, Mail, Info, Inbox,
   CheckCircle, Clock, Loader2, AlertTriangle, Send, X,
   ArrowUpCircle, ExternalLink,
 } from 'lucide-react';
@@ -489,10 +489,15 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 }) {
   if (!email) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-muted">
-        <div className="text-center">
-          <Mail size={48} className="mx-auto mb-3 text-muted-foreground/30" />
-          <p className="text-size-sm text-muted-foreground">Select an email to view</p>
+      <div className="flex-1 flex items-center justify-center bg-card rounded-lg shadow-lg">
+        <div className="flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/8 flex items-center justify-center mb-4">
+            <Inbox size={28} className="text-primary/40" />
+          </div>
+          <p className="text-size-base font-w-medium text-foreground/70 mb-1">All caught up</p>
+          <p className="text-size-sm text-muted-foreground max-w-[240px]">
+            Hit refresh to check for new messages
+          </p>
         </div>
       </div>
     );

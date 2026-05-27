@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
@@ -335,9 +335,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
       {/* Email rows with Unread/Read sections */}
       <div>
         {emails.length === 0 && (
-          <div className="p-6 text-center">
-            <p className="text-size-sm text-muted-foreground">No items to review</p>
-          </div>
+          <div className="py-6" />
         )}
 
         {/* Unread section */}

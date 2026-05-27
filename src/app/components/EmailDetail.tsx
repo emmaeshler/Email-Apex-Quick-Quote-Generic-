@@ -955,7 +955,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           <ComposeBox
             toEmail="quotes@apex-corp.com"
             subject={email.subject}
-            prefillBody="Approved"
+            prefillBody="Approved, go ahead and send the client the quote."
             onSend={() => onApprovalSend?.()}
             onDiscard={() => onApprovalDiscard?.()}
             hintSend={hintTarget === 'action:send'}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/emmaeshler/Email-Apex-Quick-Quote-Generic- status)",
+      "Bash(git -C /Users/emmaeshler/Email-Apex-Quick-Quote-Generic- diff --stat)",
+      "Bash(git -C /Users/emmaeshler/Email-Apex-Quick-Quote-Generic- diff)",
+      "Bash(git -C /Users/emmaeshler/Email-Apex-Quick-Quote-Generic- add src/app/App.tsx src/app/components/EmailDetail.tsx src/app/components/EmailList.tsx src/app/data/emails.ts src/app/lib/hintRegistry.ts)"
+    ]
+  }
+}

@@ -905,7 +905,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   };
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-card">
+    <div className="flex-1 min-w-0 flex flex-col bg-card rounded-lg shadow-lg">
       {/* Toolbar */}
       <div className="border-b border-border bg-muted">
         <div className="flex items-center gap-1 px-4 py-2">

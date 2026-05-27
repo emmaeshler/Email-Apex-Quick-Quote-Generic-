@@ -149,7 +149,7 @@ export function InboxSidebar({
 }: InboxSidebarProps) {
   return (
     <div
-      className={`bg-sidebar border-r border-sidebar-border flex flex-col overflow-y-auto transition-all duration-200 ${
+      className={`bg-sidebar flex flex-col overflow-y-auto transition-all duration-200 rounded-lg shadow-lg ${
         collapsed ? 'w-12' : 'w-56'
       }`}
     >

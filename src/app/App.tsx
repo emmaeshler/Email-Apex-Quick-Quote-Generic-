@@ -516,7 +516,7 @@ export default function App() {
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
   return (
-    <div className="size-full flex bg-background overflow-hidden">
+    <div className="size-full flex gap-2 p-2 bg-background overflow-hidden">
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}

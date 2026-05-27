@@ -109,7 +109,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   }
 
   return (
-    <div ref={scrollRef} className="w-80 flex-shrink-0 border-r border-border bg-card overflow-y-auto transition-all duration-200">
+    <div ref={scrollRef} className="w-80 flex-shrink-0 bg-card overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">

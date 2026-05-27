@@ -52,6 +52,7 @@ export interface WorkflowState {
   forwardStage: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   approvalStage: 'pending' | 'composing' | 'approved' | 'sent';
   arrivedEmails: Set<string>;
+  readIds: Set<string>;
   hasNewMessages: boolean;
   isRefreshing: boolean;
   nextBatchIndex: number;
@@ -133,8 +134,8 @@ export const hintRules: HintRule[] = [
     conditions: {
       reviewResolved: false,
       emailsArrived: ['csr-steve-clarification'],
-      emailsNotArrived: ['csr-stonite-final-cc'],
       selectedEmailIdNot: ['csr-steve-clarification'],
+      customCondition: (state) => !state.readIds.has('csr-steve-clarification'),
     },
     target: 'email:csr-steve-clarification',
   },
@@ -238,81 +239,73 @@ export const hintRules: HintRule[] = [
   // ═══════════════════════════════════════════════════════════
   {
     id: 'rush-cc-email',
-    priority: 620,
-    phase: 'Phase 3: Guide to rush re-quote CC',
+    priority: 650,
+    phase: 'Phase 3: Guide to rush re-quote CC email',
     conditions: {
       approvalStage: 'sent',
       emailsArrived: ['csr-rush-cc'],
-      selectedEmailIdNot: ['csr-rush-cc', 'csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
+      selectedEmailIdNot: ['csr-rush-cc'],
+      emailsNotArrived: ['csr-ai-2'],
     },
     target: 'email:csr-rush-cc',
   },
 
   {
-    id: 'rush-to-autoquotes-refresh',
-    priority: 610,
-    phase: 'Phase 4→5: After viewing rush CC, guide to refresh for auto-quotes',
+    id: 'rush-to-autoquote-refresh',
+    priority: 640,
+    phase: 'Phase 3→4: After viewing rush, guide to refresh for auto-quotes',
     conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-rush-cc'],
       selectedEmailId: 'csr-rush-cc',
-      emailsNotArrived: ['csr-ai-1'],
+      emailsNotArrived: ['csr-ai-2'],
       hasNewMessages: true,
-      isRefreshing: false,
     },
     target: 'action:refresh',
   },
 
-  {
-    id: 'rush-to-first-autoquote',
-    priority: 605,
-    phase: 'Phase 4→5: After rush CC, guide to first auto-quote if already loaded',
-    conditions: {
-      selectedEmailId: 'csr-rush-cc',
-      emailsArrived: ['csr-ai-1'],
-    },
-    target: 'email:csr-ai-1',
-  },
-
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 5: AUTO-QUOTED EMAILS
+  //  PHASE 4: AUTO-QUOTES
   // ═══════════════════════════════════════════════════════════
   {
-    id: 'autoquote-1-email',
-    priority: 550,
-    phase: 'Phase 4: Guide to first auto-quote',
+    id: 'autoquote-email',
+    priority: 600,
+    phase: 'Phase 4: Guide to auto-quote CC email',
     conditions: {
-      reviewResolved: true,
       approvalStage: 'sent',
-      activeFolder: 'csr',
-      emailsArrived: ['csr-ai-1'],
-      selectedEmailIdNot: ['csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
-    },
-    target: 'email:csr-ai-1',
-  },
-
-  {
-    id: 'autoquote-2-email',
-    priority: 540,
-    phase: 'Phase 5: After viewing first auto-quote, guide to second',
-    conditions: {
-      selectedEmailId: 'csr-ai-1',
       emailsArrived: ['csr-ai-2'],
+      selectedEmailIdNot: ['csr-ai-2'],
+      emailsNotArrived: ['csr-daily-summary'],
     },
     target: 'email:csr-ai-2',
   },
 
+  {
+    id: 'autoquote-to-daily-refresh',
+    priority: 590,
+    phase: 'Phase 4→5: After viewing auto-quote, guide to refresh for daily summary',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-ai-2'],
+      selectedEmailId: 'csr-ai-2',
+      emailsNotArrived: ['csr-daily-summary'],
+      hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 6: DAILY SUMMARY
+  //  PHASE 5: DAILY SUMMARY
   // ═══════════════════════════════════════════════════════════
   {
     id: 'daily-summary-refresh',
     priority: 530,
-    phase: 'Phase 6: Guide to refresh for daily summary',
+    phase: 'Phase 5: Guide to refresh for daily summary',
     conditions: {
+      approvalStage: 'sent',
       emailsNotArrived: ['csr-daily-summary'],
       hasNewMessages: true,
       isRefreshing: false,
-      customCondition: (state) =>
-        state.reviewResolved && state.selectedEmailId === 'csr-ai-2',
     },
     target: 'action:refresh',
   },
@@ -320,7 +313,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'daily-summary-email',
     priority: 520,
-    phase: 'Phase 6: Guide to daily summary email',
+    phase: 'Phase 5: Guide to daily summary email',
     conditions: {
       emailsArrived: ['csr-daily-summary'],
       selectedEmailIdNot: ['csr-daily-summary'],
@@ -418,7 +411,7 @@ export function validateHintCoverage(): void {
   ];
 
   const issues: string[] = [];
-  const phases = ['Phase 0', 'Phase 1a', 'Phase 1b', 'Phase 1c', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Phase 6'];
+  const phases = ['Phase 0', 'Phase 1a', 'Phase 1b', 'Phase 1c', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5'];
 
   // Check phase coverage
   console.group('[Hint Coverage Validation]');

@@ -92,7 +92,7 @@ export interface Email {
   date: string;
   time: string;
   read: boolean;
-  quoteStatus?: 'processing' | 'quoted' | 'review';
+  quoteStatus?: 'processing' | 'quoted' | 'auto-quoted' | 'review';
   inlineQuoteTable?: QuoteTable;
   bodyBefore?: string;
   bodyAfter?: string;
@@ -336,7 +336,7 @@ export const eis1Response: Email = {
   date: 'May 28, 2026',
   time: '10:33 AM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: rcscaQuote,
   quotedPrevious: {
     from: 'Jawinder Schahal',
@@ -405,7 +405,7 @@ export const eis6Response: Email = {
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: taperedReelQuote,
   quotedPrevious: {
     from: 'Dave Morrison',
@@ -642,7 +642,7 @@ export const eis8RushResponse: Email = {
   date: 'May 28, 2026',
   time: '2:13 PM',
   read: false,
-  quoteStatus: 'quoted',
+  quoteStatus: 'auto-quoted',
   inlineQuoteTable: rushRcscaQuote,
   quotedPrevious: {
     from: 'Jawinder Schahal',

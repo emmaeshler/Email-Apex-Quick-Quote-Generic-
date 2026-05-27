@@ -206,6 +206,7 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
 const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof Clock; iconColor: string; bg: string; border: string; desc: string; animate?: boolean }> = {
   processing: { label: 'Processing', color: 'blue', icon: Loader2, iconColor: 'text-accent', bg: 'bg-accent/6', border: 'var(--accent)', desc: 'This request is being analyzed and a quote is being generated. The response will be sent automatically.', animate: true },
   quoted: { label: 'Quoted', color: 'green', icon: CheckCircle, iconColor: 'text-chart-3', bg: 'bg-chart-3/6', border: 'var(--chart-3)', desc: 'A quote has been generated and sent to the customer. The assigned CSR has been CC\'d.' },
+  'auto-quoted': { label: 'Auto-Quote', color: 'green', icon: CheckCircle, iconColor: 'text-chart-3', bg: 'bg-chart-3/6', border: 'var(--chart-3)', desc: 'This quote was automatically generated and sent to the customer. The assigned CSR has been CC\'d.' },
   review: { label: 'Needs Review', color: 'orange', icon: AlertTriangle, iconColor: 'text-secondary', bg: 'bg-secondary/6', border: 'var(--secondary)', desc: 'This request was partially quoted but some items could not be resolved automatically. A review request has been sent to the assigned CSR.' },
 };
 

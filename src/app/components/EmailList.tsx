@@ -30,7 +30,7 @@ interface EmailListProps {
   onToggleCollapse: () => void;
   reviewResolved?: boolean;
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
-  approvalStage?: 'pending' | 'reviewing' | 'approved' | 'sent';
+  approvalStage?: 'pending' | 'composing' | 'approved' | 'sent';
   hintTarget?: string | null;
   scrollTrigger?: number;
   newEmailIds?: Set<string>;

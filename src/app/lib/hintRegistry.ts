@@ -19,7 +19,7 @@ export interface HintConditions {
   reviewStage?: 'pending' | 'composing' | 'sending' | 'resolved';
   reviewForwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
-  approvalStage?: 'pending' | 'reviewing' | 'approved' | 'sent';
+  approvalStage?: 'pending' | 'composing' | 'approved' | 'sent';
 
   // UI state
   activeFolder?: 'csr' | 'eis' | 'review';
@@ -50,7 +50,7 @@ export interface WorkflowState {
   reviewStage: 'pending' | 'composing' | 'sending' | 'resolved';
   reviewForwardStage: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   forwardStage: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
-  approvalStage: 'pending' | 'reviewing' | 'approved' | 'sent';
+  approvalStage: 'pending' | 'composing' | 'approved' | 'sent';
   arrivedEmails: Set<string>;
   hasNewMessages: boolean;
   isRefreshing: boolean;
@@ -220,15 +220,26 @@ export const hintRules: HintRule[] = [
   },
 
   {
-    id: 'approval-approve-button',
+    id: 'approval-reply-button',
     priority: 740,
-    phase: 'Phase 2: Guide to Approve & Send button',
+    phase: 'Phase 2: Guide to Reply button on approval hold',
     conditions: {
       approvalStage: 'pending',
       selectedEmailId: 'csr-approval-hold',
       emailsArrived: ['csr-approval-hold'],
     },
-    target: 'action:approve',
+    target: 'action:reply',
+  },
+
+  {
+    id: 'approval-send-button',
+    priority: 735,
+    phase: 'Phase 2: Guide to Send button in approval reply',
+    conditions: {
+      approvalStage: 'composing',
+      selectedEmailId: 'csr-approval-hold',
+    },
+    target: 'action:send',
   },
 
   {
@@ -524,7 +535,7 @@ export function validateHintCoverage(): void {
   if (!import.meta.env.DEV) return;
 
   const validTargetPatterns = [
-    /^action:(refresh|forward|send|approve)$/,
+    /^action:(refresh|forward|send|reply)$/,
     /^email:[\w-]+$/,
     /^folder:[\w-]+$/,
   ];

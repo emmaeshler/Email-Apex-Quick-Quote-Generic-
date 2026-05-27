@@ -1,3 +1,5 @@
+'use client';
+
 import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useState } from 'react';
 import { DemoDot } from './DemoGuide';
@@ -141,9 +143,9 @@ export function InboxSidebar({
                 icon={Inbox}
                 label="Inbox"
                 count={733}
-                isActive={isCsrActive}
+                isActive={false}
                 onClick={() => onFolderSelect(csrId)}
-                isHinted={isCsrHinted}
+                isHinted={false}
               />
               <FolderItem
                 icon={Send}

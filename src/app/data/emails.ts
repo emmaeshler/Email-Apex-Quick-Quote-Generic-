@@ -510,6 +510,8 @@ export const csrSteveClarification: Email = {
   date: 'May 28, 2026',
   time: '11:38 AM',
   read: false,
+  forwardTo: 'quotes@apex-corp.com',
+  forwardNote: `Please quote the below thread per customer specifications.`,
   quotedPrevious: {
     from: 'Morgan',
     fromEmail: 'morgan@apex-corp.com',
@@ -684,7 +686,7 @@ export const csrHermanDirect: Email = {
   read: false,
   isDirectQuoteRequest: true,
   forwardTo: 'quotes@apex-corp.com',
-  forwardNote: `Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting.\n\n- Morgan`,
+  forwardNote: `Please quote the below thread per customer specifications.`,
   originalSender: 'Herman (Motion)',
   forwardAiResponse: {
     from: 'Apex Quoting',

@@ -1,7 +1,10 @@
+'use client';
+
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
+import { AppRail } from '@/app/components/AppRail';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import {
   eisEmails,
@@ -67,6 +70,9 @@ export default function App() {
   // ── New email tracking — for animation (email IDs that arrived in last 3s) ──
   const [newEmailIds, setNewEmailIds] = useState<Set<string>>(new Set());
 
+  // ── Track which batch each email arrived in (for Unread/Read grouping) ──
+  const [emailBatchMap, setEmailBatchMap] = useState<Map<string, number>>(new Map());
+
   // ── Refresh queue — tracks which batch to reveal next ──
   const [nextBatchIndex, setNextBatchIndex] = useState(0);
 
@@ -109,7 +115,7 @@ export default function App() {
   }, []);
 
   // ── Helper: Mark email as arrived with animation ──
-  const markEmailArrived = useCallback((emailId: string) => {
+  const markEmailArrived = useCallback((emailId: string, batchNumber: number) => {
     setArrivedEmails((prev) => {
       const next = new Set(prev);
       next.add(emailId);
@@ -118,6 +124,11 @@ export default function App() {
     setNewEmailIds((prev) => {
       const next = new Set(prev);
       next.add(emailId);
+      return next;
+    });
+    setEmailBatchMap((prev) => {
+      const next = new Map(prev);
+      next.set(emailId, batchNumber);
       return next;
     });
     setScrollTrigger((n) => n + 1);
@@ -167,12 +178,16 @@ export default function App() {
 
     const batch = refreshBatches[nextBatchIndex];
     const emailIds = batch.emailIds;
+    const currentBatchNumber = nextBatchIndex + 1; // New emails get next batch number
+
+    // Increment batch index immediately so currentBatch updates
+    setNextBatchIndex((prev) => prev + 1);
 
     // Stagger arrivals within the batch
     emailIds.forEach((emailId, index) => {
       const delay = index === 0 ? 300 : 800 + index * 600 + Math.random() * 400;
       setTimeout(() => {
-        markEmailArrived(emailId);
+        markEmailArrived(emailId, currentBatchNumber);
 
         // Auto-select first meaningful CSR email when it arrives
         if (emailId === 'csr-review-1') {
@@ -185,7 +200,7 @@ export default function App() {
         // Batch 2: Final quote arrives - change state to 'quoted'
         if (emailId === 'csr-stonite-final-cc') {
           setReviewForwardStage('quoted');
-          markEmailArrived('eis-stonite-response'); // Also mark EIS email as arrived
+          markEmailArrived('eis-stonite-response', currentBatchNumber); // Also mark EIS email as arrived
         }
 
         // Clear refreshing state after last email in batch
@@ -194,8 +209,6 @@ export default function App() {
         }
       }, delay);
     });
-
-    setNextBatchIndex((prev) => prev + 1);
   }, [nextBatchIndex, refreshBatches, markEmailArrived]);
 
   const hideEmail = (id: string) => {
@@ -366,8 +379,8 @@ export default function App() {
     setApprovalStage('approved');
     setTimeout(() => {
       setApprovalStage('sent');
-      markEmailArrived('csr-approval-cc');
-      markEmailArrived('eis-7-midwest');
+      markEmailArrived('csr-approval-cc', nextBatchIndex);
+      markEmailArrived('eis-7-midwest', nextBatchIndex);
       setScrollTrigger((n) => n + 1);
     }, 1500);
   };
@@ -379,7 +392,7 @@ export default function App() {
       setForwardStage('processing');
       setTimeout(() => {
         setForwardStage('quoted');
-        markEmailArrived('csr-herman-reply');
+        markEmailArrived('csr-herman-reply', nextBatchIndex);
         setScrollTrigger((n) => n + 1);
       }, 1800);
     }, 1000);
@@ -394,24 +407,24 @@ export default function App() {
 
       // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
       setTimeout(() => {
-        markEmailArrived('csr-review-reply');
+        markEmailArrived('csr-review-reply', nextBatchIndex);
       }, 500);
 
       // Phase 2: Original Stonite request transitions to processing (forwarded to quotes@)
       setTimeout(() => {
-        markEmailArrived('eis-5'); // Original request now shows as being processed
+        markEmailArrived('eis-5', nextBatchIndex); // Original request now shows as being processed
       }, 1000);
 
       // Phase 3: EIS quote response arrives after 2-5s (system generated it)
       const eisDelay = 2000 + Math.random() * 3000; // 2-5s
       setTimeout(() => {
-        markEmailArrived('eis-stonite-response');
+        markEmailArrived('eis-stonite-response', nextBatchIndex);
       }, eisDelay);
 
       // Phase 4: CSR CC notification arrives 0.7-1.5s after quote response
       const ccDelay = eisDelay + 700 + Math.random() * 800; // +0.7-1.5s
       setTimeout(() => {
-        markEmailArrived('csr-stonite-final-cc');
+        markEmailArrived('csr-stonite-final-cc', nextBatchIndex);
         // Note: reviewResolved is set when user VIEWS the email (see hintTarget useMemo)
         // This allows hints to guide user: view quote → refresh → see auto-quotes
       }, ccDelay);
@@ -422,7 +435,7 @@ export default function App() {
       // Morgan will need to manually forward Steve's response to quotes@
       const customerDelay = 3000 + Math.random() * 4000; // 3-7s
       setTimeout(() => {
-        markEmailArrived('csr-steve-clarification');
+        markEmailArrived('csr-steve-clarification', nextBatchIndex);
         setReviewStage('pending'); // Reset to pending, waiting for Morgan to forward
       }, customerDelay);
     }
@@ -437,21 +450,21 @@ export default function App() {
 
       // Phase 1: Forwarded thread appears in EIS
       setTimeout(() => {
-        markEmailArrived('eis-5');
+        markEmailArrived('eis-5', nextBatchIndex);
       }, 500);
 
       // Phase 2: Auto-quote generated and sent (2-5s)
       const quoteDelay = 2000 + Math.random() * 3000; // 2-5s
       setTimeout(() => {
         setReviewForwardStage('quoted');
-        markEmailArrived('eis-stonite-response');
-        markEmailArrived('csr-stonite-final-cc'); // Morgan gets CC'd
+        markEmailArrived('eis-stonite-response', nextBatchIndex);
+        markEmailArrived('csr-stonite-final-cc', nextBatchIndex); // Morgan gets CC'd
       }, quoteDelay);
 
       // Phase 3: CSR CC notification (1-2s after quote)
       const ccDelay = quoteDelay + 1000 + Math.random() * 1000;
       setTimeout(() => {
-        markEmailArrived('csr-stonite-final-cc');
+        markEmailArrived('csr-stonite-final-cc', nextBatchIndex);
         setScrollTrigger((n) => n + 1);
         // Don't set reviewResolved here - let the hint logic handle it
         // when user views the email (lines 488-490)
@@ -543,6 +556,8 @@ export default function App() {
           hasNewMessages={hasNewMessages}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          emailBatchMap={emailBatchMap}
+          currentBatch={nextBatchIndex}
         />
         <EmailDetail
           email={selectedEmailWithRead}
@@ -569,6 +584,7 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
+        <AppRail />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { Email, QuoteTable, ReviewMatchItem, QuotedPrevious } from '../data/emails';
 import { DemoDot } from './DemoGuide';
+import { getAvatarColor, getInitials } from '../lib/avatarUtils';
 
 /* ── Helpers ── */
 
@@ -425,8 +426,11 @@ function MessageHeader({ email }: { email: Email }) {
   const isSystemEmail = email.fromEmail === 'quotes@apex-corp.com' || email.isCcFromAi || email.isReviewRequest;
   return (
     <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
-      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-size-base bg-primary text-primary-foreground">
-        {isSystemEmail ? 'Q' : email.from.charAt(0).toUpperCase()}
+      <div
+        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+        style={{ backgroundColor: getAvatarColor(email.from, isSystemEmail), fontSize: '13px', fontWeight: 600 }}
+      >
+        {getInitials(email.from, isSystemEmail)}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
@@ -753,8 +757,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         {isDirectQuote && effectiveForwardStage === 'quoted' && email.forwardAiResponse && (
           <div className="mt-8 border-t-2 border-foreground/15 pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-size-sm">
-                Q
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                style={{ backgroundColor: getAvatarColor('Apex Quoting', true), fontSize: '11px', fontWeight: 600 }}
+              >
+                AQ
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
@@ -933,6 +940,10 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           <button className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors">
             <MoreVertical size={18} className="text-foreground/70" />
           </button>
+          <div className="flex-1" />
+          <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm">
+            <Mail size={14} /> New Message
+          </button>
         </div>
       </div>
 
@@ -1022,15 +1033,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                       <span className="text-size-sm text-foreground">FW: {email.subject}</span>
                     </div>
                   </div>
-                  {email.forwardNote && (
-                    <div className="mt-3">
-                      <textarea
-                        className="w-full min-h-[120px] p-3 bg-card border border-border rounded-[var(--radius)] text-size-sm text-foreground resize-y font-sans"
-                        defaultValue={email.forwardNote}
-                        placeholder="Add a message..."
-                      />
-                    </div>
-                  )}
+                  <div className="mt-3 mb-3 p-3 border border-border rounded-[var(--radius)] bg-card min-h-[80px]">
+                    <p className="whitespace-pre-wrap text-size-sm text-foreground/80">
+                      {email.forwardNote || ''}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
                     <div className="relative">
                       <button
@@ -1067,8 +1074,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                 <div className="border-t-2 border-foreground/10">
                   {/* Thread message header */}
                   <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
-                    <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-size-sm">
-                      Q
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                      style={{ backgroundColor: getAvatarColor(thr.from, thr.fromEmail === 'quotes@apex-corp.com'), fontSize: '13px', fontWeight: 600 }}
+                    >
+                      {getInitials(thr.from, thr.fromEmail === 'quotes@apex-corp.com')}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">

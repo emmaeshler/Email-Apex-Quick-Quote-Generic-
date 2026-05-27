@@ -1,6 +1,9 @@
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2 } from 'lucide-react';
-import { useRef, useEffect } from 'react';
+'use client';
+
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
+import { getAvatarColor, getInitials } from '../lib/avatarUtils';
 
 interface Email {
   id: string;
@@ -37,6 +40,8 @@ interface EmailListProps {
   hasNewMessages?: boolean;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  emailBatchMap?: Map<string, number>;
+  currentBatch?: number;
 }
 
 /* Outlook-style category tag */
@@ -60,8 +65,36 @@ const STATUS_TAG: Record<string, { label: string; color: string }> = {
   review: { label: 'Needs Review', color: 'orange' },
 };
 
-export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false }: EmailListProps) {
+interface SectionHeaderProps {
+  label: string;
+  count: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+function SectionHeader({ label, count, isExpanded, onToggle }: SectionHeaderProps) {
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center justify-between gap-2 px-4 py-2 text-left hover:bg-muted/30 transition-colors bg-muted/40"
+    >
+      <div className="flex items-center gap-1.5">
+        {isExpanded ? (
+          <ChevronDown size={14} className="text-foreground/70" />
+        ) : (
+          <ChevronRight size={14} className="text-foreground/70" />
+        )}
+        <span className="text-size-sm font-w-medium text-foreground">{label}</span>
+      </div>
+      <span className="text-size-xs text-muted-foreground">{count}</span>
+    </button>
+  );
+}
+
+export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false, emailBatchMap = new Map(), currentBatch = 0 }: EmailListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [unreadExpanded, setUnreadExpanded] = useState(true);
+  const [readExpanded, setReadExpanded] = useState(true);
 
   // Auto-scroll the hinted email into view whenever hintTarget changes
   useEffect(() => {
@@ -85,6 +118,135 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
       scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [scrollTrigger]);
+
+  // Group emails into Unread (current batch only) and Read (previous batches)
+  // Emails without batch numbers are treated as batch 0 (initial emails)
+  // Unread shows ONLY the current narrative batch
+  // Clicking refresh moves current batch to Read and shows next batch in Unread
+  const unreadEmails = emails.filter(email => {
+    const batch = emailBatchMap.get(email.id) ?? 0;
+    return batch === currentBatch;
+  });
+
+  const readEmails = emails.filter(email => {
+    const batch = emailBatchMap.get(email.id) ?? 0;
+    return batch < currentBatch;
+  });
+
+  // Helper function to render an individual email row
+  const renderEmail = (email: Email) => {
+    const isHinted = hintTarget === `email:${email.id}`;
+    const isNew = newEmailIds.has(email.id);
+    return (
+      <div
+        key={email.id}
+        data-email-id={email.id}
+        onClick={() => onSelectEmail(email.id)}
+        className={`group relative p-4 cursor-pointer transition-all duration-300 ${
+          isNew
+            ? 'border-l-4 border-l-accent'
+            : selectedEmailId === email.id
+              ? 'bg-primary/8 border-l-4 border-l-primary'
+              : 'hover:bg-muted'
+        }`}
+        style={isNew ? {
+          animation: 'emailArrival 0.3s ease-out, highlightFade 3s ease-out forwards',
+          backgroundColor: 'rgba(51, 105, 135, 0.15)'
+        } : undefined}
+      >
+        {isHinted && <DemoDot className="top-3 left-1.5" />}
+        <div className="flex items-start gap-3">
+          {!email.read && <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+            style={{ backgroundColor: getAvatarColor(email.from, !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com')), fontSize: '11px', fontWeight: 600 }}
+          >
+            {getInitials(email.from, !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com'))}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <span className={`text-size-sm ${!email.read ? 'font-w-medium text-foreground' : 'font-w-normal text-foreground/70'}`}>
+                {email.from}
+              </span>
+              <span className="text-size-xs text-muted-foreground whitespace-nowrap">
+                {email.date !== 'May 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}
+              </span>
+            </div>
+            <div className={`text-size-sm mb-1 truncate ${!email.read ? 'font-w-semibold text-primary' : 'font-w-normal text-foreground/70'}`}>
+              {email.subject}
+            </div>
+            <div className={`text-size-xs truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`}>{email.preview}</div>
+            {(folderType === 'eis' || folderType === 'review') && email.quoteStatus && (() => {
+              const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
+              return (
+                <div className="mt-1.5">
+                  <CategoryTag {...STATUS_TAG[effectiveStatus!]} />
+                </div>
+              );
+            })()}
+            {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
+              const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
+              return (
+                <div className="mt-1.5">
+                  <CategoryTag
+                    label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"}
+                    color={wasReviewed ? "grey" : "green"}
+                  />
+                </div>
+              );
+            })()}
+            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
+              <div className="mt-1.5">
+                <CategoryTag label="Sent to Customer" color="grey" />
+              </div>
+            )}
+            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
+              <div className="mt-1.5">
+                <CategoryTag label="Draft Ready" color="orange" />
+              </div>
+            )}
+            {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
+              if (forwardStage === 'quoted') return (
+                <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
+              );
+              if (forwardStage === 'processing' || forwardStage === 'sent') return (
+                <div className="mt-1.5"><CategoryTag label="Forwarded" color="blue" /></div>
+              );
+              if (forwardStage === 'composing') return (
+                <div className="mt-1.5"><CategoryTag label="Forwarding..." color="blue" /></div>
+              );
+              return (
+                <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
+              );
+            })()}
+            {(folderType === 'csr') && email.isApprovalHold && (() => {
+              if (approvalStage === 'sent') return (
+                <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
+              );
+              if (approvalStage === 'approved') return (
+                <div className="mt-1.5"><CategoryTag label="Sending..." color="blue" /></div>
+              );
+              return (
+                <div className="mt-1.5"><CategoryTag label="Pending Approval" color="orange" /></div>
+              );
+            })()}
+          </div>
+          {onDeleteEmail && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteEmail(email.id);
+              }}
+              className="p-1 hover:bg-destructive/10 rounded-[var(--radius)] transition-all text-muted-foreground hover:text-destructive flex-shrink-0 opacity-0 group-hover:opacity-100"
+              title="Delete"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   if (collapsed) {
     return (
@@ -145,6 +307,17 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
             </button>
           </div>
         </div>
+
+        {/* Focused/Other toggle */}
+        <div className="mt-3 mb-2 inline-flex bg-muted/50 rounded-lg p-1">
+          <button className="px-3 py-1.5 text-size-sm font-w-medium bg-background text-primary rounded-md transition-colors">
+            Focused
+          </button>
+          <button className="px-3 py-1.5 text-size-sm font-w-normal text-muted-foreground rounded-md transition-colors hover:text-foreground">
+            Other
+          </button>
+        </div>
+
         <p className="text-size-sm text-muted-foreground mt-1">
           {emails.length} message{emails.length !== 1 ? 's' : ''}
         </p>
@@ -158,123 +331,47 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         </div>
       )}
 
-      {/* Email rows */}
-      <div className="divide-y divide-border">
+      {/* Email rows with Unread/Read sections */}
+      <div>
         {emails.length === 0 && (
           <div className="p-6 text-center">
             <p className="text-size-sm text-muted-foreground">No items to review</p>
           </div>
         )}
-        {emails.map((email) => {
-          const isHinted = hintTarget === `email:${email.id}`;
-          const isNew = newEmailIds.has(email.id);
-          return (
-          <div
-            key={email.id}
-            data-email-id={email.id}
-            onClick={() => onSelectEmail(email.id)}
-            className={`group relative p-4 cursor-pointer transition-all duration-300 ${
-              isNew
-                ? 'border-l-4 border-l-accent'
-                : selectedEmailId === email.id
-                  ? 'bg-primary/8 border-l-4 border-l-primary'
-                  : 'hover:bg-muted'
-            }`}
-            style={isNew ? {
-              animation: 'emailArrival 0.3s ease-out, highlightFade 3s ease-out forwards',
-              backgroundColor: 'rgba(51, 105, 135, 0.15)'
-            } : undefined}
-          >
-            {isHinted && <DemoDot className="top-3 left-1.5" />}
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-size-sm bg-primary text-primary-foreground">
-                {(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com') ? 'Q' : email.from.charAt(0).toUpperCase()}
+
+        {/* Unread section */}
+        {unreadEmails.length > 0 && (
+          <>
+            <SectionHeader
+              label="Unread"
+              count={unreadEmails.length}
+              isExpanded={unreadExpanded}
+              onToggle={() => setUnreadExpanded(!unreadExpanded)}
+            />
+            {unreadExpanded && (
+              <div className="divide-y divide-border">
+                {unreadEmails.map(renderEmail)}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-size-sm text-foreground ${!email.read ? 'font-w-medium' : 'font-w-normal'}`}>
-                    {email.from}
-                  </span>
-                  <span className="text-size-xs text-muted-foreground whitespace-nowrap">
-                    {email.date !== 'May 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}
-                  </span>
-                </div>
-                <div className={`text-size-sm text-foreground mb-1 truncate ${!email.read ? 'font-w-medium' : 'font-w-normal'}`}>
-                  {email.subject}
-                </div>
-                <div className="text-size-xs text-muted-foreground truncate">{email.preview}</div>
-                {(folderType === 'eis' || folderType === 'review') && email.quoteStatus && (() => {
-                  const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
-                  return (
-                    <div className="mt-1.5">
-                      <CategoryTag {...STATUS_TAG[effectiveStatus!]} />
-                    </div>
-                  );
-                })()}
-                {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
-                  const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
-                  return (
-                    <div className="mt-1.5">
-                      <CategoryTag
-                        label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"}
-                        color={wasReviewed ? "grey" : "green"}
-                      />
-                    </div>
-                  );
-                })()}
-                {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
-                  <div className="mt-1.5">
-                    <CategoryTag label="Sent to Customer" color="grey" />
-                  </div>
-                )}
-                {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
-                  <div className="mt-1.5">
-                    <CategoryTag label="Draft Ready" color="orange" />
-                  </div>
-                )}
-                {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
-                  if (forwardStage === 'quoted') return (
-                    <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
-                  );
-                  if (forwardStage === 'processing' || forwardStage === 'sent') return (
-                    <div className="mt-1.5"><CategoryTag label="Forwarded" color="blue" /></div>
-                  );
-                  if (forwardStage === 'composing') return (
-                    <div className="mt-1.5"><CategoryTag label="Forwarding..." color="blue" /></div>
-                  );
-                  return (
-                    <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
-                  );
-                })()}
-                {(folderType === 'csr') && email.isApprovalHold && (() => {
-                  if (approvalStage === 'sent') return (
-                    <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
-                  );
-                  if (approvalStage === 'approved') return (
-                    <div className="mt-1.5"><CategoryTag label="Sending..." color="blue" /></div>
-                  );
-                  return (
-                    <div className="mt-1.5"><CategoryTag label="Pending Approval" color="orange" /></div>
-                  );
-                })()}
+            )}
+          </>
+        )}
+
+        {/* Read section */}
+        {readEmails.length > 0 && (
+          <>
+            <SectionHeader
+              label="Read"
+              count={readEmails.length}
+              isExpanded={readExpanded}
+              onToggle={() => setReadExpanded(!readExpanded)}
+            />
+            {readExpanded && (
+              <div className="divide-y divide-border">
+                {readEmails.map(renderEmail)}
               </div>
-              {!email.read && <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />}
-              {onDeleteEmail && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteEmail(email.id);
-                  }}
-                  className="p-1 hover:bg-destructive/10 rounded-[var(--radius)] transition-all text-muted-foreground hover:text-destructive flex-shrink-0 opacity-0 group-hover:opacity-100"
-                  title="Delete"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-          );
-        })}
+            )}
+          </>
+        )}
       </div>
     </div>
   );

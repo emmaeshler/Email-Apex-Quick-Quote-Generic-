@@ -196,7 +196,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                     {email.from}
                   </span>
                   <span className="text-size-xs text-muted-foreground whitespace-nowrap">
-                    {email.date !== 'Jan 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}
+                    {email.date !== 'May 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}
                   </span>
                 </div>
                 <div className={`text-size-sm text-foreground mb-1 truncate ${!email.read ? 'font-w-medium' : 'font-w-normal'}`}>

@@ -143,9 +143,8 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
         </tfoot>
       </table>
       {hasComparison && table.standardTotal != null && (
-        <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
-          <Info size={14} className="text-secondary flex-shrink-0 mt-0.5" />
-          <span className="text-size-xs text-foreground/70">
+        <div className="mt-3 px-1">
+          <span className="text-size-xs text-foreground/60">
             <span className="font-w-medium">Price comparison:</span>{' '}
             Standard {fmt(table.standardTotal)} → Rush {fmt(table.total)} (+{(((table.total - table.standardTotal) / table.standardTotal) * 100).toFixed(1)}%)
           </span>

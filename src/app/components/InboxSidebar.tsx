@@ -77,7 +77,7 @@ export function InboxSidebar({
   hintTarget = null,
 }: InboxSidebarProps) {
   const [morganExpanded, setMorganExpanded] = useState(true);
-  const [quotesExpanded, setQuotesExpanded] = useState(false);
+  const [quotesExpanded, setQuotesExpanded] = useState(true);
   const [reviewExpanded, setReviewExpanded] = useState(false);
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
 
@@ -235,7 +235,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={42}
+                count={4}
                 isActive={isEisActive}
                 onClick={() => onFolderSelect(eisId)}
                 isHinted={isEisHinted}

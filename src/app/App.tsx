@@ -227,6 +227,9 @@ export default function App() {
     list.push(eis8RushResponse);      // Rush re-quote — Jawinder rush thread
     list.push(eis6Response);          // WF4: Dave (Tri-State) — multi-item thread
 
+    // Midwest Power original request (approval workflow)
+    list.push(eis7MidwestPower);
+
     // WF2: Stonite quote thread (arrives after review workflow completes)
     if (arrivedEmails.has('eis-stonite-response')) list.unshift(eisStoniteResponse);
 

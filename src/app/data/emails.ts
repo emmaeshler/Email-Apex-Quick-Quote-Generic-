@@ -153,7 +153,7 @@ export interface Email {
 
 const rcscaQuote: QuoteTable = {
   quoteNumber: 'Q-1093928',
-  validThrough: 'Feb 27, 2026',
+  validThrough: 'Jun 27, 2026',
   customerName: 'RCSCA',
   lineItems: [
     { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock' },
@@ -161,15 +161,15 @@ const rcscaQuote: QuoteTable = {
   ],
   total: 192.01,
   shipping: {
-    method: 'Cold Pack — Air Shipment',
+    method: 'Air Shipment',
     cost: 24.75,
-    note: 'Temperature-sensitive adhesives require cold packing and overnight air delivery.',
+    note: 'Adhesives require overnight air delivery.',
   },
 };
 
 const stoniteFinalQuote: QuoteTable = {
   quoteNumber: 'Q-8320281',
-  validThrough: 'Feb 27, 2026',
+  validThrough: 'Jun 27, 2026',
   customerName: 'Stonite Coil Corp',
   lineItems: [
     { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 25, unitPrice: 14.25, totalPrice: 356.25, minOrderQty: 25, qtyBreakIncrement: 25, requestedQty: 15, stockStatus: 'in-stock' },
@@ -185,10 +185,10 @@ const stoniteFinalQuote: QuoteTable = {
 
 const motionQuote: QuoteTable = {
   quoteNumber: 'Q-3018483',
-  validThrough: 'Feb 27, 2026',
+  validThrough: 'Jun 27, 2026',
   customerName: 'Motion Industries Inc.',
   lineItems: [
-    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
+    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 2, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
   ],
   total: 545.50,
   shipping: {
@@ -199,15 +199,15 @@ const motionQuote: QuoteTable = {
 
 const taperedReelQuote: QuoteTable = {
   quoteNumber: 'Q-4150772',
-  validThrough: 'Mar 14, 2026',
+  validThrough: 'Jul 14, 2026',
   customerName: 'Tri-State Coil Winding',
   lineItems: [
     { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 14.68, totalPrice: 146.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 11.25, totalPrice: 112.50, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
     { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 15.32, totalPrice: 153.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
     { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 15.48, totalPrice: 154.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
     { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 16.92, totalPrice: 169.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
     { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 17.39, totalPrice: 173.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
+    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 11.25, totalPrice: 112.50, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
   ],
   total: 945.90,
   shipping: {
@@ -251,7 +251,7 @@ const stoniteMatchItems: ReviewMatchItem[] = [
 
 const midwestPowerQuote: QuoteTable = {
   quoteNumber: 'Q-5571039',
-  validThrough: 'Feb 27, 2026',
+  validThrough: 'Jun 27, 2026',
   customerName: 'Midwest Power Generators',
   lineItems: [
     { sku: 'INS-H220-NMN', description: 'NMN Laminate, Class H, 0.020" Sheet', quantity: 50, unitPrice: 89.40, totalPrice: 4470.00, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
@@ -272,7 +272,7 @@ const midwestPowerQuote: QuoteTable = {
 
 const rushRcscaQuote: QuoteTable = {
   quoteNumber: 'Q-1094215',
-  validThrough: 'Feb 3, 2026',
+  validThrough: 'Jun 3, 2026',
   customerName: 'RCSCA',
   isRushOrder: true,
   comparisonNote: 'Rush pricing compared to standard quote Q-1093928',
@@ -283,10 +283,10 @@ const rushRcscaQuote: QuoteTable = {
   ],
   total: 258.06,
   shipping: {
-    method: 'Priority Overnight — Cold Pack',
+    method: 'Priority Overnight',
     cost: 49.00,
-    note: 'Temperature-sensitive adhesives require cold packing. Expedited to meet Friday delivery.',
-    standardMethod: 'Cold Pack — Air Shipment',
+    note: 'Expedited to meet Friday delivery.',
+    standardMethod: 'Air Shipment',
     standardCost: 24.75,
   },
 };
@@ -304,7 +304,7 @@ export const eis1Jawinder: Email = {
   subject: 'Adhesive & Activator Pricing',
   preview: 'Please advise price for ADH-X315 and ACT-Z788 activator',
   body: `Please advise price for ADH-X315 and ACT-Z788 activator`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:30 AM',
   read: false,
 };
@@ -321,7 +321,7 @@ export const eis1Response: Email = {
   body: '',
   bodyBefore: `Jawinder, Please see below for details of your requested quote.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:33 AM',
   read: false,
   quoteStatus: 'quoted',
@@ -329,7 +329,7 @@ export const eis1Response: Email = {
   quotedPrevious: {
     from: 'Jawinder Schahal',
     fromEmail: 'jschahal@rcsca.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '10:30 AM',
     subject: 'Adhesive & Activator Pricing',
     body: 'Please advise price for ADH-X315 and ACT-Z788 activator',
@@ -348,7 +348,7 @@ export const csr1CC: Email = {
   body: '',
   bodyBefore: `Jawinder, Please see below for details of your requested quote.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:33 AM',
   read: false,
   isCcFromAi: true,
@@ -357,7 +357,7 @@ export const csr1CC: Email = {
   quotedPrevious: {
     from: 'Jawinder Schahal',
     fromEmail: 'jschahal@rcsca.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '10:30 AM',
     subject: 'Adhesive & Activator Pricing',
     body: 'Please advise price for ADH-X315 and ACT-Z788 activator',
@@ -373,7 +373,7 @@ export const eis6Dave: Email = {
   subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
   preview: 'Need pricing on all available tapered reel packaging options in red, various AWG sizes...',
   body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool configurations you carry.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option so we can compare pricing. We'd also like to know what's in stock vs. what has lead time.\n\nThanks,\nDave Morrison\nOperations Manager\nTri-State Coil Winding`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:05 AM',
   read: false,
 };
@@ -390,7 +390,7 @@ export const eis6Response: Email = {
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
   bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
   quoteStatus: 'quoted',
@@ -398,7 +398,7 @@ export const eis6Response: Email = {
   quotedPrevious: {
     from: 'Dave Morrison',
     fromEmail: 'dmorrison@tristatecoil.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '10:05 AM',
     subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
     body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
@@ -417,7 +417,7 @@ export const csr2CC: Email = {
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
   bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
   isCcFromAi: true,
@@ -426,7 +426,7 @@ export const csr2CC: Email = {
   quotedPrevious: {
     from: 'Dave Morrison',
     fromEmail: 'dmorrison@tristatecoil.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '10:05 AM',
     subject: 'Tapered Reel & Spool Packaging — 6 Configurations',
     body: `Hi,\n\nWe're evaluating packaging options for our magnet wire line and need a quote on all available tapered reel and spool packaging options matching your request.\n\nSpecifically looking for:\n- 10-11" Tapered Reel/Box options across all AWG sizes available in Red\n- Any spool alternatives in the same wire gauges\n\nPlease quote 10 units of each option...`,
@@ -442,7 +442,7 @@ export const eis5Stonite: Email = {
   subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
   preview: 'Good morning, I need pricing for the below: # 27 HPL - round tapers (15 units)...',
   body: `Good morning, I need pricing for the below:\n\n# 27 HPL - round tapers (15 units)\n# 24 SDPZ - round tapers\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:15 AM',
   read: false,
   quoteStatus: 'review',
@@ -457,7 +457,7 @@ export const csrSteveOriginal: Email = {
   subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
   preview: 'Good morning, I need pricing for 27 gauge HPL round tapers - we need about...',
   body: `Good morning Morgan,\n\nI need pricing for 27 gauge HPL round tapers - we need about 15 units.\n\nAlso need a quote on 24 gauge SDPZ round tapers.\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:15 AM',
   read: false,
 };
@@ -473,7 +473,7 @@ export const csrReview1: Email = {
   body: '',
   bodyBefore: `Draft message ready for customer. The following items need clarification before quoting:`,
   bodyAfter: `Please let me know these details so I can provide accurate pricing.\n\nBest regards,\nMorgan\nApex Corp`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:18 AM',
   read: false,
   isReviewRequest: true,
@@ -487,12 +487,12 @@ export const csrReview1: Email = {
     to: 'quotes@apex-corp.com',
     subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
     body: `Good morning, I need pricing for 27 gauge HPL round tapers - we need about 15 units.\n\nAlso need a quote on 24 gauge SDPZ round tapers.\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:15 AM',
   },
   reviewReply: {
     body: `Please provide the missing details for the items listed in the table above:\n\n[Provide corrections or clarifications for each item that needs review]\n\nFor example:\n- Item 1: [Confirm correct item number, adjust quantity if needed]\n- Item 2: [Specify correct gauge or alternative, provide quantity]\n\n- Morgan`,
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:42 AM',
   },
 };
@@ -507,7 +507,7 @@ export const csrSteveClarification: Email = {
   subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
   preview: 'Thanks for checking. For the #27 HPL, we need 25 units. For #24 SDPZ...',
   body: `Hi Morgan,\n\nThanks for checking on this.\n\nFor the #27 HPL round tapers - we can do 25 units to meet your MOQ.\n\nFor the #24 SDPZ - yes, we can use #22.5 gauge instead. Please quote 100 units of that.\n\nThanks,\nSteve`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:38 AM',
   read: false,
   quotedPrevious: {
@@ -516,7 +516,7 @@ export const csrSteveClarification: Email = {
     to: 'slanders@stonitecoil.com',
     subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
     body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Please review the below items and outstanding questions:\n\n[Details about quantities and gauges]`,
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:30 AM',
   },
 };
@@ -534,7 +534,7 @@ export const eis7MidwestPower: Email = {
   subject: 'Motor Rewind Materials — Full Kit Pricing',
   preview: 'We need a quote on a full rewind kit for our 500HP motor overhaul program...',
   body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program. Here's what we need:\n\n- NMN laminate sheets, Class H, 0.020" — 50 sheets\n- VPI resin, 5-gallon pails — 4 pails\n- 6205-2RS sealed bearings — 24 units\n- Slot liners, NMN, 14" cut — 200 pcs\n- Kapton tape HN 1mil, 1" × 36yd — 36 rolls\n\nPlease provide pricing and availability. We'd like to get this ordered this week if possible.\n\nThanks,\nGary Tillman\nMaintenance Manager\nMidwest Power Generators`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '9:45 AM',
   read: false,
 };
@@ -549,8 +549,8 @@ export const csrApprovalHold: Email = {
   preview: 'Quote #Q-5571039 ($12,247.00) requires approval before sending. Quote exceeds auto-send threshold...',
   body: '',
   bodyBefore: `A quote has been generated for Midwest Power Generators but requires your approval before sending to the customer.\n\nThis quote was held because it exceeds the $10,000 auto-send threshold. Please review the quote below and approve, edit, or reject.`,
-  bodyAfter: `Once approved, this quote will be sent directly to the customer with you CC'd.\n\nOriginal request from Gary Tillman (gtillman@midwestpower.com) received Jan 28, 2026 at 9:45 AM.`,
-  date: 'Jan 28, 2026',
+  bodyAfter: `Once approved, this quote will be sent directly to the customer with you CC'd.\n\nOriginal request from Gary Tillman (gtillman@midwestpower.com) received May 28, 2026 at 9:45 AM.`,
+  date: 'May 28, 2026',
   time: '9:48 AM',
   read: false,
   isApprovalHold: true,
@@ -562,7 +562,7 @@ export const csrApprovalHold: Email = {
   quotedPrevious: {
     from: 'Gary Tillman',
     fromEmail: 'gtillman@midwestpower.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '9:45 AM',
     subject: 'Motor Rewind Materials — Full Kit Pricing',
     body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program. Here's what we need:\n\n- NMN laminate sheets, Class H, 0.020" — 50 sheets\n- VPI resin, 5-gallon pails — 4 pails\n- 6205-2RS sealed bearings — 24 units\n- Slot liners, NMN, 14" cut — 200 pcs\n- Kapton tape HN 1mil, 1" × 36yd — 36 rolls`,
@@ -581,7 +581,7 @@ export const csrApprovalSentCc: Email = {
   body: '',
   bodyBefore: `Gary, Please see below for details of your requested quote for the 500HP motor rewind kit.\n\nAll requested items have been matched and priced. Kapton tape has a 1–2 week lead time; all other items are in stock and ready to ship.`,
   bodyAfter: `Please note that VPI resin shipments require hazmat documentation, which will be included with your order.\n\nPlease reply to confirm your order or if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '9:51 AM',
   read: false,
   isCcFromAi: true,
@@ -590,7 +590,7 @@ export const csrApprovalSentCc: Email = {
   quotedPrevious: {
     from: 'Gary Tillman',
     fromEmail: 'gtillman@midwestpower.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '9:45 AM',
     subject: 'Motor Rewind Materials — Full Kit Pricing',
     body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program...`,
@@ -610,7 +610,7 @@ export const eis8Rush: Email = {
   subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
   preview: 'Hi, we need to expedite our previous order. Same items (ADH-X315 and ACT-Z788)...',
   body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.\n\nThanks,\nJawinder Schahal\nRCSCA`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '2:10 PM',
   read: false,
 };
@@ -625,9 +625,9 @@ export const eis8RushResponse: Email = {
   subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
   preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
   time: '2:13 PM',
   read: false,
   quoteStatus: 'quoted',
@@ -635,7 +635,7 @@ export const eis8RushResponse: Email = {
   quotedPrevious: {
     from: 'Jawinder Schahal',
     fromEmail: 'jschahal@rcsca.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '2:10 PM',
     subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
     body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.`,
@@ -652,9 +652,9 @@ export const csr3RushCc: Email = {
   subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
   preview: 'Auto-quoted (Rush): Quote #Q-1094215 — $258.06 for RCSCA...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
   time: '2:13 PM',
   read: false,
   isCcFromAi: true,
@@ -663,7 +663,7 @@ export const csr3RushCc: Email = {
   quotedPrevious: {
     from: 'Jawinder Schahal',
     fromEmail: 'jschahal@rcsca.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '2:10 PM',
     subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
     body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.`,
@@ -678,8 +678,8 @@ export const csrHermanDirect: Email = {
   to: 'morgan@apex-corp.com',
   subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Hi Morgan, we spoke at the trade show last month about your sleeving line...',
-  body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
-  date: 'Jan 28, 2026',
+  body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+  date: 'May 28, 2026',
   time: '11:50 AM',
   read: false,
   isDirectQuoteRequest: true,
@@ -692,10 +692,10 @@ export const csrHermanDirect: Email = {
     to: 'hemnant@motion.com',
     cc: 'morgan@apex-corp.com',
     subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '9:52 AM',
     isAiGenerated: true,
-    bodyBefore: `Herman, Please see below for details of your requested quote.`,
+    bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
     bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
     quoteTable: motionQuote,
   },
@@ -720,7 +720,7 @@ export const eisStoniteResponse: Email = {
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
   bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,
   quoteStatus: 'quoted',
@@ -728,7 +728,7 @@ export const eisStoniteResponse: Email = {
   quotedPrevious: {
     from: 'Steve Landers',
     fromEmail: 'slanders@stonitecoil.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:15 AM',
     subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
     body: 'Good morning, I need pricing for the below:\n\n# 27 HPL - round tapers (15 units)\n# 24 SDPZ - round tapers',
@@ -743,17 +743,17 @@ export const eisForwardedEmail: Email = {
   subject: 'FW: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting...',
   body: `Herman from Motion needs pricing on BRT40XF17M — forwarding for quoting.\n\n- Morgan`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:53 AM',
   read: false,
   quoteStatus: 'processing',
   quotedPrevious: {
     from: 'Herman',
     fromEmail: 'hemnant@motion.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?`,
   },
 };
 
@@ -766,9 +766,9 @@ export const eisMotionResponse: Email = {
   subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
   body: '',
-  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:57 AM',
   read: false,
   quoteStatus: 'quoted',
@@ -776,10 +776,10 @@ export const eisMotionResponse: Email = {
   quotedPrevious: {
     from: 'Herman',
     fromEmail: 'hemnant@motion.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M`,
   },
 };
 
@@ -796,11 +796,11 @@ export const csrDailySummary: Email = {
     from: 'Apex Quoting',
     fromEmail: 'quotes@apex-corp.com',
     to: 'morgan@apex-corp.com',
-    subject: 'Daily Quoting Summary — January 27, 2026',
+    subject: 'Daily Quoting Summary — May 27, 2026',
     preview: '12 quotes sent across 9 customers. Total quoted value: $47,850.00. Avg quote size: $3,987.50...',
     body: `Hi Morgan,
 
-Here is your quoting activity summary for Monday, January 27, 2026.
+Here is your quoting activity summary for Wednesday, May 27, 2026.
 
 ══════════════════════════════════════
   QUOTING ACTIVITY OVERVIEW
@@ -868,7 +868,7 @@ This summary is generated automatically at the end of each business day. For det
 
 Best regards,
 Apex Quoting System`,
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '5:00 PM',
     read: true,
 };
@@ -883,13 +883,13 @@ export const csrReviewReplyEmail: Email = {
   subject: 'Re: Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
   preview: 'The #27 HPL match is correct — MW27HPLRT is what Steve orders. Adjust quantity to 25...',
   body: `The #27 HPL match is correct — MW27HPLRT is what Steve orders. Adjust quantity to 25 to meet MOQ.\n\nFor #24 SDPZ — we carry #22.5 SDPZ which aligns with what he typically orders for this application. Use SDPZ-22.5-RT. Quote 100 units.\n\n- Morgan`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:42 AM',
   read: true,
   quotedPrevious: {
     from: 'Apex Quoting',
     fromEmail: 'quotes@apex-corp.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:18 AM',
     subject: 'Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
     body: 'The below quote requires your attention. A partial quote was prepared for Steve Landers (Stonite Coil Corp) but some items need confirmation.',
@@ -907,7 +907,7 @@ export const csrStoniteFinalCc: Email = {
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
   bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,
   isCcFromAi: true,
@@ -916,7 +916,7 @@ export const csrStoniteFinalCc: Email = {
   quotedPrevious: {
     from: 'Morgan',
     fromEmail: 'morgan@apex-corp.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:42 AM',
     subject: 'Re: Review Needed: Magnet Wire Round Tapers — Stonite Coil Corp',
     body: 'The #27 HPL match is correct — MW27HPLRT is what Steve orders. Adjust quantity to 25 to meet MOQ.\n\nFor #24 SDPZ — we carry #22.5 SDPZ which aligns with what he typically orders for this application. Use SDPZ-22.5-RT. Quote 100 units.',
@@ -932,9 +932,9 @@ export const csrMotionCc: Email = {
   subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Auto-quoted: Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
   body: '',
-  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '11:57 AM',
   read: false,
   isCcFromAi: true,
@@ -943,10 +943,10 @@ export const csrMotionCc: Email = {
   quotedPrevious: {
     from: 'Herman',
     fromEmail: 'hemnant@motion.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M`,
   },
 };
 
@@ -959,7 +959,7 @@ export const csrHermanReply: Email = {
   subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Hey Morgan! Thanks for getting that quote over so quickly...',
   body: `Hey Morgan!\n\nThanks for getting that quote over so quickly — really appreciate the fast turnaround. I'm going to review it with our purchasing team and should have an answer for you by end of week.\n\nLet's catch up next time you're in town! It was great talking at the show.\n\nTalk soon,\nHerman`,
-  date: 'Jan 28, 2026',
+  date: 'May 28, 2026',
   time: '2:17 PM',
   read: false,
   threadedQuoteResponse: {
@@ -967,19 +967,19 @@ export const csrHermanReply: Email = {
     fromEmail: 'quotes@apex-corp.com',
     to: 'hemnant@motion.com',
     cc: 'morgan@apex-corp.com',
-    date: 'Jan 28, 2026',
+    date: 'May 28, 2026',
     time: '11:57 AM',
     subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    bodyBefore: `Herman, Please see below for details of your requested quote.`,
+    bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
     bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
     quoteTable: motionQuote,
     quotedPrevious: {
       from: 'Herman',
       fromEmail: 'hemnant@motion.com',
-      date: 'Jan 28, 2026',
+      date: 'May 28, 2026',
       time: '11:50 AM',
       subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-      body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+      body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
     },
   },
 };

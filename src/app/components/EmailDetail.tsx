@@ -139,7 +139,10 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
           {table.discount && (
             <tr>
               <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
-                {table.discount.label} ({table.discount.percentage}%)
+                <span>{table.discount.label} ({table.discount.percentage}%)</span>
+                {table.discount.note && (
+                  <span className="block text-size-xs text-muted-foreground mt-0.5">{table.discount.note}</span>
+                )}
               </td>
               <td className="py-2 pl-4 text-right text-size-sm" style={{ color: '#16a34a' }}>−{fmt(table.discount.amount)}</td>
             </tr>
@@ -457,7 +460,7 @@ function MessageHeader({ email }: { email: Email }) {
    Main component — Flat email detail (one email per view)
    ══════════════════════════════════════════════════════════════════════════ */
 
-export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, approvalStage, onApprovalCompose, onApprovalSend, onApprovalDiscard, onDeleteEmail, hintTarget }: {
+export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, approvalStage, onApprovalCompose, onApprovalSend, onApprovalDiscard, onDeleteEmail, hintTarget }: {
   email: Email | null;
   folderType: 'csr' | 'eis';
   reviewResolved?: boolean;
@@ -468,9 +471,6 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   onReviewComposeModeChange: (mode: 'reply' | 'forward') => void;
   onReviewSend: () => void;
   reviewForwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
-  onReviewForwardCompose?: () => void;
-  onReviewForwardSend?: () => void;
-  onReviewForwardDiscard?: () => void;
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   onForwardCompose?: () => void;
   onForwardSend?: () => void;
@@ -512,11 +512,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   const isSteveClarification = email.id === 'csr-steve-clarification';
   const isApprovalHold = email.isApprovalHold;
 
-  // Use reviewForwardStage for Steve's clarification, forwardStage for others
+  // Use reviewForwardStage for Steve's clarification (auto-processed), forwardStage for others
   const effectiveForwardStage = isSteveClarification ? reviewForwardStage : forwardStage;
-  const effectiveOnForwardCompose = isSteveClarification ? onReviewForwardCompose : onForwardCompose;
-  const effectiveOnForwardSend = isSteveClarification ? onReviewForwardSend : onForwardSend;
-  const effectiveOnForwardDiscard = isSteveClarification ? onReviewForwardDiscard : onForwardDiscard;
+  const effectiveOnForwardCompose = isSteveClarification ? undefined : onForwardCompose;
+  const effectiveOnForwardSend = isSteveClarification ? undefined : onForwardSend;
+  const effectiveOnForwardDiscard = isSteveClarification ? undefined : onForwardDiscard;
   const hasInlineQuote = !!email.inlineQuoteTable;
   const hasCcQuote = !!email.isCcFromAiQuoteTable;
 
@@ -607,33 +607,26 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         </InfoBar>
       );
     }
-    // Steve's clarification info bars
+    // Steve's clarification info bars — auto-processed since quotes@ was CC'd
     if (isSteveClarification) {
       if (effectiveForwardStage === 'quoted') {
         return (
           <InfoBar icon={CheckCircle} iconColor="text-chart-3" bg="bg-chart-3/6" border="var(--chart-3)">
-            Customer clarification forwarded. A quote has been generated and sent to{' '}
+            Customer response auto-processed. A quote has been generated and sent to{' '}
             <span className="font-w-medium">Steve Landers (Stonite Coil Corp)</span>. You've been CC'd on the response.
           </InfoBar>
         );
       }
-      if (effectiveForwardStage === 'processing') {
+      if (effectiveForwardStage === 'processing' || effectiveForwardStage === 'sent') {
         return (
           <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
-            Forwarded to quotes@apex-corp.com. Generating a quote with customer clarifications...
-          </InfoBar>
-        );
-      }
-      if (effectiveForwardStage === 'sent') {
-        return (
-          <InfoBar icon={CheckCircle} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)">
-            Forwarded to quotes@apex-corp.com. Waiting for processing...
+            Customer reply CC'd <span className="font-w-medium">quotes@apex-corp.com</span>. Automatically generating quote with updated details...
           </InfoBar>
         );
       }
       return (
-        <InfoBar icon={Info} iconColor="text-secondary" bg="bg-secondary/6" border="var(--secondary)">
-          Customer provided clarification details. Forward this to <span className="font-w-medium">quotes@apex-corp.com</span> for quoting.
+        <InfoBar icon={Loader2} iconColor="text-accent" bg="bg-accent/6" border="var(--accent)" animate>
+          Customer reply CC'd <span className="font-w-medium">quotes@apex-corp.com</span>. Automatically generating quote with updated details...
         </InfoBar>
       );
     }
@@ -864,7 +857,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       return (
         <div className="flex items-center gap-2">
           <Loader2 size={14} className="text-accent animate-spin" />
-          <span className="text-size-xs text-muted-foreground">{effectiveForwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}</span>
+          <span className="text-size-xs text-muted-foreground">
+            {isSteveClarification
+              ? 'Auto-generating quote from customer response...'
+              : effectiveForwardStage === 'processing' ? 'Processing the quote...' : 'Forwarded. Waiting for processing...'}
+          </span>
         </div>
       );
     }

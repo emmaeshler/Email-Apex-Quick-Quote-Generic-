@@ -33,6 +33,7 @@ export interface QuoteTable {
     label: string;
     percentage: number;
     amount: number;
+    note?: string;
   };
   isRushOrder?: boolean;
   comparisonNote?: string;
@@ -275,6 +276,7 @@ const midwestPowerQuote: QuoteTable = {
     label: 'Truckload Discount',
     percentage: 7.5,
     amount: 919.00,
+    note: 'You\'re saving here because shipping a full truckload reduces the per-unit cost to get your order out the door. We calculated 7.5% based on what we actually save on freight and handling at that volume.',
   },
 };
 

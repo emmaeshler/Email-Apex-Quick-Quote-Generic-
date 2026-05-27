@@ -161,9 +161,9 @@ const rcscaQuote: QuoteTable = {
   ],
   total: 192.01,
   shipping: {
-    method: 'Cold Pack — Air Shipment',
+    method: 'Air Shipment',
     cost: 24.75,
-    note: 'Temperature-sensitive adhesives require cold packing and overnight air delivery.',
+    note: 'Adhesives require overnight air delivery.',
   },
 };
 
@@ -188,7 +188,7 @@ const motionQuote: QuoteTable = {
   validThrough: 'Feb 27, 2026',
   customerName: 'Motion Industries Inc.',
   lineItems: [
-    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
+    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 2, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
   ],
   total: 545.50,
   shipping: {
@@ -283,10 +283,10 @@ const rushRcscaQuote: QuoteTable = {
   ],
   total: 258.06,
   shipping: {
-    method: 'Priority Overnight — Cold Pack',
+    method: 'Priority Overnight',
     cost: 49.00,
-    note: 'Temperature-sensitive adhesives require cold packing. Expedited to meet Friday delivery.',
-    standardMethod: 'Cold Pack — Air Shipment',
+    note: 'Expedited to meet Friday delivery.',
+    standardMethod: 'Air Shipment',
     standardCost: 24.75,
   },
 };
@@ -625,8 +625,8 @@ export const eis8RushResponse: Email = {
   subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
   preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '2:13 PM',
   read: false,
@@ -652,8 +652,8 @@ export const csr3RushCc: Email = {
   subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
   preview: 'Auto-quoted (Rush): Quote #Q-1094215 — $258.06 for RCSCA...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight with cold packing to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight cold-pack shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyAfter: `Estimated delivery: Thursday, January 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Feb 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '2:13 PM',
   read: false,
@@ -678,7 +678,7 @@ export const csrHermanDirect: Email = {
   to: 'morgan@apex-corp.com',
   subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Hi Morgan, we spoke at the trade show last month about your sleeving line...',
-  body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+  body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
   date: 'Jan 28, 2026',
   time: '11:50 AM',
   read: false,
@@ -695,7 +695,7 @@ export const csrHermanDirect: Email = {
     date: 'Jan 28, 2026',
     time: '9:52 AM',
     isAiGenerated: true,
-    bodyBefore: `Herman, Please see below for details of your requested quote.`,
+    bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
     bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
     quoteTable: motionQuote,
   },
@@ -753,7 +753,7 @@ export const eisForwardedEmail: Email = {
     date: 'Jan 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?`,
   },
 };
 
@@ -766,7 +766,7 @@ export const eisMotionResponse: Email = {
   subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
   body: '',
-  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '11:57 AM',
@@ -779,7 +779,7 @@ export const eisMotionResponse: Email = {
     date: 'Jan 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M`,
   },
 };
 
@@ -932,7 +932,7 @@ export const csrMotionCc: Email = {
   subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
   preview: 'Auto-quoted: Quote #Q-3018483 — $545.50 for Motion Industries Inc....',
   body: '',
-  bodyBefore: `Herman, Please see below for details of your requested quote.`,
+  bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'Jan 28, 2026',
   time: '11:57 AM',
@@ -946,7 +946,7 @@ export const csrMotionCc: Email = {
     date: 'Jan 28, 2026',
     time: '11:50 AM',
     subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls`,
+    body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M`,
   },
 };
 
@@ -970,7 +970,7 @@ export const csrHermanReply: Email = {
     date: 'Jan 28, 2026',
     time: '11:57 AM',
     subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
-    bodyBefore: `Herman, Please see below for details of your requested quote.`,
+    bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
     bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
     quoteTable: motionQuote,
     quotedPrevious: {
@@ -979,7 +979,7 @@ export const csrHermanReply: Email = {
       date: 'Jan 28, 2026',
       time: '11:50 AM',
       subject: 'Aramid Braided Tape Pricing — P/N BRT40XF17M',
-      body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M — Qty 2 Rolls\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
+      body: `Hi Morgan,\n\nWe spoke at the trade show last month about your sleeving line. I'd like to get pricing on the following:\n\nP/N BRT40XF17M\n\nCan you get me a quote by end of week?\n\nThanks,\nHerman\nMotion`,
     },
   },
 };

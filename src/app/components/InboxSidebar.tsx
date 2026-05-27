@@ -111,6 +111,10 @@ export function InboxSidebar({
   const isEisActive = activeFolderId === eisId;
   const isReviewActive = activeFolderId === reviewId;
 
+  const csrFolder = folders.find(f => f.id === 'csr');
+  const eisFolder = folders.find(f => f.id === 'eis');
+  const reviewFolder = folders.find(f => f.id === 'review');
+
   const isCsrHinted = hintTarget === `folder:${csrId}`;
   const isEisHinted = hintTarget === `folder:${eisId}`;
   const isReviewHinted = hintTarget === `folder:${reviewId}`;
@@ -142,7 +146,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={733}
+                count={csrFolder?.count ?? 0}
                 isActive={false}
                 onClick={() => onFolderSelect(csrId)}
                 isHinted={false}
@@ -157,7 +161,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Trash2}
                 label="Deleted Items"
-                count={5369}
+                count={14}
                 isActive={false}
                 onClick={() => {}}
               />
@@ -177,7 +181,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={733}
+                count={csrFolder?.count ?? 0}
                 isActive={isCsrActive}
                 onClick={() => onFolderSelect(csrId)}
                 isHinted={isCsrHinted}
@@ -185,7 +189,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Mail}
                 label="OEM"
-                count={124}
+                count={3}
                 isActive={false}
                 onClick={() => {}}
                 indent
@@ -193,7 +197,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Mail}
                 label="AM/MRO"
-                count={89}
+                count={5}
                 isActive={false}
                 onClick={() => {}}
                 indent
@@ -201,21 +205,21 @@ export function InboxSidebar({
               <FolderItem
                 icon={Trash2}
                 label="Deleted Items"
-                count={5369}
+                count={14}
                 isActive={false}
                 onClick={() => {}}
               />
               <FolderItem
                 icon={Archive}
                 label="Archive"
-                count={223}
+                count={47}
                 isActive={false}
                 onClick={() => {}}
               />
               <FolderItem
                 icon={AlertOctagon}
                 label="Junk Email"
-                count={12}
+                count={2}
                 isActive={false}
                 onClick={() => {}}
               />
@@ -235,7 +239,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={4}
+                count={eisFolder?.count ?? 0}
                 isActive={isEisActive}
                 onClick={() => onFolderSelect(eisId)}
                 isHinted={isEisHinted}
@@ -256,7 +260,7 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={3}
+                count={reviewFolder?.count ?? 0}
                 isActive={isReviewActive}
                 onClick={() => onFolderSelect(reviewId)}
                 isHinted={isReviewHinted}

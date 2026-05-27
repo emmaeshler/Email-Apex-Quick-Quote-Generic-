@@ -120,7 +120,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <>
               <tr className="border-t border-foreground/10">
                 <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">Subtotal</td>
-                <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.total - table.shipping.cost)}</td>
+                <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.total + (table.discount?.amount ?? 0) - table.shipping.cost)}</td>
               </tr>
               <tr>
                 <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
@@ -135,6 +135,14 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                 <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.shipping.cost)}</td>
               </tr>
             </>
+          )}
+          {table.discount && (
+            <tr>
+              <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
+                {table.discount.label} ({table.discount.percentage}%)
+              </td>
+              <td className="py-2 pl-4 text-right text-size-sm" style={{ color: '#16a34a' }}>−{fmt(table.discount.amount)}</td>
+            </tr>
           )}
           <tr className="border-t-2 border-foreground/20">
             <td colSpan={colCount - 1} className="py-3 pr-4 text-size-base font-w-medium text-foreground">TOTAL</td>

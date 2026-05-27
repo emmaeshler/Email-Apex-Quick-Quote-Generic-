@@ -52,8 +52,8 @@ export default function App() {
   // Workflow 3 forward stage: pending → composing → sent → processing → quoted
   const [forwardStage, setForwardStage] = useState<'pending' | 'composing' | 'sent' | 'processing' | 'quoted'>('pending');
 
-  // Approval hold stage: pending → reviewing → approved → sent
-  const [approvalStage, setApprovalStage] = useState<'pending' | 'reviewing' | 'approved' | 'sent'>('pending');
+  // Approval hold stage: pending → composing → approved → sent
+  const [approvalStage, setApprovalStage] = useState<'pending' | 'composing' | 'approved' | 'sent'>('pending');
 
   // Demo "delete" — just hides emails from the list; resets on refresh
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
@@ -563,7 +563,9 @@ export default function App() {
           onForwardSend={handleForwardSend}
           onForwardDiscard={() => setForwardStage('pending')}
           approvalStage={approvalStage}
+          onApprovalCompose={() => setApprovalStage('composing')}
           onApprovalSend={handleApprovalSend}
+          onApprovalDiscard={() => setApprovalStage('pending')}
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />

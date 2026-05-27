@@ -252,7 +252,6 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
           <tr className="border-b border-foreground/20">
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Requested Item</th>
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Number</th>
-            <th className="py-2 text-center px-4 text-size-sm font-w-medium text-foreground">Confidence</th>
             {hasAnyDescription && <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Description</th>}
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Quantity</th>
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
@@ -264,8 +263,6 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
         </thead>
         <tbody>
           {items.map((item, i) => {
-            const lowConfidence = item.confidence !== '-' && parseFloat(item.confidence) < 90;
-            const highConfidence = item.confidence !== '-' && parseFloat(item.confidence) >= 90;
             const qtyBelowMOQ = item.quantity != null && item.minOrderQty != null && item.quantity < item.minOrderQty;
 
             return (
@@ -278,23 +275,14 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
                         href={item.catalogUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-1 underline underline-offset-2 transition-colors ${lowConfidence ? 'text-secondary hover:text-secondary/80' : 'text-accent hover:text-accent/80'}`}
+                        className="inline-flex items-center gap-1 underline underline-offset-2 transition-colors text-accent hover:text-accent/80"
                       >
                         {item.matchedItem}
                         <ExternalLink size={12} className="flex-shrink-0" />
                       </a>
                     ) : (
-                      <span className={lowConfidence ? 'text-secondary font-w-medium' : 'text-foreground/80'}>{item.matchedItem}</span>
+                      <span className="text-foreground/80">{item.matchedItem}</span>
                     )
-                  ) : (
-                    <span className="text-muted-foreground italic">—</span>
-                  )}
-                </td>
-                <td className="py-2.5 px-4 text-center text-size-sm">
-                  {item.confidence !== '-' ? (
-                    <span className={`inline-block px-1.5 py-px font-w-medium ${highConfidence ? 'bg-chart-3/15 text-chart-3' : 'bg-secondary/15 text-secondary'}`} style={{ fontSize: '10px', lineHeight: '16px' }}>
-                      {item.confidence}
-                    </span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
@@ -462,7 +450,7 @@ function MessageHeader({ email }: { email: Email }) {
    Main component — Flat email detail (one email per view)
    ══════════════════════════════════════════════════════════════════════════ */
 
-export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, approvalStage, onApprovalSend, onDeleteEmail, hintTarget }: {
+export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve, reviewStage, onReviewStageChange, reviewComposeMode, onReviewComposeModeChange, onReviewSend, reviewForwardStage, onReviewForwardCompose, onReviewForwardSend, onReviewForwardDiscard, forwardStage, onForwardCompose, onForwardSend, onForwardDiscard, approvalStage, onApprovalCompose, onApprovalSend, onApprovalDiscard, onDeleteEmail, hintTarget }: {
   email: Email | null;
   folderType: 'csr' | 'eis';
   reviewResolved?: boolean;
@@ -480,8 +468,10 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   onForwardCompose?: () => void;
   onForwardSend?: () => void;
   onForwardDiscard?: () => void;
-  approvalStage?: 'pending' | 'reviewing' | 'approved' | 'sent';
+  approvalStage?: 'pending' | 'composing' | 'approved' | 'sent';
+  onApprovalCompose?: () => void;
   onApprovalSend?: () => void;
+  onApprovalDiscard?: () => void;
   onDeleteEmail?: (id: string) => void;
   hintTarget?: string | null;
 }) {
@@ -501,13 +491,13 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
   // Auto-scroll to top when compose box appears (review reply or forward compose)
   useEffect(() => {
-    if ((reviewStage === 'composing' || effectiveForwardStage === 'composing' || reviewForwardStage === 'composing') && contentScrollRef.current) {
+    if ((reviewStage === 'composing' || effectiveForwardStage === 'composing' || reviewForwardStage === 'composing' || approvalStage === 'composing') && contentScrollRef.current) {
       // Small delay to ensure compose box has rendered before scrolling
       setTimeout(() => {
         contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }, 50);
     }
-  }, [reviewStage, forwardStage, reviewForwardStage]);
+  }, [reviewStage, forwardStage, reviewForwardStage, approvalStage]);
 
   const isReview = email.isReviewRequest;
   const isDirectQuote = email.isDirectQuoteRequest;
@@ -871,22 +861,24 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         </div>
       );
     }
-    // Approval hold: Approve & Send / Edit
-    if (isApprovalHold && (approvalStage === 'pending' || approvalStage === 'reviewing')) {
+    // Approval hold: standard Reply/Reply All/Forward (Reply opens compose with "Approved")
+    if (isApprovalHold && approvalStage === 'pending') {
       return (
         <>
           <div className="relative">
             <button
-              onClick={() => onApprovalSend?.()}
+              onClick={() => onApprovalCompose?.()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
-              <CheckCircle size={16} /> Approve & Send
+              <Reply size={16} /> Reply
             </button>
-            {hintTarget === 'action:approve' && <DemoDot />}
+            {hintTarget === 'action:reply' && <DemoDot />}
           </div>
-          <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
-            <Forward size={16} /> Edit Before Sending
-          </button>
+          {[{ icon: ReplyAll, label: 'Reply All' }, { icon: Forward, label: 'Forward' }].map(({ icon: Icon, label }) => (
+            <button key={label} className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
+              <Icon size={16} /> {label}
+            </button>
+          ))}
         </>
       );
     }
@@ -958,6 +950,18 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto" ref={contentScrollRef}>
+        {/* ── Approval hold composing: Reply with "Approved" ── */}
+        {isApprovalHold && approvalStage === 'composing' && (
+          <ComposeBox
+            toEmail="quotes@apex-corp.com"
+            subject={email.subject}
+            prefillBody="Approved, go ahead and send the client the quote."
+            onSend={() => onApprovalSend?.()}
+            onDiscard={() => onApprovalDiscard?.()}
+            hintSend={hintTarget === 'action:send'}
+          />
+        )}
+
         {/* ── Review composing: Show compose box above message ── */}
         {isReview && reviewStage === 'composing' && email.reviewReply && (
           <ComposeBox

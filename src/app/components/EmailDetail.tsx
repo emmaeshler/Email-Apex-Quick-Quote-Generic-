@@ -21,9 +21,11 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasDescriptions = table.lineItems.some((item) => item.description);
   const hasStock = table.lineItems.some((item) => item.stockStatus);
   const hasComparison = table.lineItems.some((item) => item.standardUnitPrice != null);
+  const hasQtyBreakNotes = table.lineItems.some((item) => item.qtyBreakNote);
   const baseColCount = hasDescriptions ? 7 : 6;
   const comparisonExtra = hasComparison ? 1 : 0;
-  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + comparisonExtra;
+  const qtyBreakExtra = hasQtyBreakNotes ? 1 : 0;
+  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + comparisonExtra + qtyBreakExtra;
   return (
     <div className="my-4">
       <div className="mb-3 pb-2 border-b-2 border-foreground/20">
@@ -59,6 +61,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Price' : 'Unit Price'}</th>
             {hasComparison && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground/60">Standard Total</th>}
             <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Total' : 'Total Price'}</th>
+            {hasQtyBreakNotes && <th className="py-2 text-left pl-4 text-size-sm font-w-medium text-foreground">Pricing Tier</th>}
           </tr>
         </thead>
         <tbody>
@@ -112,10 +115,14 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                   </td>
                 )}
                 <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">{fmt(item.totalPrice)}</td>
+                {hasQtyBreakNotes && (
+                  <td className="py-2.5 pl-4 text-size-sm text-foreground/70">{item.qtyBreakNote || '—'}</td>
+                )}
               </tr>
             );
           })}
         </tbody>
+        {!table.isQtyBreakComparison && (
         <tfoot>
           {table.shipping && (
             <>
@@ -153,6 +160,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <td className="py-3 pl-4 text-right text-size-base font-w-medium text-foreground">{fmt(table.total)}</td>
           </tr>
         </tfoot>
+        )}
       </table>
       {hasComparison && table.standardTotal != null && (
         <div className="mt-3 px-1">

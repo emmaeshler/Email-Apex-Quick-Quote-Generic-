@@ -28,6 +28,9 @@ import {
   eis8Rush,
   eis8RushResponse,
   csr3RushCc,
+  eis9QtyBreak,
+  eis9QtyBreakResponse,
+  csrQtyBreakCc,
 } from './data/emails';
 
 // Re-export types so existing imports from './App' still work
@@ -151,10 +154,13 @@ export default function App() {
       // Batch 2: Rush re-quote (Phase 3: urgent re-quote, moderate human involvement)
       { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc'] },
 
-      // Batch 3: Auto-quotes (Phase 4: fully automated, no human involvement)
+      // Batch 3: Auto-quotes part 1 (tapered reels + simple request)
       { emailIds: ['eis-1', 'eis-1-response', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
 
-      // Batch 4: Daily summary (Phase 5: closer — full picture)
+      // Batch 4: Auto-quotes part 2 (qty-break comparison)
+      { emailIds: ['eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'] },
+
+      // Batch 5: Daily summary (Phase 5: closer — full picture)
       { emailIds: ['csr-daily-summary'] },
     ];
 
@@ -226,6 +232,7 @@ export default function App() {
     list.push(eis1Response);          // WF1: Jawinder (RCSCA) — simple request thread
     list.push(eis8RushResponse);      // Rush re-quote — Jawinder rush thread
     list.push(eis6Response);          // WF4: Dave (Tri-State) — multi-item thread
+    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);  // Qty-break — Lisa (Consolidated Electric)
 
     // Midwest Power original request (approval workflow)
     list.push(eis7MidwestPower);
@@ -241,6 +248,7 @@ export default function App() {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
       'csr-daily-summary': 120,       // Daily summary (last/newest)
+      'csr-ai-3': 116,                // Auto-quoted CC — qty-break
       'csr-ai-2': 115,                // Auto-quoted CC — always visible
       'csr-rush-cc': 105,             // Rush re-quote CC — always visible
       'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
@@ -253,6 +261,7 @@ export default function App() {
 
     const list = [];
 
+    if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
     if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);

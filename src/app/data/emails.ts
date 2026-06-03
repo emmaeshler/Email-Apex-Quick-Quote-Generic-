@@ -14,6 +14,7 @@ export interface QuoteLineItem {
   standardUnitPrice?: number;
   standardTotalPrice?: number;
   priceChangeReason?: string;
+  qtyBreakNote?: string;
 }
 
 export interface QuoteTable {
@@ -38,6 +39,7 @@ export interface QuoteTable {
   isRushOrder?: boolean;
   comparisonNote?: string;
   standardTotal?: number;
+  isQtyBreakComparison?: boolean;
 }
 
 export interface ReviewMatchItem {
@@ -681,6 +683,88 @@ export const csr3RushCc: Email = {
     time: '2:10 PM',
     subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
     body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.`,
+  },
+};
+
+// ── Qty-break comparison quote (auto-generated) ──
+
+const qtyBreakQuote: QuoteTable = {
+  quoteNumber: 'Q-5571040',
+  validThrough: 'Jun 27, 2026',
+  customerName: 'Consolidated Electric',
+  isQtyBreakComparison: true,
+  lineItems: [
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 12, unitPrice: 8.75, totalPrice: 105.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Standard pricing (1–23 units)' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 48, unitPrice: 7.45, totalPrice: 357.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Case pricing — 15% off (24–99 units)' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet pricing — 30% off (100+ units)' },
+  ],
+  total: 0,
+};
+
+export const eis9QtyBreak: Email = {
+  id: 'eis-9-qtybreak',
+  from: 'Lisa Torres',
+  fromEmail: 'ltorres@consolidated-electric.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'Silicone Rescue Tape — Volume Pricing',
+  preview: "We're evaluating suppliers for our Q3 maintenance kits...",
+  body: "Hi,\n\nWe're evaluating suppliers for our Q3 maintenance kits. Can you quote SRT-500 silicone rescue tape in quantities of 12, 48, and 144? We're trying to determine the best price point for our budget.\n\nThanks,\nLisa Torres\nConsolidated Electric",
+  date: 'May 28, 2026',
+  time: '10:15 AM',
+  read: false,
+  quoteStatus: 'quoted',
+};
+
+export const eis9QtyBreakResponse: Email = {
+  id: 'eis-9-qtybreak-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'ltorres@consolidated-electric.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Silicone Rescue Tape — Volume Pricing',
+  preview: 'Quote #Q-5571040 — Volume pricing for Consolidated Electric...',
+  body: '',
+  bodyBefore: `Lisa, Please see below for the volume pricing breakdown you requested.`,
+  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nPlease let us know which quantity works best for your Q3 planning.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '10:18 AM',
+  read: false,
+  quoteStatus: 'quoted',
+  inlineQuoteTable: qtyBreakQuote,
+  quotedPrevious: {
+    from: 'Lisa Torres',
+    fromEmail: 'ltorres@consolidated-electric.com',
+    date: 'May 28, 2026',
+    time: '10:15 AM',
+    subject: 'Silicone Rescue Tape — Volume Pricing',
+    body: "We're evaluating suppliers for our Q3 maintenance kits. Can you quote SRT-500 silicone rescue tape in quantities of 12, 48, and 144? We're trying to determine the best price point for our budget.",
+  },
+};
+
+export const csrQtyBreakCc: Email = {
+  id: 'csr-ai-3',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'ltorres@consolidated-electric.com',
+  cc: 'morgan@apex-corp.com',
+  subject: 'Re: Silicone Rescue Tape — Volume Pricing',
+  preview: 'Auto-quoted: Quote #Q-5571040 — Volume pricing for Consolidated Electric...',
+  body: '',
+  bodyBefore: `Lisa, Please see below for the volume pricing breakdown you requested.`,
+  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nPlease let us know which quantity works best for your Q3 planning.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '10:18 AM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Lisa Torres (Consolidated Electric)',
+  isCcFromAiQuoteTable: qtyBreakQuote,
+  quotedPrevious: {
+    from: 'Lisa Torres',
+    fromEmail: 'ltorres@consolidated-electric.com',
+    date: 'May 28, 2026',
+    time: '10:15 AM',
+    subject: 'Silicone Rescue Tape — Volume Pricing',
+    body: "We're evaluating suppliers for our Q3 maintenance kits. Can you quote SRT-500 silicone rescue tape in quantities of 12, 48, and 144? We're trying to determine the best price point for our budget.",
   },
 };
 

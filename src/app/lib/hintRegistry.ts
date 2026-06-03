@@ -90,7 +90,7 @@ export const hintRules: HintRule[] = [
       emailsArrived: ['csr-review-1'],
       emailsNotArrived: ['csr-steve-clarification'],
       selectedEmailIdNot: ['csr-review-1', 'csr-steve-clarification', 'csr-stonite-final-cc',
-                           'csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
+                           'csr-ai-1', 'csr-ai-2', 'csr-ai-3', 'csr-daily-summary'],
     },
     target: 'email:csr-review-1',
   },
@@ -270,24 +270,51 @@ export const hintRules: HintRule[] = [
   {
     id: 'autoquote-email',
     priority: 600,
-    phase: 'Phase 4: Guide to auto-quote CC email',
+    phase: 'Phase 4a: Guide to auto-quote CC email',
     conditions: {
       approvalStage: 'sent',
       emailsArrived: ['csr-ai-2'],
       selectedEmailIdNot: ['csr-ai-2'],
-      emailsNotArrived: ['csr-daily-summary'],
+      emailsNotArrived: ['csr-ai-3'],
     },
     target: 'email:csr-ai-2',
   },
 
   {
-    id: 'autoquote-to-daily-refresh',
-    priority: 590,
-    phase: 'Phase 4→5: After viewing auto-quote, guide to refresh for daily summary',
+    id: 'autoquote-to-qtybreak-refresh',
+    priority: 595,
+    phase: 'Phase 4a→4b: After viewing auto-quote, guide to refresh for qty-break',
     conditions: {
       approvalStage: 'sent',
       emailsArrived: ['csr-ai-2'],
       selectedEmailId: 'csr-ai-2',
+      emailsNotArrived: ['csr-ai-3'],
+      hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
+  {
+    id: 'autoquote-qtybreak-email',
+    priority: 590,
+    phase: 'Phase 4b: Guide to qty-break auto-quote CC email',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-ai-3'],
+      selectedEmailIdNot: ['csr-ai-3'],
+      emailsNotArrived: ['csr-daily-summary'],
+    },
+    target: 'email:csr-ai-3',
+  },
+
+  {
+    id: 'autoquote-to-daily-refresh',
+    priority: 585,
+    phase: 'Phase 4b→5: After viewing qty-break quote, guide to refresh for daily summary',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-ai-3'],
+      selectedEmailId: 'csr-ai-3',
       emailsNotArrived: ['csr-daily-summary'],
       hasNewMessages: true,
     },

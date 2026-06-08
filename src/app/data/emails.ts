@@ -40,6 +40,7 @@ export interface QuoteTable {
   comparisonNote?: string;
   standardTotal?: number;
   isQtyBreakComparison?: boolean;
+  pricingNote?: string;
 }
 
 export interface ReviewMatchItem {
@@ -173,6 +174,7 @@ const rcscaQuote: QuoteTable = {
     cost: 24.75,
     note: 'Adhesives require overnight air delivery.',
   },
+  pricingNote: 'Pricing pulled from distributor cost sheet (Essex/Superior Essex) updated May 2026.',
 };
 
 const stoniteFinalQuote: QuoteTable = {
@@ -189,6 +191,7 @@ const stoniteFinalQuote: QuoteTable = {
     cost: 25.00,
     note: 'Heavyweight wire shipment via designated carrier.',
   },
+  pricingNote: 'Pricing based on Stonite Coil Corp account history and current distributor schedule.',
 };
 
 const motionQuote: QuoteTable = {
@@ -203,6 +206,7 @@ const motionQuote: QuoteTable = {
     method: 'Ground',
     cost: 27.50,
   },
+  pricingNote: 'Pricing per Motion Industries negotiated rate schedule, updated May 2026.',
 };
 
 const taperedReelQuote: QuoteTable = {
@@ -223,6 +227,7 @@ const taperedReelQuote: QuoteTable = {
     cost: 35.50,
     note: 'Standard packaging shipment.',
   },
+  pricingNote: 'Prices based on current Essex catalog rates and Tri-State Industrial account terms.',
 };
 
 const stoniteMatchItems: ReviewMatchItem[] = [
@@ -280,6 +285,7 @@ const midwestPowerQuote: QuoteTable = {
     amount: 919.00,
     note: 'You\'re saving here because shipping a full truckload reduces the per-unit cost to get your order out the door. We calculated 7.5% based on what we actually save on freight and handling at that volume.',
   },
+  pricingNote: 'Contract pricing for Midwest Power Systems. Truckload discount calculated from actual freight savings.',
 };
 
 /* ── Quote data for rush re-quote workflow (RCSCA rush) ── */
@@ -303,6 +309,7 @@ const rushRcscaQuote: QuoteTable = {
     standardMethod: 'Air Shipment',
     standardCost: 24.75,
   },
+  pricingNote: 'Base pricing from distributor cost sheet (Essex). Rush surcharge applied per expedite policy.',
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -333,7 +340,7 @@ export const eis1Response: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Quote #Q-1093928 — $192.01 for RCSCA. Jawinder, Please see below for details...',
   body: '',
-  bodyBefore: `Jawinder, Please see below for details of your requested quote.`,
+  bodyBefore: `Jawinder, We matched this request against your distributor pricing from Essex and confirmed current availability. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:33 AM',
@@ -360,7 +367,7 @@ export const csr1CC: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Auto-quoted: Quote #Q-1093928 — $192.01 for RCSCA...',
   body: '',
-  bodyBefore: `Jawinder, Please see below for details of your requested quote.`,
+  bodyBefore: `Jawinder, We matched this request against your distributor pricing from Essex and confirmed current availability. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:33 AM',
@@ -403,7 +410,7 @@ export const eis6Response: Email = {
   preview: 'Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects current Essex catalog rates for Tri-State Industrial's account.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -430,7 +437,7 @@ export const csr2CC: Email = {
   preview: 'Auto-quoted: Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects current Essex catalog rates for Tri-State Industrial's account.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -623,9 +630,9 @@ export const eis8Rush: Email = {
   from: 'Jawinder Schahal',
   fromEmail: 'jschahal@rcsca.com',
   to: 'quotes@apex-corp.com',
-  subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
-  preview: 'Hi, we need to expedite our previous order. Same items (ADH-X315 and ACT-Z788)...',
-  body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.\n\nThanks,\nJawinder Schahal\nRCSCA`,
+  subject: 'Re: Adhesive & Activator Pricing — Need Friday Delivery',
+  preview: 'Our timeline moved up — can we get the same items delivered by Friday?',
+  body: `Hi,\n\nOur timeline moved up — can we get the same items from our last order (ADH-X315 and ACT-Z788) delivered by Friday? Happy to pay rush pricing if needed.\n\nThanks,\nJawinder Schahal\nRCSCA`,
   date: 'May 28, 2026',
   time: '2:10 PM',
   read: false,
@@ -638,10 +645,10 @@ export const eis8RushResponse: Email = {
   fromEmail: 'quotes@apex-corp.com',
   to: 'jschahal@rcsca.com',
   cc: 'creisch@apex-corp.com',
-  subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
+  subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
   preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '2:13 PM',
@@ -653,8 +660,8 @@ export const eis8RushResponse: Email = {
     fromEmail: 'jschahal@rcsca.com',
     date: 'May 28, 2026',
     time: '2:10 PM',
-    subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
-    body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.\n\nPlease re-quote with rush pricing and fastest available shipping.`,
+    subject: 'Re: Adhesive & Activator Pricing — Need Friday Delivery',
+    body: `Hi,\n\nOur timeline moved up — can we get the same items from our last order (ADH-X315 and ACT-Z788) delivered by Friday? Happy to pay rush pricing if needed.`,
   },
 };
 
@@ -665,10 +672,10 @@ export const csr3RushCc: Email = {
   fromEmail: 'quotes@apex-corp.com',
   to: 'jschahal@rcsca.com',
   cc: 'creisch@apex-corp.com',
-  subject: 're: URGENT: Adhesive & Activator — Rush Delivery Needed',
-  preview: 'Auto-quoted (Rush): Quote #Q-1094215 — $258.06 for RCSCA...',
+  subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
+  preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote based on your expedited delivery request.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight to meet your Friday delivery deadline. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '2:13 PM',
@@ -681,7 +688,7 @@ export const csr3RushCc: Email = {
     fromEmail: 'jschahal@rcsca.com',
     date: 'May 28, 2026',
     time: '2:10 PM',
-    subject: 'URGENT: Adhesive & Activator — Rush Delivery Needed',
+    subject: 'Re: Adhesive & Activator Pricing — Need Friday Delivery',
     body: `Hi,\n\nWe need to expedite our previous order. Same items as before — ADH-X315 adhesive and ACT-Z788 activator — but we have a production line down and need delivery by Friday.`,
   },
 };
@@ -699,6 +706,7 @@ const qtyBreakQuote: QuoteTable = {
     { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet pricing — 30% off (100+ units)' },
   ],
   total: 0,
+  pricingNote: 'Volume tiers based on manufacturer pack sizes and distributor incentive breaks.',
 };
 
 export const eis9QtyBreak: Email = {
@@ -817,7 +825,7 @@ export const eisStoniteResponse: Email = {
   preview: 'Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing pulled from current distributor schedules for Stonite Coil Corp's account.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,
@@ -1004,7 +1012,7 @@ export const csrStoniteFinalCc: Email = {
   preview: 'Resolved: Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25).\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing pulled from current distributor schedules for Stonite Coil Corp's account.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,

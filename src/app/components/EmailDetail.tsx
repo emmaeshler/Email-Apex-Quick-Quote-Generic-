@@ -162,6 +162,11 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
         </tfoot>
         )}
       </table>
+      {table.pricingNote && (
+        <div className="px-1 pt-2 pb-1 text-size-xs text-muted-foreground italic">
+          * {table.pricingNote}
+        </div>
+      )}
       {hasComparison && table.standardTotal != null && (
         <div className="mt-3 px-1">
           <span className="text-size-xs text-foreground/60">
@@ -235,11 +240,11 @@ function QuotedPreviousBlock({ quoted }: { quoted: QuotedPrevious }) {
         </span>
       </button>
       {expanded && (
-        <div className="mt-2 pl-4 border-l-2 border-foreground/10">
+        <div className="mt-2 pl-4 border-l-2 border-foreground/30">
           {quoted.subject && (
-            <p className="text-size-xs text-muted-foreground mb-1">Subject: {quoted.subject}</p>
+            <p className="text-size-xs text-foreground/60 mb-1">Subject: {quoted.subject}</p>
           )}
-          <p className="whitespace-pre-wrap text-size-sm text-foreground/50">{quoted.body}</p>
+          <p className="whitespace-pre-wrap text-size-sm text-foreground/75">{quoted.body}</p>
         </div>
       )}
     </div>

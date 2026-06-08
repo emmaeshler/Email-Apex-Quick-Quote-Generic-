@@ -15,6 +15,7 @@ import {
   eis1Response,
   eis6Dave,
   eis6Response,
+  csr1CC,
   csr2CC,
   eis5Stonite,
   csrReview1,
@@ -53,7 +54,17 @@ interface StateSnapshot {
   readIds: Set<string>;
 }
 
+export type DemoMode = 'short' | 'full';
+
+function getInitialDemoMode(): DemoMode {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('demo');
+  if (mode === 'short' || mode === 'full') return mode;
+  return 'full';
+}
+
 export default function App() {
+  const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
   const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
@@ -201,31 +212,34 @@ export default function App() {
     setIsRefreshing(false);
   }, [stateHistory]);
 
-  // ── Refresh queue definition — each batch is revealed on refresh ──
-  // Flow: most human involvement → least (auto-quote payoff at end)
+  // ── Refresh queue definition — lead with auto-quotes, then human workflows ──
+  // Short demo: 5 batches. Full demo: 6 batches (adds rush + qty-break).
   const refreshBatches = useMemo(() => {
-    const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: Review flag (Phase 1: vague inputs → identified items, highest human involvement)
+    const allBatches: Array<{ emailIds: string[]; fullOnly?: boolean }> = [
+      // Batch 0: Simple auto-quote (adhesive — full flow including CSR CC)
+      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
+
+      // Batch 1: Multi-product auto-quote (tapered reels — 6 configurations, with CC)
+      { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
+
+      // Batch 2: Rush re-quote + Qty-break comparison (long demo only)
+      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc', 'eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'], fullOnly: true },
+
+      // Batch 3: Review needed (magnet wire — human clarification)
       { emailIds: ['csr-review-1'] },
 
-      // Batch 1: Approval hold (Phase 2: large dollar quote needs sales rep approval)
+      // Batch 4: Approval required (motor rewind — sales rep sign-off)
       { emailIds: ['csr-approval-hold'] },
 
-      // Batch 2: Rush re-quote (Phase 3: urgent re-quote, moderate human involvement)
-      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc'] },
-
-      // Batch 3: Auto-quotes part 1 (tapered reels + simple request)
-      { emailIds: ['eis-1', 'eis-1-response', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 4: Auto-quotes part 2 (qty-break comparison)
-      { emailIds: ['eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'] },
-
-      // Batch 5: Daily summary (Phase 5: closer — full picture)
+      // Batch 5: Daily summary
       { emailIds: ['csr-daily-summary'] },
     ];
 
-    return batches;
-  }, []);
+    if (demoMode === 'short') {
+      return allBatches.filter(b => !b.fullOnly);
+    }
+    return allBatches;
+  }, [demoMode]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
@@ -249,9 +263,9 @@ export default function App() {
       setTimeout(() => {
         markEmailArrived(emailId, currentBatchNumber);
 
-        // Auto-select review email on first refresh (demo starting point)
-        if (emailId === 'csr-review-1') {
-          setSelectedCsrEmailId('csr-review-1');
+        // Auto-select the CSR CC email on first refresh (demo starting point)
+        if (emailId === 'csr-ai-1') {
+          setSelectedCsrEmailId('csr-ai-1');
         }
 
         // Batch 2: Final quote arrives - change state to 'quoted'
@@ -311,7 +325,8 @@ export default function App() {
     const workflowPriority: Record<string, number> = {
       'csr-daily-summary': 120,       // Daily summary (last/newest)
       'csr-ai-3': 116,                // Auto-quoted CC — qty-break
-      'csr-ai-2': 115,                // Auto-quoted CC — always visible
+      'csr-ai-2': 115,                // Auto-quoted CC — tapered reels
+      'csr-ai-1': 114,                // Auto-quoted CC — adhesive
       'csr-rush-cc': 105,             // Rush re-quote CC — always visible
       'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
       'csr-approval-hold': 75,        // Batch 1 - Approval hold notification
@@ -325,6 +340,7 @@ export default function App() {
 
     if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
+    if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
     if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
     if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
@@ -586,7 +602,7 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail />
+        <AppRail demoMode={demoMode} onDemoModeChange={setDemoMode} />
     </div>
   );
 }

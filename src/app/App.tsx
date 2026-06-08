@@ -7,17 +7,12 @@ import { EmailDetail } from '@/app/components/EmailDetail';
 import { AppRail } from '@/app/components/AppRail';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import {
-  eisEmails,
-  csrEmails,
   inboxFolders,
   csrDailySummary,
-  eis1Jawinder,
   eis1Response,
-  eis6Dave,
   eis6Response,
   csr1CC,
   csr2CC,
-  eis5Stonite,
   csrReview1,
   eisStoniteResponse,
   csrReviewReplyEmail,
@@ -26,10 +21,8 @@ import {
   eis7MidwestPower,
   csrApprovalHold,
   csrApprovalSentCc,
-  eis8Rush,
   eis8RushResponse,
   csr3RushCc,
-  eis9QtyBreak,
   eis9QtyBreakResponse,
   csrQtyBreakCc,
 } from './data/emails';
@@ -37,13 +30,50 @@ import {
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
 
+export type DemoMode = 'short' | 'full';
+export type FolderType = 'autoquotes' | 'approval' | 'morgan' | 'eis';
+
+function getInitialDemoMode(): DemoMode {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('demo');
+  if (mode === 'short' || mode === 'full') return mode;
+  return 'full';
+}
+
+function getInitialArrivedEmails(mode: DemoMode): Set<string> {
+  const ids = new Set([
+    // Auto-quote CCs (pre-loaded)
+    'csr-ai-1', 'csr-ai-2',
+    // EIS auto-quote responses (pre-loaded)
+    'eis-1', 'eis-1-response', 'eis-6', 'eis-6-response',
+    // Needs Approval (pre-loaded)
+    'csr-review-1', 'csr-approval-hold',
+    // EIS context emails (pre-loaded)
+    'eis-7-midwest',
+  ]);
+  if (mode === 'full') {
+    ids.add('csr-rush-cc');
+    ids.add('csr-ai-3');
+    ids.add('eis-8-rush');
+    ids.add('eis-8-rush-response');
+    ids.add('eis-9-qtybreak');
+    ids.add('eis-9-qtybreak-response');
+  }
+  return ids;
+}
+
+function getInitialBatchMap(mode: DemoMode): Map<string, number> {
+  return new Map([...getInitialArrivedEmails(mode)].map(id => [id, 0]));
+}
+
 interface StateSnapshot {
   arrivedEmails: Set<string>;
   emailBatchMap: Map<string, number>;
   nextBatchIndex: number;
-  selectedCsrEmailId: string | null;
+  selectedAutoQuotesId: string | null;
+  selectedApprovalId: string | null;
+  selectedMorganId: string | null;
   selectedEisEmailId: string | null;
-  selectedReviewEmailId: string | null;
   reviewResolved: boolean;
   reviewStage: string;
   reviewComposeMode: string;
@@ -54,21 +84,13 @@ interface StateSnapshot {
   readIds: Set<string>;
 }
 
-export type DemoMode = 'short' | 'full';
-
-function getInitialDemoMode(): DemoMode {
-  const params = new URLSearchParams(window.location.search);
-  const mode = params.get('demo');
-  if (mode === 'short' || mode === 'full') return mode;
-  return 'full';
-}
-
 export default function App() {
   const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
-  const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
-  const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
+  const [activeFolder, setActiveFolder] = useState<FolderType>('autoquotes');
+  const [selectedAutoQuotesId, setSelectedAutoQuotesId] = useState<string | null>('csr-ai-1');
+  const [selectedApprovalId, setSelectedApprovalId] = useState<string | null>(null);
+  const [selectedMorganId, setSelectedMorganId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
-  const [selectedReviewEmailId, setSelectedReviewEmailId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [emailListCollapsed, setEmailListCollapsed] = useState(false);
   const [reviewResolved, setReviewResolved] = useState(false);
@@ -88,16 +110,16 @@ export default function App() {
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
 
   // Track which emails have been opened/read during this session
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set(['csr-ai-1']));
 
   // ── Arrival state — tracks which dynamic emails have "arrived" ──
-  const [arrivedEmails, setArrivedEmails] = useState<Set<string>>(new Set());
+  const [arrivedEmails, setArrivedEmails] = useState<Set<string>>(() => getInitialArrivedEmails(getInitialDemoMode()));
 
   // ── New email tracking — for animation (email IDs that arrived in last 3s) ──
   const [newEmailIds, setNewEmailIds] = useState<Set<string>>(new Set());
 
   // ── Track which batch each email arrived in (for Unread/Read grouping) ──
-  const [emailBatchMap, setEmailBatchMap] = useState<Map<string, number>>(new Map());
+  const [emailBatchMap, setEmailBatchMap] = useState<Map<string, number>>(() => getInitialBatchMap(getInitialDemoMode()));
 
   // ── Refresh queue — tracks which batch to reveal next ──
   const [nextBatchIndex, setNextBatchIndex] = useState(0);
@@ -133,10 +155,10 @@ export default function App() {
 
   // ── Mark review as resolved when user views final quote ──
   useEffect(() => {
-    if (selectedEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
+    if (selectedAutoQuotesId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
       setReviewResolved(true);
     }
-  }, [selectedCsrEmailId, reviewForwardStage, reviewResolved]);
+  }, [selectedAutoQuotesId, reviewForwardStage, reviewResolved]);
 
   // Validate hint coverage on mount (development only)
   useEffect(() => {
@@ -177,9 +199,10 @@ export default function App() {
     arrivedEmails: new Set(arrivedEmails),
     emailBatchMap: new Map(emailBatchMap),
     nextBatchIndex,
-    selectedCsrEmailId,
+    selectedAutoQuotesId,
+    selectedApprovalId,
+    selectedMorganId,
     selectedEisEmailId,
-    selectedReviewEmailId,
     reviewResolved,
     reviewStage,
     reviewComposeMode,
@@ -188,7 +211,7 @@ export default function App() {
     approvalStage,
     hiddenIds: new Set(hiddenIds),
     readIds: new Set(readIds),
-  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedCsrEmailId, selectedEisEmailId, selectedReviewEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
+  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedAutoQuotesId, selectedApprovalId, selectedMorganId, selectedEisEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
 
   const handleBack = useCallback(() => {
     if (stateHistory.length === 0) return;
@@ -197,9 +220,10 @@ export default function App() {
     setArrivedEmails(prev.arrivedEmails);
     setEmailBatchMap(prev.emailBatchMap);
     setNextBatchIndex(prev.nextBatchIndex);
-    setSelectedCsrEmailId(prev.selectedCsrEmailId);
+    setSelectedAutoQuotesId(prev.selectedAutoQuotesId);
+    setSelectedApprovalId(prev.selectedApprovalId);
+    setSelectedMorganId(prev.selectedMorganId);
     setSelectedEisEmailId(prev.selectedEisEmailId);
-    setSelectedReviewEmailId(prev.selectedReviewEmailId);
     setReviewResolved(prev.reviewResolved);
     setReviewStage(prev.reviewStage as any);
     setReviewComposeMode(prev.reviewComposeMode as any);
@@ -212,69 +236,53 @@ export default function App() {
     setIsRefreshing(false);
   }, [stateHistory]);
 
-  // ── Refresh queue definition — lead with auto-quotes, then human workflows ──
-  // Short demo: 5 batches. Full demo: 6 batches (adds rush + qty-break).
-  const refreshBatches = useMemo(() => {
-    const allBatches: Array<{ emailIds: string[]; fullOnly?: boolean }> = [
-      // Batch 0: Simple auto-quote (adhesive — full flow including CSR CC)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
+  // ── Handle demo mode change — reset all state ──
+  const handleDemoModeChange = useCallback((mode: DemoMode) => {
+    setDemoMode(mode);
+    const initial = getInitialArrivedEmails(mode);
+    setArrivedEmails(initial);
+    setEmailBatchMap(getInitialBatchMap(mode));
+    setNextBatchIndex(0);
+    setSelectedAutoQuotesId('csr-ai-1');
+    setSelectedApprovalId(null);
+    setSelectedMorganId(null);
+    setSelectedEisEmailId(null);
+    setReadIds(new Set(['csr-ai-1']));
+    setReviewResolved(false);
+    setReviewStage('pending');
+    setReviewComposeMode('reply');
+    setReviewForwardStage('pending');
+    setForwardStage('pending');
+    setApprovalStage('pending');
+    setStateHistory([]);
+    setHiddenIds(new Set());
+    setNewEmailIds(new Set());
+    setActiveFolder('autoquotes');
+  }, []);
 
-      // Batch 1: Multi-product auto-quote (tapered reels — 6 configurations, with CC)
-      { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 2: Rush re-quote + Qty-break comparison (long demo only)
-      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc', 'eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'], fullOnly: true },
-
-      // Batch 3: Review needed (magnet wire — human clarification)
-      { emailIds: ['csr-review-1'] },
-
-      // Batch 4: Approval required (motor rewind — sales rep sign-off)
-      { emailIds: ['csr-approval-hold'] },
-
-      // Batch 5: Daily summary
-      { emailIds: ['csr-daily-summary'] },
-    ];
-
-    if (demoMode === 'short') {
-      return allBatches.filter(b => !b.fullOnly);
-    }
-    return allBatches;
-  }, [demoMode]);
+  // ── Refresh batches — only the daily summary needs refresh now ──
+  const refreshBatches = useMemo(() => [
+    { emailIds: ['csr-daily-summary'] },
+  ], []);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
-    if (nextBatchIndex >= refreshBatches.length) return; // No more batches
+    if (nextBatchIndex >= refreshBatches.length) return;
 
     setStateHistory(h => [...h, captureSnapshot()]);
-
-    // Set refreshing state
     setIsRefreshing(true);
 
     const batch = refreshBatches[nextBatchIndex];
     const emailIds = batch.emailIds;
-    const currentBatchNumber = nextBatchIndex + 1; // New emails get next batch number
+    const currentBatchNumber = nextBatchIndex + 1;
 
-    // Increment batch index immediately so currentBatch updates
     setNextBatchIndex((prev) => prev + 1);
 
-    // Stagger arrivals within the batch
     emailIds.forEach((emailId, index) => {
       const delay = index === 0 ? 300 : 800 + index * 600 + Math.random() * 400;
       setTimeout(() => {
         markEmailArrived(emailId, currentBatchNumber);
 
-        // Auto-select the CSR CC email on first refresh (demo starting point)
-        if (emailId === 'csr-ai-1') {
-          setSelectedCsrEmailId('csr-ai-1');
-        }
-
-        // Batch 2: Final quote arrives - change state to 'quoted'
-        if (emailId === 'csr-stonite-final-cc') {
-          setReviewForwardStage('quoted');
-          markEmailArrived('eis-stonite-response', currentBatchNumber); // Also mark EIS email as arrived
-        }
-
-        // Clear refreshing state after last email in batch
         if (index === emailIds.length - 1) {
           setTimeout(() => setIsRefreshing(false), 500);
         }
@@ -292,113 +300,120 @@ export default function App() {
 
   const handleDeleteEmail = (id: string) => {
     hideEmail(id);
-    // Auto-select the next email in the current list after deletion
     const list = currentEmails.filter((e) => e.id !== id && !hiddenIds.has(e.id));
     const nextEmail = list.length > 0 ? list[0].id : null;
-    if (activeFolder === 'csr') setSelectedCsrEmailId(nextEmail);
-    else if (activeFolder === 'eis') setSelectedEisEmailId(nextEmail);
-    else setSelectedReviewEmailId(nextEmail);
+    if (activeFolder === 'autoquotes') setSelectedAutoQuotesId(nextEmail);
+    else if (activeFolder === 'approval') setSelectedApprovalId(nextEmail);
+    else if (activeFolder === 'morgan') setSelectedMorganId(nextEmail);
+    else setSelectedEisEmailId(nextEmail);
   };
 
-  /* ── Build dynamic EIS email list ── */
-  const effectiveEisEmails = useMemo(() => {
-    const list = [];
-
-    // Auto-quoted threads — show only the response (contains original via quotedPrevious)
-    list.push(eis1Response);          // WF1: Jawinder (RCSCA) — simple request thread
-    list.push(eis8RushResponse);      // Rush re-quote — Jawinder rush thread
-    list.push(eis6Response);          // WF4: Dave (Tri-State) — multi-item thread
-    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);  // Qty-break — Lisa (Consolidated Electric)
-
-    // Midwest Power original request (approval workflow)
-    list.push(eis7MidwestPower);
-
-    // WF2: Stonite quote thread (arrives after review workflow completes)
-    if (arrivedEmails.has('eis-stonite-response')) list.unshift(eisStoniteResponse);
-
-    return list;
-  }, [arrivedEmails]);
-
-  /* ── Build dynamic CSR email list ── */
-  const effectiveCsrEmails = useMemo(() => {
-    // Map email IDs to workflow priority (higher = newer, appears first)
-    const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 120,       // Daily summary (last/newest)
-      'csr-ai-3': 116,                // Auto-quoted CC — qty-break
-      'csr-ai-2': 115,                // Auto-quoted CC — tapered reels
-      'csr-ai-1': 114,                // Auto-quoted CC — adhesive
-      'csr-rush-cc': 105,             // Rush re-quote CC — always visible
-      'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
-      'csr-approval-hold': 75,        // Batch 1 - Approval hold notification
-      'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
-      'csr-steve-clarification': 65,  // Auto-delivered - Steve's clarification (Phase 1b)
-      'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
-      'csr-review-1': 55,             // Batch 0 - Review email
+  /* ── Build Auto-Quotes email list ── */
+  const autoQuoteEmails = useMemo(() => {
+    const priority: Record<string, number> = {
+      'csr-ai-3': 116,
+      'csr-ai-2': 115,
+      'csr-ai-1': 114,
+      'csr-rush-cc': 105,
+      'csr-stonite-final-cc': 70,
+      'csr-approval-cc': 80,
     };
 
     const list = [];
-
     if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
     if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
     if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
-    if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
-    if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
-    if (arrivedEmails.has('csr-steve-clarification')) list.push(csrSteveClarification);
     if (arrivedEmails.has('csr-stonite-final-cc') && (readIds.has('csr-steve-clarification') || readIds.has('csr-review-reply'))) list.push(csrStoniteFinalCc);
-    if (arrivedEmails.has('csr-approval-hold')) list.push(csrApprovalHold);
     if (approvalStage === 'sent') list.push(csrApprovalSentCc);
+
+    return list.sort((a, b) => (priority[b.id] || 0) - (priority[a.id] || 0));
+  }, [arrivedEmails, readIds, approvalStage]);
+
+  /* ── Build Needs Approval email list ── */
+  const approvalEmails = useMemo(() => {
+    const priority: Record<string, number> = {
+      'csr-approval-hold': 75,
+      'csr-review-1': 55,
+    };
+
+    const list = [];
+    if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
+    if (arrivedEmails.has('csr-approval-hold')) list.push(csrApprovalHold);
+
+    return list.sort((a, b) => (priority[b.id] || 0) - (priority[a.id] || 0));
+  }, [arrivedEmails]);
+
+  /* ── Build Morgan's Inbox email list ── */
+  const morganEmails = useMemo(() => {
+    const priority: Record<string, number> = {
+      'csr-daily-summary': 120,
+      'csr-steve-clarification': 65,
+      'csr-review-reply': 60,
+    };
+
+    const list = [];
+    if (arrivedEmails.has('csr-steve-clarification')) list.push(csrSteveClarification);
+    if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
     if (arrivedEmails.has('csr-daily-summary')) list.push(csrDailySummary);
 
-    // Sort by workflow priority - higher priority appears first (newest at top)
-    return list.sort((a, b) => {
-      const priorityA = workflowPriority[a.id] || 0;
-      const priorityB = workflowPriority[b.id] || 0;
-      return priorityB - priorityA; // Descending order
-    });
-  }, [arrivedEmails, approvalStage, readIds]);
+    return list.sort((a, b) => (priority[b.id] || 0) - (priority[a.id] || 0));
+  }, [arrivedEmails]);
 
-  // Build the review folder email list from both inboxes
-  const reviewEmails = useMemo(() => {
-    const eisReview = effectiveEisEmails.filter((e) =>
-      reviewResolved ? false : e.quoteStatus === 'review'
-    );
-    const csrReview = effectiveCsrEmails.filter((e) =>
-      reviewResolved ? false : e.isReviewRequest
-    );
-    return [...csrReview, ...eisReview];
-  }, [effectiveEisEmails, effectiveCsrEmails, reviewResolved]);
+  /* ── Build Apex Quote Inbox (EIS) email list ── */
+  const effectiveEisEmails = useMemo(() => {
+    const list = [];
+
+    list.push(eis1Response);
+    list.push(eis6Response);
+
+    if (demoMode === 'full') {
+      list.push(eis8RushResponse);
+      list.push(eis9QtyBreakResponse);
+    }
+
+    list.push(eis7MidwestPower);
+
+    if (arrivedEmails.has('eis-stonite-response')) list.unshift(eisStoniteResponse);
+
+    return list;
+  }, [arrivedEmails, demoMode]);
 
   // Check if there are new messages available to refresh
   const hasNewMessages = nextBatchIndex < refreshBatches.length;
 
   // Compute dynamic folder definitions with live unread counts
   const dynamicFolders = useMemo(() => {
-    const csrUnread = effectiveCsrEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
-    const eisUnread = effectiveEisEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
-    const reviewUnread = reviewEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
+    const unreadFor = (emails: typeof autoQuoteEmails) =>
+      emails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
 
     return inboxFolders.map((folder) => {
-      if (folder.id === 'csr') {
-        return { ...folder, count: effectiveCsrEmails.length, unreadCount: csrUnread };
+      if (folder.id === 'autoquotes') {
+        return { ...folder, count: autoQuoteEmails.length, unreadCount: unreadFor(autoQuoteEmails) };
+      }
+      if (folder.id === 'approval') {
+        return { ...folder, count: approvalEmails.length, unreadCount: unreadFor(approvalEmails) };
+      }
+      if (folder.id === 'morgan') {
+        return { ...folder, count: morganEmails.length, unreadCount: unreadFor(morganEmails) };
       }
       if (folder.id === 'eis') {
-        return { ...folder, count: effectiveEisEmails.length, unreadCount: eisUnread };
-      }
-      if (folder.id === 'review') {
-        return { ...folder, count: reviewEmails.length, unreadCount: reviewUnread };
+        return { ...folder, count: effectiveEisEmails.length, unreadCount: unreadFor(effectiveEisEmails) };
       }
       return folder;
     });
-  }, [effectiveCsrEmails, effectiveEisEmails, reviewEmails, readIds, hiddenIds]);
+  }, [autoQuoteEmails, approvalEmails, morganEmails, effectiveEisEmails, readIds, hiddenIds]);
 
-  // Set default selection for review folder
-  const effectiveReviewEmailId = selectedReviewEmailId ?? (reviewEmails.length > 0 ? reviewEmails[0].id : null);
+  // Map folder to its email list, selected ID, and setter
+  const folderConfig = useMemo(() => ({
+    autoquotes: { emails: autoQuoteEmails, selectedId: selectedAutoQuotesId, setSelectedId: setSelectedAutoQuotesId },
+    approval: { emails: approvalEmails, selectedId: selectedApprovalId, setSelectedId: setSelectedApprovalId },
+    morgan: { emails: morganEmails, selectedId: selectedMorganId, setSelectedId: setSelectedMorganId },
+    eis: { emails: effectiveEisEmails, selectedId: selectedEisEmailId, setSelectedId: setSelectedEisEmailId },
+  }), [autoQuoteEmails, approvalEmails, morganEmails, effectiveEisEmails, selectedAutoQuotesId, selectedApprovalId, selectedMorganId, selectedEisEmailId]);
 
-  const currentEmails = activeFolder === 'csr' ? effectiveCsrEmails : activeFolder === 'eis' ? effectiveEisEmails : reviewEmails;
+  const { emails: currentEmails, selectedId: selectedEmailId, setSelectedId: setSelectedEmailId } = folderConfig[activeFolder];
   const visibleEmails = currentEmails.filter((e) => !hiddenIds.has(e.id));
-  const selectedEmailId = activeFolder === 'csr' ? selectedCsrEmailId : activeFolder === 'eis' ? selectedEisEmailId : effectiveReviewEmailId;
-  const setSelectedEmailId = activeFolder === 'csr' ? setSelectedCsrEmailId : activeFolder === 'eis' ? setSelectedEisEmailId : setSelectedReviewEmailId;
   const selectedEmail = visibleEmails.find((e) => e.id === selectedEmailId) || null;
 
   // Mark emails as read when selected
@@ -441,46 +456,34 @@ export default function App() {
     setReviewStage('sending');
 
     if (reviewComposeMode === 'reply') {
-      // ── Reply workflow: Morgan provides details internally ──
-
-      // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
       setTimeout(() => {
         markEmailArrived('csr-review-reply', nextBatchIndex);
       }, 500);
 
-      // Phase 2: Original Stonite request transitions to processing (forwarded to quotes@)
       setTimeout(() => {
-        markEmailArrived('eis-5', nextBatchIndex); // Original request now shows as being processed
+        markEmailArrived('eis-5', nextBatchIndex);
       }, 1000);
 
-      // Phase 3: EIS quote response arrives after 2-5s (system generated it)
-      const eisDelay = 2000 + Math.random() * 3000; // 2-5s
+      const eisDelay = 2000 + Math.random() * 3000;
       setTimeout(() => {
         markEmailArrived('eis-stonite-response', nextBatchIndex);
       }, eisDelay);
 
-      // Phase 4: CSR CC notification arrives 0.7-1.5s after quote response
-      const ccDelay = eisDelay + 700 + Math.random() * 800; // +0.7-1.5s
+      const ccDelay = eisDelay + 700 + Math.random() * 800;
       setTimeout(() => {
         markEmailArrived('csr-stonite-final-cc', nextBatchIndex);
       }, ccDelay);
     } else {
-      // ── Forward workflow: Morgan asks customer for clarification ──
-      // Steve's reply CCs quotes@apex-corp.com, so the agent auto-processes it
-
-      // Phase 1: Customer (Steve) responds with details after 3-7s
-      const customerDelay = 3000 + Math.random() * 4000; // 3-7s
+      const customerDelay = 3000 + Math.random() * 4000;
       setTimeout(() => {
         markEmailArrived('csr-steve-clarification', nextBatchIndex);
         setReviewStage('resolved');
         setReviewForwardStage('processing');
 
-        // Phase 2: Original Stonite request shows as being processed
         setTimeout(() => {
           markEmailArrived('eis-5', nextBatchIndex);
         }, 500);
 
-        // Phase 3: Auto-quote generated (2-5s)
         const quoteDelay = 2000 + Math.random() * 3000;
         setTimeout(() => {
           setReviewForwardStage('quoted');
@@ -492,23 +495,18 @@ export default function App() {
     }
   };
 
-
   // Determine the effective folderType for EmailDetail rendering
-  const getEmailFolderType = (emailId: string | null): 'csr' | 'eis' => {
-    if (activeFolder !== 'review' || !emailId) return activeFolder === 'eis' ? 'eis' : 'csr';
-    if (emailId.startsWith('eis')) return 'eis';
-    return 'csr';
+  const effectiveFolderType: 'csr' | 'eis' = activeFolder === 'eis' ? 'eis' : 'csr';
+
+  // Folder labels for EmailList header
+  const folderLabels: Record<FolderType, string> = {
+    autoquotes: 'Auto-Quotes',
+    approval: 'Needs Approval',
+    morgan: "Morgan's Inbox",
+    eis: 'Apex Quote Inbox',
   };
 
-  const effectiveFolderType = getEmailFolderType(selectedEmailId);
-
-  /* ══════════════════════════════════════════════════════════════════════════
-     Demo Hint — compute which element gets the pulsing dot
-     Returns a target string like "email:csr-review-1" or "action:forward"
-     ══════════════════════════════════════════════════════════════════════════ */
-  // ── Workflow Hint System (Registry-Based) ──
-  // Replaced 110-line conditional logic with declarative registry pattern
-  // See src/app/lib/hintRegistry.ts for all workflow hint rules
+  /* ── Demo Hint System ── */
   const hintTarget = useMemo<string | null>(() => {
     const hint = selectHint({
       demoVisible,
@@ -529,12 +527,12 @@ export default function App() {
     return hint;
   }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, approvalStage, arrivedEmails, readIds, hasNewMessages, isRefreshing, nextBatchIndex]);
 
-  // ── Debug hint changes (dev mode only) ──
   useEffect(() => {
     if (import.meta.env.DEV) {
       console.log('[Hint Changed]', {
         target: hintTarget,
         state: {
+          activeFolder,
           selectedEmailId,
           reviewResolved,
           reviewForwardStage,
@@ -545,14 +543,14 @@ export default function App() {
         },
       });
     }
-  }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
+  }, [hintTarget, activeFolder, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
   return (
     <div className="size-full flex gap-2 p-2 bg-background overflow-hidden">
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
-          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'review')}
+          onFolderSelect={(id) => setActiveFolder(id as FolderType)}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           hintTarget={hintTarget}
@@ -562,8 +560,8 @@ export default function App() {
           selectedEmailId={selectedEmailId}
           onSelectEmail={handleSelectEmail}
           onDeleteEmail={handleDeleteEmail}
-          folderType={activeFolder === 'review' ? 'review' : activeFolder}
-          folderLabel={activeFolder === 'csr' ? 'CSR Inbox' : activeFolder === 'eis' ? 'Apex Quote Inbox' : 'Flagged for Review'}
+          folderType={activeFolder}
+          folderLabel={folderLabels[activeFolder]}
           collapsed={emailListCollapsed}
           onToggleCollapse={() => setEmailListCollapsed(!emailListCollapsed)}
           reviewResolved={reviewResolved}
@@ -602,7 +600,7 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail demoMode={demoMode} onDemoModeChange={setDemoMode} />
+        <AppRail demoMode={demoMode} onDemoModeChange={handleDemoModeChange} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, Zap, Flag, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import type { InboxFolderDef } from '../data/emails';
@@ -68,6 +68,13 @@ function SectionHeader({ label, isExpanded, onToggle }: SectionHeaderProps) {
   );
 }
 
+const folderIcons: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  autoquotes: Zap,
+  approval: Flag,
+  morgan: Inbox,
+  eis: Zap,
+};
+
 export function InboxSidebar({
   folders,
   activeFolderId,
@@ -77,8 +84,9 @@ export function InboxSidebar({
   hintTarget = null,
 }: InboxSidebarProps) {
   const [morganExpanded, setMorganExpanded] = useState(true);
-  const [quotesExpanded, setQuotesExpanded] = useState(true);
-  const [reviewExpanded, setReviewExpanded] = useState(false);
+  const [autoQuotesExpanded, setAutoQuotesExpanded] = useState(true);
+  const [approvalExpanded, setApprovalExpanded] = useState(true);
+  const [eisExpanded, setEisExpanded] = useState(false);
   const [favoritesExpanded, setFavoritesExpanded] = useState(false);
 
   if (collapsed) {
@@ -97,27 +105,10 @@ export function InboxSidebar({
     );
   }
 
-  // Map folder IDs to the new structure
-  const getFolderId = (type: string) => {
-    const folder = folders.find(f => f.id === type);
-    return folder?.id || type;
-  };
-
-  const csrId = getFolderId('csr');
-  const eisId = getFolderId('eis');
-  const reviewId = getFolderId('review');
-
-  const isCsrActive = activeFolderId === csrId;
-  const isEisActive = activeFolderId === eisId;
-  const isReviewActive = activeFolderId === reviewId;
-
-  const csrFolder = folders.find(f => f.id === 'csr');
+  const autoQuotesFolder = folders.find(f => f.id === 'autoquotes');
+  const approvalFolder = folders.find(f => f.id === 'approval');
+  const morganFolder = folders.find(f => f.id === 'morgan');
   const eisFolder = folders.find(f => f.id === 'eis');
-  const reviewFolder = folders.find(f => f.id === 'review');
-
-  const isCsrHinted = hintTarget === `folder:${csrId}`;
-  const isEisHinted = hintTarget === `folder:${eisId}`;
-  const isReviewHinted = hintTarget === `folder:${reviewId}`;
 
   return (
     <div className="w-64 bg-background flex flex-col overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
@@ -146,10 +137,9 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={csrFolder?.count ?? 0}
+                count={morganFolder?.count ?? 0}
                 isActive={false}
-                onClick={() => onFolderSelect(csrId)}
-                isHinted={false}
+                onClick={() => onFolderSelect('morgan')}
               />
               <FolderItem
                 icon={Send}
@@ -181,10 +171,10 @@ export function InboxSidebar({
               <FolderItem
                 icon={Inbox}
                 label="Inbox"
-                count={csrFolder?.count ?? 0}
-                isActive={isCsrActive}
-                onClick={() => onFolderSelect(csrId)}
-                isHinted={isCsrHinted}
+                count={morganFolder?.count ?? 0}
+                isActive={activeFolderId === 'morgan'}
+                onClick={() => onFolderSelect('morgan')}
+                isHinted={hintTarget === 'folder:morgan'}
               />
               <FolderItem
                 icon={Mail}
@@ -227,43 +217,64 @@ export function InboxSidebar({
           )}
         </div>
 
-        {/* Apex Quote Inbox Section */}
+        {/* Auto-Quotes Section */}
         <div className="pt-2">
           <SectionHeader
-            label="Apex Quote Inbox"
-            isExpanded={quotesExpanded}
-            onToggle={() => setQuotesExpanded(!quotesExpanded)}
+            label="Auto-Quotes"
+            isExpanded={autoQuotesExpanded}
+            onToggle={() => setAutoQuotesExpanded(!autoQuotesExpanded)}
           />
-          {quotesExpanded && (
+          {autoQuotesExpanded && (
             <div>
               <FolderItem
-                icon={Inbox}
+                icon={Zap}
                 label="Inbox"
-                count={eisFolder?.count ?? 0}
-                isActive={isEisActive}
-                onClick={() => onFolderSelect(eisId)}
-                isHinted={isEisHinted}
+                count={autoQuotesFolder?.count ?? 0}
+                isActive={activeFolderId === 'autoquotes'}
+                onClick={() => onFolderSelect('autoquotes')}
+                isHinted={hintTarget === 'folder:autoquotes'}
               />
             </div>
           )}
         </div>
 
-        {/* Flagged for Review Section */}
-        <div className="pt-2 pb-2">
+        {/* Needs Approval Section */}
+        <div className="pt-2">
           <SectionHeader
-            label="Flagged for Review"
-            isExpanded={reviewExpanded}
-            onToggle={() => setReviewExpanded(!reviewExpanded)}
+            label="Needs Approval"
+            isExpanded={approvalExpanded}
+            onToggle={() => setApprovalExpanded(!approvalExpanded)}
           />
-          {reviewExpanded && (
+          {approvalExpanded && (
             <div>
               <FolderItem
-                icon={Inbox}
+                icon={Flag}
                 label="Inbox"
-                count={reviewFolder?.count ?? 0}
-                isActive={isReviewActive}
-                onClick={() => onFolderSelect(reviewId)}
-                isHinted={isReviewHinted}
+                count={approvalFolder?.count ?? 0}
+                isActive={activeFolderId === 'approval'}
+                onClick={() => onFolderSelect('approval')}
+                isHinted={hintTarget === 'folder:approval'}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Apex Quote Inbox Section */}
+        <div className="pt-2 pb-2">
+          <SectionHeader
+            label="Apex Quote Inbox"
+            isExpanded={eisExpanded}
+            onToggle={() => setEisExpanded(!eisExpanded)}
+          />
+          {eisExpanded && (
+            <div>
+              <FolderItem
+                icon={Zap}
+                label="Inbox"
+                count={eisFolder?.count ?? 0}
+                isActive={activeFolderId === 'eis'}
+                onClick={() => onFolderSelect('eis')}
+                isHinted={hintTarget === 'folder:eis'}
               />
             </div>
           )}

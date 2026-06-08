@@ -27,7 +27,7 @@ interface EmailListProps {
   selectedEmailId: string | null;
   onSelectEmail: (id: string) => void;
   onDeleteEmail?: (id: string) => void;
-  folderType?: 'csr' | 'eis' | 'review';
+  folderType?: string;
   folderLabel?: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -179,7 +179,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
               {email.subject}
             </div>
             <div className={`text-size-xs truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`}>{email.preview}</div>
-            {(folderType === 'eis' || folderType === 'review') && email.quoteStatus && (() => {
+            {folderType === 'eis' && email.quoteStatus && (() => {
               const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
               return (
                 <div className="mt-1.5">
@@ -187,7 +187,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 </div>
               );
             })()}
-            {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
+            {folderType !== 'eis' && email.isCcFromAi && (() => {
               const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
               return (
                 <div className="mt-1.5">
@@ -198,17 +198,17 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 </div>
               );
             })()}
-            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
+            {folderType !== 'eis' && email.isReviewRequest && reviewResolved && (
               <div className="mt-1.5">
                 <CategoryTag label="Sent to Customer" color="grey" />
               </div>
             )}
-            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
+            {folderType !== 'eis' && email.isReviewRequest && !reviewResolved && (
               <div className="mt-1.5">
                 <CategoryTag label="Draft Ready" color="orange" />
               </div>
             )}
-            {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
+            {folderType !== 'eis' && email.isDirectQuoteRequest && (() => {
               if (forwardStage === 'quoted') return (
                 <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
               );
@@ -222,7 +222,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
               );
             })()}
-            {(folderType === 'csr') && email.isApprovalHold && (() => {
+            {folderType !== 'eis' && email.isApprovalHold && (() => {
               if (approvalStage === 'sent') return (
                 <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
               );
@@ -293,8 +293,8 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 <Undo2 size={16} />
               </button>
             )}
-            {folderType === 'eis' && <Zap size={16} className="text-secondary flex-shrink-0" />}
-            {folderType === 'review' && <Flag size={16} className="text-secondary flex-shrink-0" />}
+            {(folderType === 'eis' || folderType === 'autoquotes') && <Zap size={16} className="text-secondary flex-shrink-0" />}
+            {folderType === 'approval' && <Flag size={16} className="text-secondary flex-shrink-0" />}
             <h2 className="text-size-lg font-w-medium text-foreground truncate">{folderLabel || 'Inbox'}</h2>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">

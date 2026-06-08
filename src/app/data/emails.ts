@@ -1104,51 +1104,35 @@ export interface InboxFolderDef {
 
 export const inboxFolders: InboxFolderDef[] = [
   {
-    id: 'csr',
-    label: 'CSR Inbox',
+    id: 'autoquotes',
+    label: 'Auto-Quotes',
+    sublabel: 'Apex Quoting',
+    icon: 'zap' as const,
+    count: 0,
+    unreadCount: 0,
+  },
+  {
+    id: 'approval',
+    label: 'Needs Approval',
+    sublabel: 'Action Required',
+    icon: 'flag' as const,
+    count: 0,
+    unreadCount: 0,
+  },
+  {
+    id: 'morgan',
+    label: "Morgan's Inbox",
     sublabel: 'morgan@apex-corp.com',
     icon: 'inbox' as const,
-    count: csrEmails.length,
-    unreadCount: csrEmails.filter((e) => !e.read).length,
-    children: [
-      {
-        id: 'csr-oem',
-        label: 'OEM',
-        icon: 'inbox' as const,
-        count: 0,
-        unreadCount: 0,
-      },
-      {
-        id: 'csr-am-mro',
-        label: 'AM/MRO',
-        icon: 'inbox' as const,
-        count: 0,
-        unreadCount: 0,
-      },
-    ],
+    count: 0,
+    unreadCount: 0,
   },
   {
     id: 'eis',
     label: 'Apex Quote Inbox',
     sublabel: 'quotes@apex-corp.com',
     icon: 'zap' as const,
-    count: eisEmails.length,
-    unreadCount: eisEmails.filter((e) => !e.read).length,
-  },
-  {
-    id: 'review',
-    label: 'Flagged for Review',
-    sublabel: 'Apex Quoting',
-    icon: 'flag' as const,
-    count: (() => {
-      const eisReview = eisEmails.filter((e) => e.quoteStatus === 'review');
-      const csrReview = csrEmails.filter((e) => e.isReviewRequest);
-      return eisReview.length + csrReview.length;
-    })(),
-    unreadCount: (() => {
-      const eisReview = eisEmails.filter((e) => e.quoteStatus === 'review' && !e.read);
-      const csrReview = csrEmails.filter((e) => e.isReviewRequest && !e.read);
-      return eisReview.length + csrReview.length;
-    })(),
+    count: 0,
+    unreadCount: 0,
   },
 ];

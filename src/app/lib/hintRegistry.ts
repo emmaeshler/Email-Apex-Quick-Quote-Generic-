@@ -4,7 +4,7 @@
  * Declarative system for managing workflow indicators (yellow dots) throughout the demo.
  * Each HintRule defines when a hint should appear and what it should point to.
  *
- * Demo order: Auto-quotes → (Rush+QtyBreak in long) → Review → Approval → Daily Summary
+ * Demo order: Pre-loaded auto-quotes → Needs Approval (review → approval) → Daily Summary
  */
 
 /* ── Types ── */
@@ -19,7 +19,7 @@ export interface HintConditions {
   reviewForwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   approvalStage?: 'pending' | 'composing' | 'approved' | 'sent';
-  activeFolder?: 'csr' | 'eis' | 'review';
+  activeFolder?: string;
   selectedEmailId?: string | string[];
   selectedEmailIdNot?: string[];
   hasNewMessages?: boolean;
@@ -38,7 +38,7 @@ export interface HintRule {
 export interface WorkflowState {
   demoVisible: boolean;
   selectedEmailId: string | null;
-  activeFolder: 'csr' | 'eis' | 'review';
+  activeFolder: string;
   reviewResolved: boolean;
   reviewStage: 'pending' | 'composing' | 'sending' | 'resolved';
   reviewForwardStage: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
@@ -55,149 +55,87 @@ export interface WorkflowState {
 
 export const hintRules: HintRule[] = [
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 0: INITIAL REFRESH
+  //  PHASE 1: PRE-LOADED AUTO-QUOTES — GUIDE THROUGH EACH CC
+  //  All auto-quote CCs are visible on load. Guide the presenter
+  //  through them in order based on read status.
   // ═══════════════════════════════════════════════════════════
   {
-    id: 'initial-refresh',
+    id: 'view-adhesive-cc',
     priority: 1000,
-    phase: 'Phase 0: Guide to first refresh',
-    conditions: {
-      customCondition: (state) => state.nextBatchIndex === 0,
-    },
-    target: 'action:refresh',
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  //  PHASE 1: SIMPLE AUTO-QUOTE (adhesive — CSR CC)
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'autoquote-cc-email',
-    priority: 950,
-    phase: 'Phase 1: Guide to adhesive auto-quote CC email',
+    phase: 'Phase 1: Guide to adhesive auto-quote CC',
     conditions: {
       emailsArrived: ['csr-ai-1'],
-      selectedEmailIdNot: ['csr-ai-1'],
-      emailsNotArrived: ['eis-6-response'],
+      customCondition: (state) => !state.readIds.has('csr-ai-1'),
     },
     target: 'email:csr-ai-1',
   },
 
   {
-    id: 'autoquote-to-tapered-refresh',
-    priority: 940,
-    phase: 'Phase 1→2: After viewing adhesive CC, refresh for tapered reels',
-    conditions: {
-      emailsArrived: ['csr-ai-1'],
-      selectedEmailId: 'csr-ai-1',
-      emailsNotArrived: ['eis-6-response'],
-      hasNewMessages: true,
-    },
-    target: 'action:refresh',
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  //  PHASE 2: MULTI-PRODUCT AUTO-QUOTE (tapered reels + CC)
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'tapered-reels-cc-email',
-    priority: 935,
-    phase: 'Phase 2: Guide to tapered reels CC email',
+    id: 'view-tapered-cc',
+    priority: 950,
+    phase: 'Phase 1: Guide to tapered reels auto-quote CC',
     conditions: {
       emailsArrived: ['csr-ai-2'],
-      selectedEmailIdNot: ['csr-ai-2'],
-      emailsNotArrived: ['csr-review-1', 'csr-rush-cc'],
+      customCondition: (state) =>
+        state.readIds.has('csr-ai-1') && !state.readIds.has('csr-ai-2'),
     },
     target: 'email:csr-ai-2',
   },
 
   {
-    id: 'tapered-reels-to-next-refresh',
-    priority: 930,
-    phase: 'Phase 2→3: After viewing tapered reels CC, refresh for next batch',
-    conditions: {
-      emailsArrived: ['csr-ai-2'],
-      selectedEmailId: 'csr-ai-2',
-      emailsNotArrived: ['csr-review-1', 'csr-rush-cc'],
-      hasNewMessages: true,
-    },
-    target: 'action:refresh',
-  },
-
-  // ═══════════════════════════════════════════════════════════
-  //  PHASE 3: RUSH + QTY-BREAK (long demo only)
-  // ═══════════════════════════════════════════════════════════
-  {
-    id: 'rush-cc-email',
-    priority: 920,
-    phase: 'Phase 3: Guide to rush re-quote CC',
+    id: 'view-rush-cc',
+    priority: 940,
+    phase: 'Phase 1: Guide to rush auto-quote CC (full only)',
     conditions: {
       emailsArrived: ['csr-rush-cc'],
-      selectedEmailIdNot: ['csr-rush-cc'],
-      emailsNotArrived: ['csr-review-1'],
+      customCondition: (state) =>
+        state.readIds.has('csr-ai-2') && !state.readIds.has('csr-rush-cc'),
     },
     target: 'email:csr-rush-cc',
   },
 
   {
-    id: 'rush-to-qtybreak',
-    priority: 915,
-    phase: 'Phase 3: After viewing rush CC, guide to qty-break CC',
+    id: 'view-qtybreak-cc',
+    priority: 930,
+    phase: 'Phase 1: Guide to qty-break auto-quote CC (full only)',
     conditions: {
-      emailsArrived: ['csr-rush-cc', 'csr-ai-3'],
-      selectedEmailId: 'csr-rush-cc',
-      selectedEmailIdNot: ['csr-ai-3'],
-      emailsNotArrived: ['csr-review-1'],
+      emailsArrived: ['csr-ai-3'],
+      customCondition: (state) =>
+        state.readIds.has('csr-rush-cc') && !state.readIds.has('csr-ai-3'),
     },
     target: 'email:csr-ai-3',
   },
 
-  {
-    id: 'qtybreak-cc-email',
-    priority: 910,
-    phase: 'Phase 3: Guide to qty-break CC email',
-    conditions: {
-      emailsArrived: ['csr-ai-3'],
-      selectedEmailIdNot: ['csr-ai-3', 'csr-rush-cc'],
-      emailsNotArrived: ['csr-review-1'],
-    },
-    target: 'email:csr-ai-3',
-  },
-
-  {
-    id: 'qtybreak-to-review-refresh',
-    priority: 905,
-    phase: 'Phase 3→4: After viewing rush/qty-break, refresh for review',
-    conditions: {
-      emailsArrived: ['csr-ai-3'],
-      selectedEmailId: 'csr-ai-3',
-      emailsNotArrived: ['csr-review-1'],
-      hasNewMessages: true,
-    },
-    target: 'action:refresh',
-  },
-
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 4A: REVIEW EMAIL — FORWARD TO STEVE
+  //  PHASE 2: TRANSITION TO NEEDS APPROVAL — REVIEW EMAIL
+  //  After all auto-quotes are read, guide to review email.
   // ═══════════════════════════════════════════════════════════
   {
-    id: 'review-email-unopened',
-    priority: 900,
-    phase: 'Phase 4a: Guide to review email',
+    id: 'autoquotes-done-to-review',
+    priority: 920,
+    phase: 'Phase 2: All auto-quotes read, guide to review email',
     conditions: {
       reviewResolved: false,
       reviewStage: 'pending',
-      activeFolder: 'csr',
       emailsArrived: ['csr-review-1'],
-      emailsNotArrived: ['csr-steve-clarification'],
       selectedEmailIdNot: ['csr-review-1'],
+      customCondition: (state) => {
+        const required = ['csr-ai-1', 'csr-ai-2'];
+        if (state.arrivedEmails.has('csr-rush-cc')) required.push('csr-rush-cc');
+        if (state.arrivedEmails.has('csr-ai-3')) required.push('csr-ai-3');
+        return required.every(id => state.readIds.has(id));
+      },
     },
     target: 'email:csr-review-1',
   },
 
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 3A: REVIEW EMAIL — FORWARD TO STEVE
+  // ═══════════════════════════════════════════════════════════
   {
     id: 'review-forward-button',
     priority: 850,
-    phase: 'Phase 4a: Guide to Forward button on review email',
+    phase: 'Phase 3a: Guide to Forward button on review email',
     conditions: {
       reviewResolved: false,
       forwardStage: 'pending',
@@ -211,7 +149,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'review-send-button',
     priority: 840,
-    phase: 'Phase 4a: Guide to Send button when composing review forward',
+    phase: 'Phase 3a: Guide to Send button when composing review forward',
     conditions: {
       reviewResolved: false,
       reviewStage: 'composing',
@@ -222,12 +160,12 @@ export const hintRules: HintRule[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 4B: STEVE'S CLARIFICATION — AUTO-PROCESSED
+  //  PHASE 3B: STEVE'S CLARIFICATION — AUTO-PROCESSED
   // ═══════════════════════════════════════════════════════════
   {
     id: 'steve-clarification-email',
     priority: 870,
-    phase: 'Phase 4b: Guide to Steve\'s clarification email',
+    phase: "Phase 3b: Guide to Steve's clarification email",
     conditions: {
       reviewResolved: false,
       emailsArrived: ['csr-steve-clarification'],
@@ -238,12 +176,12 @@ export const hintRules: HintRule[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 4C: FINAL QUOTE GENERATED
+  //  PHASE 3C: FINAL QUOTE GENERATED
   // ═══════════════════════════════════════════════════════════
   {
     id: 'stonite-final-email',
     priority: 800,
-    phase: 'Phase 4c: Guide to final quote email',
+    phase: 'Phase 3c: Guide to final quote email in Auto-Quotes',
     conditions: {
       reviewForwardStage: 'quoted',
       reviewResolved: false,
@@ -253,41 +191,16 @@ export const hintRules: HintRule[] = [
     target: 'email:csr-stonite-final-cc',
   },
 
-  {
-    id: 'stonite-transition-refresh',
-    priority: 790,
-    phase: 'Phase 4c→5: After viewing quote, refresh for approval hold',
-    conditions: {
-      reviewResolved: true,
-      selectedEmailId: 'csr-stonite-final-cc',
-      emailsNotArrived: ['csr-approval-hold'],
-      hasNewMessages: true,
-    },
-    target: 'action:refresh',
-  },
-
-  {
-    id: 'stonite-to-approval',
-    priority: 780,
-    phase: 'Phase 4c→5: Guide to approval hold if already loaded',
-    conditions: {
-      selectedEmailId: 'csr-stonite-final-cc',
-      emailsArrived: ['csr-approval-hold'],
-    },
-    target: 'email:csr-approval-hold',
-  },
-
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 5: APPROVAL HOLD WORKFLOW
+  //  PHASE 4: APPROVAL HOLD WORKFLOW
   // ═══════════════════════════════════════════════════════════
   {
     id: 'approval-hold-email',
     priority: 750,
-    phase: 'Phase 5: Guide to approval hold email',
+    phase: 'Phase 4: Guide to approval hold email',
     conditions: {
       reviewResolved: true,
       approvalStage: 'pending',
-      activeFolder: 'csr',
       emailsArrived: ['csr-approval-hold'],
       selectedEmailIdNot: ['csr-approval-hold'],
     },
@@ -297,7 +210,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'approval-reply-button',
     priority: 740,
-    phase: 'Phase 5: Guide to Reply button on approval hold',
+    phase: 'Phase 4: Guide to Reply button on approval hold',
     conditions: {
       approvalStage: 'pending',
       selectedEmailId: 'csr-approval-hold',
@@ -308,7 +221,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'approval-send-button',
     priority: 735,
-    phase: 'Phase 5: Guide to Send button in approval reply',
+    phase: 'Phase 4: Guide to Send button in approval reply',
     conditions: {
       approvalStage: 'composing',
       selectedEmailId: 'csr-approval-hold',
@@ -319,7 +232,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'approval-to-daily-refresh',
     priority: 730,
-    phase: 'Phase 5→6: After approval sent, refresh for daily summary',
+    phase: 'Phase 4→5: After approval sent, refresh for daily summary',
     conditions: {
       approvalStage: 'sent',
       selectedEmailId: ['csr-approval-hold', 'csr-approval-cc'],
@@ -330,12 +243,12 @@ export const hintRules: HintRule[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 6: DAILY SUMMARY
+  //  PHASE 5: DAILY SUMMARY
   // ═══════════════════════════════════════════════════════════
   {
     id: 'daily-summary-refresh',
     priority: 530,
-    phase: 'Phase 6: Guide to refresh for daily summary',
+    phase: 'Phase 5: Guide to refresh for daily summary',
     conditions: {
       approvalStage: 'sent',
       emailsNotArrived: ['csr-daily-summary'],
@@ -348,7 +261,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'daily-summary-email',
     priority: 520,
-    phase: 'Phase 6: Guide to daily summary email',
+    phase: 'Phase 5: Guide to daily summary email',
     conditions: {
       emailsArrived: ['csr-daily-summary'],
       selectedEmailIdNot: ['csr-daily-summary'],
@@ -400,6 +313,7 @@ export function selectHint(state: WorkflowState): HintTarget {
   if (matches.length === 0) {
     if (import.meta.env.DEV) {
       console.warn('[Hint System] No hints match current state:', {
+        activeFolder: state.activeFolder,
         reviewStage: state.reviewStage,
         reviewForwardStage: state.reviewForwardStage,
         forwardStage: state.forwardStage,
@@ -428,7 +342,7 @@ export function validateHintCoverage(): void {
     /^folder:[\w-]+$/,
   ];
 
-  const phases = ['Phase 0', 'Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5', 'Phase 6'];
+  const phases = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5'];
 
   console.group('[Hint Coverage Validation]');
   phases.forEach(phase => {
@@ -449,7 +363,7 @@ export function validateHintCoverage(): void {
 
   console.log(`Total rules: ${hintRules.length}`);
   if (issues.length > 0) {
-    console.error('❌ Target Format Issues:', issues);
+    console.error('Target Format Issues:', issues);
   } else {
     console.log('✓ All targets use valid formats');
   }

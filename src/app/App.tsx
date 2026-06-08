@@ -36,6 +36,23 @@ import {
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
 
+interface StateSnapshot {
+  arrivedEmails: Set<string>;
+  emailBatchMap: Map<string, number>;
+  nextBatchIndex: number;
+  selectedCsrEmailId: string | null;
+  selectedEisEmailId: string | null;
+  selectedReviewEmailId: string | null;
+  reviewResolved: boolean;
+  reviewStage: string;
+  reviewComposeMode: string;
+  reviewForwardStage: string;
+  forwardStage: string;
+  approvalStage: string;
+  hiddenIds: Set<string>;
+  readIds: Set<string>;
+}
+
 export default function App() {
   const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
@@ -76,6 +93,9 @@ export default function App() {
 
   // ── Refresh loading state ──
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ── State history for back/undo during demos ──
+  const [stateHistory, setStateHistory] = useState<StateSnapshot[]>([]);
 
   // ── Demo hint visibility (toggle with ` backtick key) ──
   const [demoVisible, setDemoVisible] = useState(true);
@@ -141,6 +161,46 @@ export default function App() {
     }, 3000);
   }, []);
 
+  // ── Capture/restore state for demo back button ──
+  const captureSnapshot = useCallback((): StateSnapshot => ({
+    arrivedEmails: new Set(arrivedEmails),
+    emailBatchMap: new Map(emailBatchMap),
+    nextBatchIndex,
+    selectedCsrEmailId,
+    selectedEisEmailId,
+    selectedReviewEmailId,
+    reviewResolved,
+    reviewStage,
+    reviewComposeMode,
+    reviewForwardStage,
+    forwardStage,
+    approvalStage,
+    hiddenIds: new Set(hiddenIds),
+    readIds: new Set(readIds),
+  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedCsrEmailId, selectedEisEmailId, selectedReviewEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
+
+  const handleBack = useCallback(() => {
+    if (stateHistory.length === 0) return;
+    const prev = stateHistory[stateHistory.length - 1];
+    setStateHistory(h => h.slice(0, -1));
+    setArrivedEmails(prev.arrivedEmails);
+    setEmailBatchMap(prev.emailBatchMap);
+    setNextBatchIndex(prev.nextBatchIndex);
+    setSelectedCsrEmailId(prev.selectedCsrEmailId);
+    setSelectedEisEmailId(prev.selectedEisEmailId);
+    setSelectedReviewEmailId(prev.selectedReviewEmailId);
+    setReviewResolved(prev.reviewResolved);
+    setReviewStage(prev.reviewStage as any);
+    setReviewComposeMode(prev.reviewComposeMode as any);
+    setReviewForwardStage(prev.reviewForwardStage as any);
+    setForwardStage(prev.forwardStage as any);
+    setApprovalStage(prev.approvalStage as any);
+    setHiddenIds(prev.hiddenIds);
+    setReadIds(prev.readIds);
+    setNewEmailIds(new Set());
+    setIsRefreshing(false);
+  }, [stateHistory]);
+
   // ── Refresh queue definition — each batch is revealed on refresh ──
   // Flow: most human involvement → least (auto-quote payoff at end)
   const refreshBatches = useMemo(() => {
@@ -170,6 +230,8 @@ export default function App() {
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
     if (nextBatchIndex >= refreshBatches.length) return; // No more batches
+
+    setStateHistory(h => [...h, captureSnapshot()]);
 
     // Set refreshing state
     setIsRefreshing(true);
@@ -204,7 +266,7 @@ export default function App() {
         }
       }, delay);
     });
-  }, [nextBatchIndex, refreshBatches, markEmailArrived]);
+  }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot]);
 
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
@@ -347,6 +409,7 @@ export default function App() {
 
   // Handle approval send: approve quote and trigger CC delivery
   const handleApprovalSend = () => {
+    setStateHistory(h => [...h, captureSnapshot()]);
     setApprovalStage('approved');
     setTimeout(() => {
       setApprovalStage('sent');
@@ -358,6 +421,7 @@ export default function App() {
 
   // Handle the review send — orchestrate staggered email arrivals
   const handleReviewSend = () => {
+    setStateHistory(h => [...h, captureSnapshot()]);
     setReviewStage('sending');
 
     if (reviewComposeMode === 'reply') {
@@ -497,6 +561,8 @@ export default function App() {
           isRefreshing={isRefreshing}
           emailBatchMap={emailBatchMap}
           currentBatch={nextBatchIndex}
+          onBack={handleBack}
+          canGoBack={stateHistory.length > 0}
         />
         <EmailDetail
           email={selectedEmailWithRead}

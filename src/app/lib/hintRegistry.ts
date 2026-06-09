@@ -3,8 +3,6 @@
  *
  * Declarative system for managing workflow indicators (yellow dots) throughout the demo.
  * Each HintRule defines when a hint should appear and what it should point to.
- *
- * Demo order: Pre-loaded auto-quotes → Needs Approval (review → approval) → Daily Summary
  */
 
 /* ── Types ── */
@@ -12,25 +10,34 @@
 export type HintTarget = `email:${string}` | `action:${string}` | null;
 
 export interface HintConditions {
+  // Email arrival state
   emailsArrived?: string[];
   emailsNotArrived?: string[];
+
+  // Workflow state
   reviewResolved?: boolean;
   reviewStage?: 'pending' | 'composing' | 'sending' | 'resolved';
   reviewForwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   forwardStage?: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
   approvalStage?: 'pending' | 'composing' | 'approved' | 'sent';
-  activeFolder?: string;
-  selectedEmailId?: string | string[];
-  selectedEmailIdNot?: string[];
+
+  // UI state
+  activeFolder?: 'csr' | 'eis' | 'review';
+  selectedEmailId?: string | string[]; // single ID or array of acceptable IDs
+  selectedEmailIdNot?: string[]; // must NOT be any of these IDs
+
+  // Other
   hasNewMessages?: boolean;
   isRefreshing?: boolean;
+
+  // Custom function for complex conditions
   customCondition?: (state: WorkflowState) => boolean;
 }
 
 export interface HintRule {
-  id: string;
-  priority: number;
-  phase: string;
+  id: string; // unique identifier for debugging
+  priority: number; // higher = more important (used for conflict resolution)
+  phase: string; // human-readable phase description
   conditions: HintConditions;
   target: HintTarget;
 }
@@ -38,7 +45,7 @@ export interface HintRule {
 export interface WorkflowState {
   demoVisible: boolean;
   selectedEmailId: string | null;
-  activeFolder: string;
+  activeFolder: 'csr' | 'eis' | 'review';
   reviewResolved: boolean;
   reviewStage: 'pending' | 'composing' | 'sending' | 'resolved';
   reviewForwardStage: 'pending' | 'composing' | 'sent' | 'processing' | 'quoted';
@@ -55,87 +62,43 @@ export interface WorkflowState {
 
 export const hintRules: HintRule[] = [
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 1: PRE-LOADED AUTO-QUOTES — GUIDE THROUGH EACH CC
-  //  All auto-quote CCs are visible on load. Guide the presenter
-  //  through them in order based on read status.
+  //  PHASE 0: INITIAL REFRESH
   // ═══════════════════════════════════════════════════════════
   {
-    id: 'view-adhesive-cc',
+    id: 'initial-refresh',
     priority: 1000,
-    phase: 'Phase 1: Guide to adhesive auto-quote CC',
+    phase: 'Phase 0: Guide to refresh if inbox is empty',
     conditions: {
-      emailsArrived: ['csr-ai-1'],
-      customCondition: (state) => !state.readIds.has('csr-ai-1'),
+      emailsNotArrived: ['csr-review-1'],
+      customCondition: (state) => state.nextBatchIndex === 0,
     },
-    target: 'email:csr-ai-1',
-  },
-
-  {
-    id: 'view-tapered-cc',
-    priority: 950,
-    phase: 'Phase 1: Guide to tapered reels auto-quote CC',
-    conditions: {
-      emailsArrived: ['csr-ai-2'],
-      customCondition: (state) =>
-        state.readIds.has('csr-ai-1') && !state.readIds.has('csr-ai-2'),
-    },
-    target: 'email:csr-ai-2',
-  },
-
-  {
-    id: 'view-rush-cc',
-    priority: 940,
-    phase: 'Phase 1: Guide to rush auto-quote CC (full only)',
-    conditions: {
-      emailsArrived: ['csr-rush-cc'],
-      customCondition: (state) =>
-        state.readIds.has('csr-ai-2') && !state.readIds.has('csr-rush-cc'),
-    },
-    target: 'email:csr-rush-cc',
-  },
-
-  {
-    id: 'view-qtybreak-cc',
-    priority: 930,
-    phase: 'Phase 1: Guide to qty-break auto-quote CC (full only)',
-    conditions: {
-      emailsArrived: ['csr-ai-3'],
-      customCondition: (state) =>
-        state.readIds.has('csr-rush-cc') && !state.readIds.has('csr-ai-3'),
-    },
-    target: 'email:csr-ai-3',
+    target: 'action:refresh',
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 2: TRANSITION TO NEEDS APPROVAL — REVIEW EMAIL
-  //  After all auto-quotes are read, guide to review email.
+  //  PHASE 1A: REVIEW EMAIL - FORWARD TO STEVE
   // ═══════════════════════════════════════════════════════════
   {
-    id: 'autoquotes-done-to-review',
-    priority: 920,
-    phase: 'Phase 2: All auto-quotes read, guide to review email',
+    id: 'review-email-unopened',
+    priority: 900,
+    phase: 'Phase 1a: Guide to review email',
     conditions: {
       reviewResolved: false,
+      forwardStage: 'pending',
       reviewStage: 'pending',
+      activeFolder: 'csr',
       emailsArrived: ['csr-review-1'],
-      selectedEmailIdNot: ['csr-review-1'],
-      customCondition: (state) => {
-        const required = ['csr-ai-1', 'csr-ai-2'];
-        if (state.arrivedEmails.has('csr-rush-cc')) required.push('csr-rush-cc');
-        if (state.arrivedEmails.has('csr-ai-3')) required.push('csr-ai-3');
-        return required.every(id => state.readIds.has(id));
-      },
+      emailsNotArrived: ['csr-steve-clarification'],
+      selectedEmailIdNot: ['csr-review-1', 'csr-steve-clarification', 'csr-stonite-final-cc',
+                           'csr-ai-1', 'csr-ai-2', 'csr-daily-summary'],
     },
     target: 'email:csr-review-1',
   },
 
-  // ═══════════════════════════════════════════════════════════
-  //  PHASE 3A: REVIEW EMAIL — FORWARD TO STEVE
-  // ═══════════════════════════════════════════════════════════
   {
     id: 'review-forward-button',
     priority: 850,
-    phase: 'Phase 3a: Guide to Forward button on review email',
+    phase: 'Phase 1a: Guide to Forward button on review email',
     conditions: {
       reviewResolved: false,
       forwardStage: 'pending',
@@ -149,9 +112,10 @@ export const hintRules: HintRule[] = [
   {
     id: 'review-send-button',
     priority: 840,
-    phase: 'Phase 3a: Guide to Send button when composing review forward',
+    phase: 'Phase 1a: Guide to Send button when composing review forward',
     conditions: {
       reviewResolved: false,
+      forwardStage: 'pending',
       reviewStage: 'composing',
       selectedEmailId: 'csr-review-1',
       emailsNotArrived: ['csr-steve-clarification'],
@@ -160,12 +124,13 @@ export const hintRules: HintRule[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 3B: STEVE'S CLARIFICATION — AUTO-PROCESSED
+  //  PHASE 1B: STEVE'S CLARIFICATION - AUTO-PROCESSED
+  //  (Steve CC'd quotes@, so the agent picks it up automatically)
   // ═══════════════════════════════════════════════════════════
   {
     id: 'steve-clarification-email',
     priority: 870,
-    phase: "Phase 3b: Guide to Steve's clarification email",
+    phase: 'Phase 1b: Guide to Steve\'s clarification email (auto-processing)',
     conditions: {
       reviewResolved: false,
       emailsArrived: ['csr-steve-clarification'],
@@ -176,31 +141,57 @@ export const hintRules: HintRule[] = [
   },
 
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 3C: FINAL QUOTE GENERATED
+  //  PHASE 1C: QUOTE GENERATION - CRITICAL BUG FIX ZONE
   // ═══════════════════════════════════════════════════════════
   {
     id: 'stonite-final-email',
     priority: 800,
-    phase: 'Phase 3c: Guide to final quote email in Auto-Quotes',
+    phase: 'Phase 1c: Guide to final quote email (THE BUG FIX)',
     conditions: {
       reviewForwardStage: 'quoted',
-      reviewResolved: false,
+      reviewResolved: false, // ← Critical: Now works because we don't set reviewResolved in timeout
       emailsArrived: ['csr-stonite-final-cc'],
       selectedEmailIdNot: ['csr-stonite-final-cc'],
     },
     target: 'email:csr-stonite-final-cc',
   },
 
+  {
+    id: 'stonite-transition-refresh',
+    priority: 790,
+    phase: 'Phase 1c→2: After viewing quote, guide to refresh for approval hold',
+    conditions: {
+      reviewForwardStage: 'quoted',
+      reviewResolved: true,
+      selectedEmailId: 'csr-stonite-final-cc',
+      emailsNotArrived: ['csr-approval-hold'],
+      hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
+  {
+    id: 'stonite-to-approval',
+    priority: 780,
+    phase: 'Phase 1c→2: After viewing quote, guide to approval hold if already loaded',
+    conditions: {
+      selectedEmailId: 'csr-stonite-final-cc',
+      emailsArrived: ['csr-approval-hold'],
+    },
+    target: 'email:csr-approval-hold',
+  },
+
   // ═══════════════════════════════════════════════════════════
-  //  PHASE 4: APPROVAL HOLD WORKFLOW
+  //  PHASE 2: APPROVAL HOLD WORKFLOW
   // ═══════════════════════════════════════════════════════════
   {
     id: 'approval-hold-email',
     priority: 750,
-    phase: 'Phase 4: Guide to approval hold email',
+    phase: 'Phase 2: Guide to approval hold email',
     conditions: {
       reviewResolved: true,
       approvalStage: 'pending',
+      activeFolder: 'csr',
       emailsArrived: ['csr-approval-hold'],
       selectedEmailIdNot: ['csr-approval-hold'],
     },
@@ -210,10 +201,11 @@ export const hintRules: HintRule[] = [
   {
     id: 'approval-reply-button',
     priority: 740,
-    phase: 'Phase 4: Guide to Reply button on approval hold',
+    phase: 'Phase 2: Guide to Reply button on approval hold',
     conditions: {
       approvalStage: 'pending',
       selectedEmailId: 'csr-approval-hold',
+      emailsArrived: ['csr-approval-hold'],
     },
     target: 'action:reply',
   },
@@ -221,7 +213,7 @@ export const hintRules: HintRule[] = [
   {
     id: 'approval-send-button',
     priority: 735,
-    phase: 'Phase 4: Guide to Send button in approval reply',
+    phase: 'Phase 2: Guide to Send button in approval reply',
     conditions: {
       approvalStage: 'composing',
       selectedEmailId: 'csr-approval-hold',
@@ -230,12 +222,72 @@ export const hintRules: HintRule[] = [
   },
 
   {
-    id: 'approval-to-daily-refresh',
+    id: 'approval-to-rush-refresh',
     priority: 730,
-    phase: 'Phase 4→5: After approval sent, refresh for daily summary',
+    phase: 'Phase 2→3: After approval sent, guide to refresh for rush re-quote',
     conditions: {
       approvalStage: 'sent',
       selectedEmailId: ['csr-approval-hold', 'csr-approval-cc'],
+      emailsNotArrived: ['csr-rush-cc'],
+      hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 3: RUSH RE-QUOTE
+  // ═══════════════════════════════════════════════════════════
+  {
+    id: 'rush-cc-email',
+    priority: 650,
+    phase: 'Phase 3: Guide to rush re-quote CC email',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-rush-cc'],
+      selectedEmailIdNot: ['csr-rush-cc'],
+      emailsNotArrived: ['csr-ai-2'],
+    },
+    target: 'email:csr-rush-cc',
+  },
+
+  {
+    id: 'rush-to-autoquote-refresh',
+    priority: 640,
+    phase: 'Phase 3→4: After viewing rush, guide to refresh for auto-quotes',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-rush-cc'],
+      selectedEmailId: 'csr-rush-cc',
+      emailsNotArrived: ['csr-ai-2'],
+      hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 4: AUTO-QUOTES
+  // ═══════════════════════════════════════════════════════════
+  {
+    id: 'autoquote-email',
+    priority: 600,
+    phase: 'Phase 4: Guide to auto-quote CC email',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-ai-2'],
+      selectedEmailIdNot: ['csr-ai-2'],
+      emailsNotArrived: ['csr-daily-summary'],
+    },
+    target: 'email:csr-ai-2',
+  },
+
+  {
+    id: 'autoquote-to-daily-refresh',
+    priority: 590,
+    phase: 'Phase 4→5: After viewing auto-quote, guide to refresh for daily summary',
+    conditions: {
+      approvalStage: 'sent',
+      emailsArrived: ['csr-ai-2'],
+      selectedEmailId: 'csr-ai-2',
       emailsNotArrived: ['csr-daily-summary'],
       hasNewMessages: true,
     },
@@ -272,7 +324,11 @@ export const hintRules: HintRule[] = [
 
 /* ── Evaluation Functions ── */
 
+/**
+ * Evaluates whether a single HintRule's conditions match the current workflow state.
+ */
 function evaluateConditions(conditions: HintConditions, state: WorkflowState): boolean {
+  // Email arrival checks
   if (conditions.emailsArrived) {
     if (!conditions.emailsArrived.every(id => state.arrivedEmails.has(id))) return false;
   }
@@ -280,6 +336,7 @@ function evaluateConditions(conditions: HintConditions, state: WorkflowState): b
     if (conditions.emailsNotArrived.some(id => state.arrivedEmails.has(id))) return false;
   }
 
+  // State checks (exact match)
   if (conditions.reviewResolved !== undefined && conditions.reviewResolved !== state.reviewResolved) return false;
   if (conditions.reviewStage !== undefined && conditions.reviewStage !== state.reviewStage) return false;
   if (conditions.reviewForwardStage !== undefined && conditions.reviewForwardStage !== state.reviewForwardStage) return false;
@@ -289,6 +346,7 @@ function evaluateConditions(conditions: HintConditions, state: WorkflowState): b
   if (conditions.hasNewMessages !== undefined && conditions.hasNewMessages !== state.hasNewMessages) return false;
   if (conditions.isRefreshing !== undefined && conditions.isRefreshing !== state.isRefreshing) return false;
 
+  // Selected email checks
   if (conditions.selectedEmailId !== undefined) {
     if (Array.isArray(conditions.selectedEmailId)) {
       if (!conditions.selectedEmailId.includes(state.selectedEmailId!)) return false;
@@ -300,20 +358,25 @@ function evaluateConditions(conditions: HintConditions, state: WorkflowState): b
     if (state.selectedEmailId && conditions.selectedEmailIdNot.includes(state.selectedEmailId)) return false;
   }
 
+  // Custom condition
   if (conditions.customCondition && !conditions.customCondition(state)) return false;
 
   return true;
 }
 
+/**
+ * Selects the highest-priority hint that matches the current workflow state.
+ * Returns null if no hints match or if demo is not visible.
+ */
 export function selectHint(state: WorkflowState): HintTarget {
   if (!state.demoVisible) return null;
 
+  // Find all matching rules
   const matches = hintRules.filter(rule => evaluateConditions(rule.conditions, state));
 
   if (matches.length === 0) {
     if (import.meta.env.DEV) {
       console.warn('[Hint System] No hints match current state:', {
-        activeFolder: state.activeFolder,
         reviewStage: state.reviewStage,
         reviewForwardStage: state.reviewForwardStage,
         forwardStage: state.forwardStage,
@@ -324,6 +387,7 @@ export function selectHint(state: WorkflowState): HintTarget {
     return null;
   }
 
+  // Sort by priority (descending) and return first match
   matches.sort((a, b) => b.priority - a.priority);
 
   if (import.meta.env.DEV) {
@@ -333,6 +397,10 @@ export function selectHint(state: WorkflowState): HintTarget {
   return matches[0].target;
 }
 
+/**
+ * Development-time validation to check hint coverage across workflow phases.
+ * Call this on app mount to catch missing hints early.
+ */
 export function validateHintCoverage(): void {
   if (!import.meta.env.DEV) return;
 
@@ -342,8 +410,10 @@ export function validateHintCoverage(): void {
     /^folder:[\w-]+$/,
   ];
 
-  const phases = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5'];
+  const issues: string[] = [];
+  const phases = ['Phase 0', 'Phase 1a', 'Phase 1b', 'Phase 1c', 'Phase 2', 'Phase 3', 'Phase 4', 'Phase 5'];
 
+  // Check phase coverage
   console.group('[Hint Coverage Validation]');
   phases.forEach(phase => {
     const phaseRules = hintRules.filter(r => r.phase.startsWith(phase));
@@ -351,7 +421,7 @@ export function validateHintCoverage(): void {
     console.log(`${status} ${phase}: ${phaseRules.length} rules`);
   });
 
-  const issues: string[] = [];
+  // Check target validity
   hintRules.forEach(rule => {
     const isValid = validTargetPatterns.some(pattern =>
       rule.target && pattern.test(rule.target)
@@ -362,10 +432,12 @@ export function validateHintCoverage(): void {
   });
 
   console.log(`Total rules: ${hintRules.length}`);
+
   if (issues.length > 0) {
-    console.error('Target Format Issues:', issues);
+    console.error('❌ Target Format Issues:', issues);
   } else {
     console.log('✓ All targets use valid formats');
   }
+
   console.groupEnd();
 }

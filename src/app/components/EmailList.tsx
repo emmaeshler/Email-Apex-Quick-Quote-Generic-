@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox, Undo2 } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
@@ -27,7 +27,7 @@ interface EmailListProps {
   selectedEmailId: string | null;
   onSelectEmail: (id: string) => void;
   onDeleteEmail?: (id: string) => void;
-  folderType?: string;
+  folderType?: 'csr' | 'eis' | 'review';
   folderLabel?: string;
   collapsed: boolean;
   onToggleCollapse: () => void;
@@ -42,8 +42,6 @@ interface EmailListProps {
   isRefreshing?: boolean;
   emailBatchMap?: Map<string, number>;
   currentBatch?: number;
-  onBack?: () => void;
-  canGoBack?: boolean;
 }
 
 /* Outlook-style category tag */
@@ -94,7 +92,7 @@ function SectionHeader({ label, count, isExpanded, onToggle }: SectionHeaderProp
   );
 }
 
-export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false, emailBatchMap = new Map(), currentBatch = 0, onBack, canGoBack = false }: EmailListProps) {
+export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false, emailBatchMap = new Map(), currentBatch = 0 }: EmailListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [unreadExpanded, setUnreadExpanded] = useState(true);
   const [readExpanded, setReadExpanded] = useState(true);
@@ -179,7 +177,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
               {email.subject}
             </div>
             <div className={`text-size-xs truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`}>{email.preview}</div>
-            {folderType === 'eis' && email.quoteStatus && (() => {
+            {(folderType === 'eis' || folderType === 'review') && email.quoteStatus && (() => {
               const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
               return (
                 <div className="mt-1.5">
@@ -187,7 +185,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 </div>
               );
             })()}
-            {folderType !== 'eis' && email.isCcFromAi && (() => {
+            {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
               const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
               return (
                 <div className="mt-1.5">
@@ -198,17 +196,17 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 </div>
               );
             })()}
-            {folderType !== 'eis' && email.isReviewRequest && reviewResolved && (
+            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
               <div className="mt-1.5">
                 <CategoryTag label="Sent to Customer" color="grey" />
               </div>
             )}
-            {folderType !== 'eis' && email.isReviewRequest && !reviewResolved && (
+            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
               <div className="mt-1.5">
                 <CategoryTag label="Draft Ready" color="orange" />
               </div>
             )}
-            {folderType !== 'eis' && email.isDirectQuoteRequest && (() => {
+            {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
               if (forwardStage === 'quoted') return (
                 <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
               );
@@ -222,7 +220,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
               );
             })()}
-            {folderType !== 'eis' && email.isApprovalHold && (() => {
+            {(folderType === 'csr') && email.isApprovalHold && (() => {
               if (approvalStage === 'sent') return (
                 <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
               );
@@ -279,22 +277,8 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            {onBack && (
-              <button
-                onClick={onBack}
-                disabled={!canGoBack}
-                className={`p-1 rounded-[var(--radius)] transition-colors flex-shrink-0 ${
-                  canGoBack
-                    ? 'text-foreground/70 hover:bg-muted hover:text-foreground'
-                    : 'text-muted-foreground/30 cursor-not-allowed'
-                }`}
-                title="Go back one step"
-              >
-                <Undo2 size={16} />
-              </button>
-            )}
-            {(folderType === 'eis' || folderType === 'autoquotes') && <Zap size={16} className="text-secondary flex-shrink-0" />}
-            {folderType === 'approval' && <Flag size={16} className="text-secondary flex-shrink-0" />}
+            {folderType === 'eis' && <Zap size={16} className="text-secondary flex-shrink-0" />}
+            {folderType === 'review' && <Flag size={16} className="text-secondary flex-shrink-0" />}
             <h2 className="text-size-lg font-w-medium text-foreground truncate">{folderLabel || 'Inbox'}</h2>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">

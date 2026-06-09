@@ -15,6 +15,7 @@ import {
   eis1Response,
   eis6Dave,
   eis6Response,
+  csr1CC,
   csr2CC,
   eis5Stonite,
   csrReview1,
@@ -28,12 +29,42 @@ import {
   eis8Rush,
   eis8RushResponse,
   csr3RushCc,
+  eis9QtyBreak,
+  eis9QtyBreakResponse,
+  csrQtyBreakCc,
 } from './data/emails';
 
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
 
+interface StateSnapshot {
+  arrivedEmails: Set<string>;
+  emailBatchMap: Map<string, number>;
+  nextBatchIndex: number;
+  selectedCsrEmailId: string | null;
+  selectedEisEmailId: string | null;
+  selectedReviewEmailId: string | null;
+  reviewResolved: boolean;
+  reviewStage: string;
+  reviewComposeMode: string;
+  reviewForwardStage: string;
+  forwardStage: string;
+  approvalStage: string;
+  hiddenIds: Set<string>;
+  readIds: Set<string>;
+}
+
+export type DemoMode = 'short' | 'full';
+
+function getInitialDemoMode(): DemoMode {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('demo');
+  if (mode === 'short' || mode === 'full') return mode;
+  return 'full';
+}
+
 export default function App() {
+  const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
   const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
@@ -73,6 +104,9 @@ export default function App() {
 
   // ── Refresh loading state ──
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ── State history for back/undo during demos ──
+  const [stateHistory, setStateHistory] = useState<StateSnapshot[]>([]);
 
   // ── Demo hint visibility (toggle with ` backtick key) ──
   const [demoVisible, setDemoVisible] = useState(true);
@@ -138,32 +172,80 @@ export default function App() {
     }, 3000);
   }, []);
 
-  // ── Refresh queue definition — each batch is revealed on refresh ──
-  // Flow: most human involvement → least (auto-quote payoff at end)
+  // ── Capture/restore state for demo back button ──
+  const captureSnapshot = useCallback((): StateSnapshot => ({
+    arrivedEmails: new Set(arrivedEmails),
+    emailBatchMap: new Map(emailBatchMap),
+    nextBatchIndex,
+    selectedCsrEmailId,
+    selectedEisEmailId,
+    selectedReviewEmailId,
+    reviewResolved,
+    reviewStage,
+    reviewComposeMode,
+    reviewForwardStage,
+    forwardStage,
+    approvalStage,
+    hiddenIds: new Set(hiddenIds),
+    readIds: new Set(readIds),
+  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedCsrEmailId, selectedEisEmailId, selectedReviewEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
+
+  const handleBack = useCallback(() => {
+    if (stateHistory.length === 0) return;
+    const prev = stateHistory[stateHistory.length - 1];
+    setStateHistory(h => h.slice(0, -1));
+    setArrivedEmails(prev.arrivedEmails);
+    setEmailBatchMap(prev.emailBatchMap);
+    setNextBatchIndex(prev.nextBatchIndex);
+    setSelectedCsrEmailId(prev.selectedCsrEmailId);
+    setSelectedEisEmailId(prev.selectedEisEmailId);
+    setSelectedReviewEmailId(prev.selectedReviewEmailId);
+    setReviewResolved(prev.reviewResolved);
+    setReviewStage(prev.reviewStage as any);
+    setReviewComposeMode(prev.reviewComposeMode as any);
+    setReviewForwardStage(prev.reviewForwardStage as any);
+    setForwardStage(prev.forwardStage as any);
+    setApprovalStage(prev.approvalStage as any);
+    setHiddenIds(prev.hiddenIds);
+    setReadIds(prev.readIds);
+    setNewEmailIds(new Set());
+    setIsRefreshing(false);
+  }, [stateHistory]);
+
+  // ── Refresh queue definition — lead with auto-quotes, then human workflows ──
+  // Short demo: 5 batches. Full demo: 6 batches (adds rush + qty-break).
   const refreshBatches = useMemo(() => {
-    const batches: Array<{ emailIds: string[]; condition?: boolean }> = [
-      // Batch 0: Review flag (Phase 1: vague inputs → identified items, highest human involvement)
+    const allBatches: Array<{ emailIds: string[]; fullOnly?: boolean }> = [
+      // Batch 0: Simple auto-quote (adhesive — full flow including CSR CC)
+      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
+
+      // Batch 1: Multi-product auto-quote (tapered reels — 6 configurations, with CC)
+      { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
+
+      // Batch 2: Rush re-quote + Qty-break comparison (long demo only)
+      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc', 'eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'], fullOnly: true },
+
+      // Batch 3: Review needed (magnet wire — human clarification)
       { emailIds: ['csr-review-1'] },
 
-      // Batch 1: Approval hold (Phase 2: large dollar quote needs sales rep approval)
+      // Batch 4: Approval required (motor rewind — sales rep sign-off)
       { emailIds: ['csr-approval-hold'] },
 
-      // Batch 2: Rush re-quote (Phase 3: urgent re-quote, moderate human involvement)
-      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc'] },
-
-      // Batch 3: Auto-quotes (Phase 4: fully automated, no human involvement)
-      { emailIds: ['eis-1', 'eis-1-response', 'eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 4: Daily summary (Phase 5: closer — full picture)
+      // Batch 5: Daily summary
       { emailIds: ['csr-daily-summary'] },
     ];
 
-    return batches;
-  }, []);
+    if (demoMode === 'short') {
+      return allBatches.filter(b => !b.fullOnly);
+    }
+    return allBatches;
+  }, [demoMode]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
     if (nextBatchIndex >= refreshBatches.length) return; // No more batches
+
+    setStateHistory(h => [...h, captureSnapshot()]);
 
     // Set refreshing state
     setIsRefreshing(true);
@@ -181,9 +263,9 @@ export default function App() {
       setTimeout(() => {
         markEmailArrived(emailId, currentBatchNumber);
 
-        // Auto-select review email on first refresh (demo starting point)
-        if (emailId === 'csr-review-1') {
-          setSelectedCsrEmailId('csr-review-1');
+        // Auto-select the CSR CC email on first refresh (demo starting point)
+        if (emailId === 'csr-ai-1') {
+          setSelectedCsrEmailId('csr-ai-1');
         }
 
         // Batch 2: Final quote arrives - change state to 'quoted'
@@ -198,7 +280,7 @@ export default function App() {
         }
       }, delay);
     });
-  }, [nextBatchIndex, refreshBatches, markEmailArrived]);
+  }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot]);
 
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
@@ -226,6 +308,7 @@ export default function App() {
     list.push(eis1Response);          // WF1: Jawinder (RCSCA) — simple request thread
     list.push(eis8RushResponse);      // Rush re-quote — Jawinder rush thread
     list.push(eis6Response);          // WF4: Dave (Tri-State) — multi-item thread
+    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);  // Qty-break — Lisa (Consolidated Electric)
 
     // Midwest Power original request (approval workflow)
     list.push(eis7MidwestPower);
@@ -241,7 +324,9 @@ export default function App() {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
       'csr-daily-summary': 120,       // Daily summary (last/newest)
-      'csr-ai-2': 115,                // Auto-quoted CC — always visible
+      'csr-ai-3': 116,                // Auto-quoted CC — qty-break
+      'csr-ai-2': 115,                // Auto-quoted CC — tapered reels
+      'csr-ai-1': 114,                // Auto-quoted CC — adhesive
       'csr-rush-cc': 105,             // Rush re-quote CC — always visible
       'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
       'csr-approval-hold': 75,        // Batch 1 - Approval hold notification
@@ -253,7 +338,9 @@ export default function App() {
 
     const list = [];
 
+    if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
+    if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
     if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
     if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
     if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
@@ -338,6 +425,7 @@ export default function App() {
 
   // Handle approval send: approve quote and trigger CC delivery
   const handleApprovalSend = () => {
+    setStateHistory(h => [...h, captureSnapshot()]);
     setApprovalStage('approved');
     setTimeout(() => {
       setApprovalStage('sent');
@@ -349,6 +437,7 @@ export default function App() {
 
   // Handle the review send — orchestrate staggered email arrivals
   const handleReviewSend = () => {
+    setStateHistory(h => [...h, captureSnapshot()]);
     setReviewStage('sending');
 
     if (reviewComposeMode === 'reply') {
@@ -488,6 +577,8 @@ export default function App() {
           isRefreshing={isRefreshing}
           emailBatchMap={emailBatchMap}
           currentBatch={nextBatchIndex}
+          onBack={handleBack}
+          canGoBack={stateHistory.length > 0}
         />
         <EmailDetail
           email={selectedEmailWithRead}
@@ -511,7 +602,7 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail />
+        <AppRail demoMode={demoMode} onDemoModeChange={setDemoMode} />
     </div>
   );
 }

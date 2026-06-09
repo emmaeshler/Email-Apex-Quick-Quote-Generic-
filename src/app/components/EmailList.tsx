@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox, Undo2 } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
@@ -42,6 +42,8 @@ interface EmailListProps {
   isRefreshing?: boolean;
   emailBatchMap?: Map<string, number>;
   currentBatch?: number;
+  onBack?: () => void;
+  canGoBack?: boolean;
 }
 
 /* Outlook-style category tag */
@@ -92,7 +94,7 @@ function SectionHeader({ label, count, isExpanded, onToggle }: SectionHeaderProp
   );
 }
 
-export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false, emailBatchMap = new Map(), currentBatch = 0 }: EmailListProps) {
+export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmail, folderType = 'csr', folderLabel, collapsed, onToggleCollapse, reviewResolved = false, forwardStage = 'pending', approvalStage = 'pending', hintTarget = null, scrollTrigger = 0, newEmailIds = new Set(), hasNewMessages = false, onRefresh, isRefreshing = false, emailBatchMap = new Map(), currentBatch = 0, onBack, canGoBack = false }: EmailListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [unreadExpanded, setUnreadExpanded] = useState(true);
   const [readExpanded, setReadExpanded] = useState(true);
@@ -277,6 +279,20 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
+            {onBack && (
+              <button
+                onClick={onBack}
+                disabled={!canGoBack}
+                className={`p-1 rounded-[var(--radius)] transition-colors flex-shrink-0 ${
+                  canGoBack
+                    ? 'text-foreground/70 hover:bg-muted hover:text-foreground'
+                    : 'text-muted-foreground/30 cursor-not-allowed'
+                }`}
+                title="Go back one step"
+              >
+                <Undo2 size={16} />
+              </button>
+            )}
             {folderType === 'eis' && <Zap size={16} className="text-secondary flex-shrink-0" />}
             {folderType === 'review' && <Flag size={16} className="text-secondary flex-shrink-0" />}
             <h2 className="text-size-lg font-w-medium text-foreground truncate">{folderLabel || 'Inbox'}</h2>

@@ -20,12 +20,10 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasAdjustments = table.lineItems.some((item) => item.requestedQty != null);
   const hasDescriptions = table.lineItems.some((item) => item.description);
   const hasStock = table.lineItems.some((item) => item.stockStatus);
-  const hasComparison = table.lineItems.some((item) => item.standardUnitPrice != null);
   const hasQtyBreakNotes = table.lineItems.some((item) => item.qtyBreakNote);
   const baseColCount = hasDescriptions ? 7 : 6;
-  const comparisonExtra = hasComparison ? 1 : 0;
   const qtyBreakExtra = hasQtyBreakNotes ? 1 : 0;
-  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + comparisonExtra + qtyBreakExtra;
+  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + qtyBreakExtra;
   return (
     <div className="my-4">
       <div className="mb-3 pb-2 border-b-2 border-foreground/20">
@@ -58,9 +56,8 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
             {hasStock && <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Availability</th>}
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Price' : 'Unit Price'}</th>
-            {hasComparison && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground/60">Standard Total</th>}
-            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">{hasComparison ? 'Rush Total' : 'Total Price'}</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>
+            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total Price</th>
             {hasQtyBreakNotes && <th className="py-2 text-left pl-4 text-size-sm font-w-medium text-foreground">Pricing Tier</th>}
           </tr>
         </thead>
@@ -103,17 +100,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                 )}
                 <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
                   {fmt(item.unitPrice)}
-                  {item.priceChangeReason && (
-                    <span className="block text-size-xs text-secondary" style={{ fontSize: '10px', lineHeight: '14px' }}>
-                      {item.priceChangeReason}
-                    </span>
-                  )}
                 </td>
-                {hasComparison && (
-                  <td className="py-2.5 px-4 text-right text-size-sm text-foreground/40 line-through">
-                    {item.standardTotalPrice != null ? fmt(item.standardTotalPrice) : '—'}
-                  </td>
-                )}
                 <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">{fmt(item.totalPrice)}</td>
                 {hasQtyBreakNotes && (
                   <td className="py-2.5 pl-4 text-size-sm text-foreground/70">{item.qtyBreakNote || '—'}</td>
@@ -128,7 +115,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             <>
               <tr className="border-t border-foreground/10">
                 <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">Subtotal</td>
-                <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.total + (table.discount?.amount ?? 0) - table.shipping.cost)}</td>
+                <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.total + (table.discount?.amount ?? 0) - table.shipping.cost - (table.rushFee?.amount ?? 0))}</td>
               </tr>
               <tr>
                 <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
@@ -143,6 +130,17 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                 <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.shipping.cost)}</td>
               </tr>
             </>
+          )}
+          {table.rushFee && (
+            <tr>
+              <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
+                <span>{table.rushFee.label}</span>
+                {table.rushFee.note && (
+                  <span className="block text-size-xs text-muted-foreground mt-0.5">{table.rushFee.note}</span>
+                )}
+              </td>
+              <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.rushFee.amount)}</td>
+            </tr>
           )}
           {table.discount && (
             <tr>
@@ -167,7 +165,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
           * {table.pricingNote}
         </div>
       )}
-      {hasComparison && table.standardTotal != null && (
+      {table.standardTotal != null && (
         <div className="mt-3 px-1">
           <span className="text-size-xs text-foreground/60">
             <span className="font-w-medium">Price comparison:</span>{' '}

@@ -36,6 +36,11 @@ export interface QuoteTable {
     amount: number;
     note?: string;
   };
+  rushFee?: {
+    label: string;
+    amount: number;
+    note?: string;
+  };
   isRushOrder?: boolean;
   comparisonNote?: string;
   standardTotal?: number;
@@ -298,10 +303,15 @@ const rushRcscaQuote: QuoteTable = {
   comparisonNote: 'Rush pricing compared to standard quote Q-1093928',
   standardTotal: 192.01,
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 24.70, totalPrice: 49.40, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', standardUnitPrice: 19.76, standardTotalPrice: 39.52, priceChangeReason: 'Rush surcharge (25%)' },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 26.61, totalPrice: 159.66, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', standardUnitPrice: 21.29, standardTotalPrice: 127.74, priceChangeReason: 'Rush surcharge (25%)' },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock' },
   ],
-  total: 258.06,
+  rushFee: {
+    label: 'Rush Processing Fee (25%)',
+    amount: 41.82,
+    note: 'Applied to expedite order for Friday delivery.',
+  },
+  total: 258.08,
   shipping: {
     method: 'Priority Overnight',
     cost: 49.00,
@@ -646,7 +656,7 @@ export const eis8RushResponse: Email = {
   to: 'jschahal@rcsca.com',
   cc: 'creisch@apex-corp.com',
   subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
-  preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
+  preview: 'Rush Quote #Q-1094215 — $258.08 for RCSCA (standard: $192.01)...',
   body: '',
   bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
@@ -673,7 +683,7 @@ export const csr3RushCc: Email = {
   to: 'jschahal@rcsca.com',
   cc: 'creisch@apex-corp.com',
   subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
-  preview: 'Rush Quote #Q-1094215 — $258.06 for RCSCA (standard: $192.01)...',
+  preview: 'Rush Quote #Q-1094215 — $258.08 for RCSCA (standard: $192.01)...',
   body: '',
   bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,

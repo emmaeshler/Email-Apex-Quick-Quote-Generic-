@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, Inbox, Undo2 } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, ChevronLeft, Inbox } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
@@ -19,7 +19,8 @@ interface Email {
   isReviewRequest?: boolean;
   isDirectQuoteRequest?: boolean;
   isApprovalHold?: boolean;
-  inlineQuoteTable?: object;
+  inlineQuoteTable?: { isRushOrder?: boolean; isQtyBreakComparison?: boolean };
+  isCcFromAiQuoteTable?: { isRushOrder?: boolean; isQtyBreakComparison?: boolean };
 }
 
 interface EmailListProps {
@@ -59,6 +60,22 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
       {label}
     </span>
   );
+}
+
+function getTypeChip(email: Email): string | null {
+  if (email.id === 'csr-daily-summary') return 'Daily Summary';
+  if (email.isCcFromAiQuoteTable?.isRushOrder || email.inlineQuoteTable?.isRushOrder) return 'Rush Re-Quote';
+  if (email.isCcFromAiQuoteTable?.isQtyBreakComparison || email.inlineQuoteTable?.isQtyBreakComparison) return 'Volume Pricing';
+  if (email.id === 'csr-ai-4' || email.id === 'csr-ai-5' || email.id === 'eis-10-northeast-response' || email.id === 'eis-11-gulfcoast-response') return 'Client-Specific Pricing';
+  if (email.isApprovalHold) return 'Approval Threshold';
+  if (email.isReviewRequest) return 'Needs Clarification';
+  if (email.id === 'csr-steve-clarification') return 'Customer Response';
+  if (email.id === 'csr-stonite-final-cc' || email.id === 'eis-5-response') return 'Resolved Quote';
+  if (email.id === 'csr-ai-1' || email.id === 'eis-1-response') return 'Simple Quote';
+  if (email.id === 'csr-ai-2' || email.id === 'eis-6-response') return 'Product Variants';
+  if (email.isDirectQuoteRequest) return 'Quote Request';
+  if (email.isCcFromAi || email.quoteStatus === 'auto-quoted' || email.quoteStatus === 'quoted') return 'Auto-Quote';
+  return null;
 }
 
 const STATUS_TAG: Record<string, { label: string; color: string }> = {
@@ -179,58 +196,48 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
               {email.subject}
             </div>
             <div className={`text-size-xs truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`}>{email.preview}</div>
-            {(folderType === 'eis' || folderType === 'review') && email.quoteStatus && (() => {
-              const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
+            {(() => {
+              const typeChip = getTypeChip(email);
+              const statusChip = (() => {
+                if ((folderType === 'eis' || folderType === 'review') && email.quoteStatus) {
+                  const effectiveStatus = email.quoteStatus === 'review' && reviewResolved ? 'quoted' : email.quoteStatus;
+                  return <CategoryTag {...STATUS_TAG[effectiveStatus!]} />;
+                }
+                if ((folderType === 'csr' || folderType === 'review') && email.isCcFromAi) {
+                  const wasReviewed = (email as any).quotedPrevious?.fromEmail?.includes('@apex-corp.com');
+                  if (wasReviewed) return <CategoryTag label="Reviewed & Quoted" color="grey" />;
+                  if (email.id === 'csr-approval-cc') return <CategoryTag label="Approved & Sent" color="grey" />;
+                  return <CategoryTag label="Auto-Quoted" color="green" />;
+                }
+                if ((folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved) {
+                  return <CategoryTag label="Sent to Customer" color="grey" />;
+                }
+                if ((folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved) {
+                  return <CategoryTag label="Draft Ready" color="orange" />;
+                }
+                if ((folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest) {
+                  if (forwardStage === 'quoted') return <CategoryTag label="Forwarded & Quoted" color="grey" />;
+                  if (forwardStage === 'processing' || forwardStage === 'sent') return <CategoryTag label="Forwarded" color="blue" />;
+                  if (forwardStage === 'composing') return <CategoryTag label="Forwarding..." color="blue" />;
+                  return <CategoryTag label="Quote Request" color="orange" />;
+                }
+                if (folderType === 'csr' && email.isApprovalHold) {
+                  if (approvalStage === 'sent') return <CategoryTag label="Approved & Sent" color="grey" />;
+                  if (approvalStage === 'approved') return <CategoryTag label="Sending..." color="blue" />;
+                  return <CategoryTag label="Pending Approval" color="orange" />;
+                }
+                return null;
+              })();
+              if (!statusChip && !typeChip) return null;
               return (
-                <div className="mt-1.5">
-                  <CategoryTag {...STATUS_TAG[effectiveStatus!]} />
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  {statusChip}
+                  {typeChip && (
+                    <span className="text-muted-foreground" style={{ fontSize: '10px', lineHeight: '16px' }}>
+                      {statusChip && '·  '}{typeChip}
+                    </span>
+                  )}
                 </div>
-              );
-            })()}
-            {(folderType === 'csr' || folderType === 'review') && email.isCcFromAi && (() => {
-              const wasReviewed = email.quotedPrevious?.fromEmail?.includes('@apex-corp.com');
-              return (
-                <div className="mt-1.5">
-                  <CategoryTag
-                    label={wasReviewed ? "Reviewed & Quoted" : "Auto-Quoted"}
-                    color={wasReviewed ? "grey" : "green"}
-                  />
-                </div>
-              );
-            })()}
-            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && reviewResolved && (
-              <div className="mt-1.5">
-                <CategoryTag label="Sent to Customer" color="grey" />
-              </div>
-            )}
-            {(folderType === 'csr' || folderType === 'review') && email.isReviewRequest && !reviewResolved && (
-              <div className="mt-1.5">
-                <CategoryTag label="Draft Ready" color="orange" />
-              </div>
-            )}
-            {(folderType === 'csr' || folderType === 'review') && email.isDirectQuoteRequest && (() => {
-              if (forwardStage === 'quoted') return (
-                <div className="mt-1.5"><CategoryTag label="Forwarded & Quoted" color="grey" /></div>
-              );
-              if (forwardStage === 'processing' || forwardStage === 'sent') return (
-                <div className="mt-1.5"><CategoryTag label="Forwarded" color="blue" /></div>
-              );
-              if (forwardStage === 'composing') return (
-                <div className="mt-1.5"><CategoryTag label="Forwarding..." color="blue" /></div>
-              );
-              return (
-                <div className="mt-1.5"><CategoryTag label="Quote Request" color="orange" /></div>
-              );
-            })()}
-            {(folderType === 'csr') && email.isApprovalHold && (() => {
-              if (approvalStage === 'sent') return (
-                <div className="mt-1.5"><CategoryTag label="Approved & Sent" color="grey" /></div>
-              );
-              if (approvalStage === 'approved') return (
-                <div className="mt-1.5"><CategoryTag label="Sending..." color="blue" /></div>
-              );
-              return (
-                <div className="mt-1.5"><CategoryTag label="Pending Approval" color="orange" /></div>
               );
             })()}
           </div>
@@ -290,7 +297,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 }`}
                 title="Go back one step"
               >
-                <Undo2 size={16} />
+                <ChevronLeft size={16} />
               </button>
             )}
             {folderType === 'eis' && <Zap size={16} className="text-secondary flex-shrink-0" />}

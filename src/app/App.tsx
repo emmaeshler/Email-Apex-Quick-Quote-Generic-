@@ -5,7 +5,9 @@ import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
 import { AppRail } from '@/app/components/AppRail';
+import { SequenceBuilder } from '@/app/components/SequenceBuilder';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
+import { loadCustomSequences, addCustomSequence, deleteCustomSequence, type CustomSequence } from './data/customSequences';
 import {
   eisEmails,
   csrEmails,
@@ -32,6 +34,12 @@ import {
   eis9QtyBreak,
   eis9QtyBreakResponse,
   csrQtyBreakCc,
+  eis10NortheastRequest,
+  eis10NortheastResponse,
+  csr4NortheastCc,
+  eis11GulfCoastRequest,
+  eis11GulfCoastResponse,
+  csr5GulfCoastCc,
 } from './data/emails';
 
 // Re-export types so existing imports from './App' still work
@@ -54,7 +62,7 @@ interface StateSnapshot {
   readIds: Set<string>;
 }
 
-export type DemoMode = 'short' | 'full';
+export type DemoMode = 'short' | 'full' | (string & {});
 
 function getInitialDemoMode(): DemoMode {
   const params = new URLSearchParams(window.location.search);
@@ -108,6 +116,11 @@ export default function App() {
   // ── State history for back/undo during demos ──
   const [stateHistory, setStateHistory] = useState<StateSnapshot[]>([]);
 
+  // ── View state for sequence builder ──
+  const [currentView, setCurrentView] = useState<'inbox' | 'sequence-builder'>('inbox');
+  const [editingSequenceId, setEditingSequenceId] = useState<string | null>(null);
+  const [customSequences, setCustomSequences] = useState<CustomSequence[]>(loadCustomSequences);
+
   // ── Demo hint visibility (toggle with ` backtick key) ──
   const [demoVisible, setDemoVisible] = useState(true);
 
@@ -133,7 +146,7 @@ export default function App() {
 
   // ── Mark review as resolved when user views final quote ──
   useEffect(() => {
-    if (selectedEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
+    if (selectedCsrEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
       setReviewResolved(true);
     }
   }, [selectedCsrEmailId, reviewForwardStage, reviewResolved]);
@@ -171,6 +184,61 @@ export default function App() {
       });
     }, 3000);
   }, []);
+
+  // ── Switch demo mode — full reset ──
+  const handleDemoModeChange = useCallback((mode: DemoMode) => {
+    setDemoMode(mode);
+    setActiveFolder('csr');
+    setSelectedCsrEmailId(null);
+    setSelectedEisEmailId(null);
+    setSelectedReviewEmailId(null);
+    setReviewResolved(false);
+    setReviewStage('pending');
+    setReviewComposeMode('reply');
+    setReviewForwardStage('pending');
+    setForwardStage('pending');
+    setApprovalStage('pending');
+    setHiddenIds(new Set());
+    setReadIds(new Set());
+    setArrivedEmails(new Set());
+    setNewEmailIds(new Set());
+    setEmailBatchMap(new Map());
+    setNextBatchIndex(0);
+    setIsRefreshing(false);
+    setStateHistory([]);
+    setScrollTrigger(0);
+    const url = new URL(window.location.href);
+    if (mode === 'short' || mode === 'full') {
+      url.searchParams.set('demo', mode);
+    } else {
+      url.searchParams.delete('demo');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, []);
+
+  const handleOpenBuilder = useCallback((sequenceId?: string) => {
+    setEditingSequenceId(sequenceId || null);
+    setCurrentView('sequence-builder');
+  }, []);
+
+  const handleBuilderSave = useCallback((seq: CustomSequence) => {
+    addCustomSequence(seq);
+    setCustomSequences(loadCustomSequences());
+    setCurrentView('inbox');
+    handleDemoModeChange(`custom:${seq.id}`);
+  }, [handleDemoModeChange]);
+
+  const handleBuilderCancel = useCallback(() => {
+    setCurrentView('inbox');
+  }, []);
+
+  const handleDeleteSequence = useCallback((id: string) => {
+    deleteCustomSequence(id);
+    setCustomSequences(loadCustomSequences());
+    if (demoMode === `custom:${id}`) {
+      handleDemoModeChange('full');
+    }
+  }, [demoMode, handleDemoModeChange]);
 
   // ── Capture/restore state for demo back button ──
   const captureSnapshot = useCallback((): StateSnapshot => ({
@@ -222,28 +290,38 @@ export default function App() {
       // Batch 1: Multi-product auto-quote (tapered reels — 6 configurations, with CC)
       { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
 
-      // Batch 2: Rush re-quote + Qty-break comparison (long demo only)
+      // Batch 2: Customer-specific pricing — same products, different customers (long demo only)
+      { emailIds: ['eis-10-northeast', 'eis-10-northeast-response', 'csr-ai-4', 'eis-11-gulfcoast', 'eis-11-gulfcoast-response', 'csr-ai-5'], fullOnly: true },
+
+      // Batch 3: Rush re-quote + Qty-break comparison (long demo only)
       { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc', 'eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'], fullOnly: true },
 
-      // Batch 3: Review needed (magnet wire — human clarification)
+      // Batch 4: Review needed (magnet wire — human clarification)
       { emailIds: ['csr-review-1'] },
 
-      // Batch 4: Approval required (motor rewind — sales rep sign-off)
+      // Batch 5: Approval required (motor rewind — sales rep sign-off)
       { emailIds: ['csr-approval-hold'] },
 
-      // Batch 5: Daily summary
+      // Batch 6: Daily summary
       { emailIds: ['csr-daily-summary'] },
     ];
 
     if (demoMode === 'short') {
       return allBatches.filter(b => !b.fullOnly);
     }
+    if (demoMode.startsWith('custom:')) {
+      const seqId = demoMode.slice(7);
+      const seq = customSequences.find(s => s.id === seqId);
+      if (seq) return seq.batches.map(b => ({ emailIds: b.emailIds }));
+      return [];
+    }
     return allBatches;
-  }, [demoMode]);
+  }, [demoMode, customSequences]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
     if (nextBatchIndex >= refreshBatches.length) return; // No more batches
+    if (isRefreshing) return; // Prevent double-click
 
     setStateHistory(h => [...h, captureSnapshot()]);
 
@@ -263,9 +341,9 @@ export default function App() {
       setTimeout(() => {
         markEmailArrived(emailId, currentBatchNumber);
 
-        // Auto-select the CSR CC email on first refresh (demo starting point)
-        if (emailId === 'csr-ai-1') {
-          setSelectedCsrEmailId('csr-ai-1');
+        // Auto-select first CSR email on first refresh (demo starting point)
+        if (index === 0 && nextBatchIndex === 0 && emailId.startsWith('csr')) {
+          setSelectedCsrEmailId(emailId);
         }
 
         // Batch 2: Final quote arrives - change state to 'quoted'
@@ -280,7 +358,7 @@ export default function App() {
         }
       }, delay);
     });
-  }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot]);
+  }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot, isRefreshing]);
 
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
@@ -301,29 +379,45 @@ export default function App() {
   };
 
   /* ── Build dynamic EIS email list ── */
+  const isCustomMode = demoMode.startsWith('custom:');
   const effectiveEisEmails = useMemo(() => {
     const list = [];
 
-    // Auto-quoted threads — show only the response (contains original via quotedPrevious)
-    list.push(eis1Response);          // WF1: Jawinder (RCSCA) — simple request thread
-    list.push(eis8RushResponse);      // Rush re-quote — Jawinder rush thread
-    list.push(eis6Response);          // WF4: Dave (Tri-State) — multi-item thread
-    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);  // Qty-break — Lisa (Consolidated Electric)
+    // In custom mode, all emails are gated by arrivedEmails
+    // In built-in modes, some are always present (pre-loaded in EIS inbox)
 
-    // Midwest Power original request (approval workflow)
-    list.push(eis7MidwestPower);
+    // Request emails (only shown in custom mode when explicitly included)
+    if (isCustomMode && arrivedEmails.has('eis-1')) list.push(eis1Jawinder);
+    if (isCustomMode && arrivedEmails.has('eis-6')) list.push(eis6Dave);
+    if (isCustomMode && arrivedEmails.has('eis-8-rush')) list.push(eis8Rush);
+    if (isCustomMode && arrivedEmails.has('eis-9-qtybreak')) list.push(eis9QtyBreak);
+    if (isCustomMode && arrivedEmails.has('eis-5')) list.push(eis5Stonite);
+    if (isCustomMode && arrivedEmails.has('eis-10-northeast')) list.push(eis10NortheastRequest);
+    if (isCustomMode && arrivedEmails.has('eis-11-gulfcoast')) list.push(eis11GulfCoastRequest);
+
+    // Response emails
+    if (!isCustomMode || arrivedEmails.has('eis-1-response')) list.push(eis1Response);
+    if (!isCustomMode || arrivedEmails.has('eis-8-rush-response')) list.push(eis8RushResponse);
+    if (!isCustomMode || arrivedEmails.has('eis-6-response')) list.push(eis6Response);
+    if (arrivedEmails.has('eis-10-northeast-response')) list.push(eis10NortheastResponse);
+    if (arrivedEmails.has('eis-11-gulfcoast-response')) list.push(eis11GulfCoastResponse);
+    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);
+
+    if (!isCustomMode || arrivedEmails.has('eis-7-midwest')) list.push(eis7MidwestPower);
 
     // WF2: Stonite quote thread (arrives after review workflow completes)
     if (arrivedEmails.has('eis-stonite-response')) list.unshift(eisStoniteResponse);
 
     return list;
-  }, [arrivedEmails]);
+  }, [arrivedEmails, isCustomMode]);
 
   /* ── Build dynamic CSR email list ── */
   const effectiveCsrEmails = useMemo(() => {
     // Map email IDs to workflow priority (higher = newer, appears first)
     const workflowPriority: Record<string, number> = {
       'csr-daily-summary': 120,       // Daily summary (last/newest)
+      'csr-ai-5': 118,                // Auto-quoted CC — Gulf Coast (customer pricing)
+      'csr-ai-4': 117,                // Auto-quoted CC — Northeast Motor (customer pricing)
       'csr-ai-3': 116,                // Auto-quoted CC — qty-break
       'csr-ai-2': 115,                // Auto-quoted CC — tapered reels
       'csr-ai-1': 114,                // Auto-quoted CC — adhesive
@@ -338,6 +432,8 @@ export default function App() {
 
     const list = [];
 
+    if (arrivedEmails.has('csr-ai-5')) list.push(csr5GulfCoastCc);
+    if (arrivedEmails.has('csr-ai-4')) list.push(csr4NortheastCc);
     if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
     if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
     if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
@@ -401,8 +497,11 @@ export default function App() {
   const setSelectedEmailId = activeFolder === 'csr' ? setSelectedCsrEmailId : activeFolder === 'eis' ? setSelectedEisEmailId : setSelectedReviewEmailId;
   const selectedEmail = visibleEmails.find((e) => e.id === selectedEmailId) || null;
 
-  // Mark emails as read when selected
+  // Mark emails as read when selected, and snapshot for per-email back
   const handleSelectEmail = (id: string) => {
+    if (id !== selectedEmailId) {
+      setStateHistory(h => [...h, captureSnapshot()]);
+    }
     setSelectedEmailId(id);
     setReadIds((prev) => {
       if (prev.has(id)) return prev;
@@ -524,10 +623,11 @@ export default function App() {
       hasNewMessages,
       isRefreshing,
       nextBatchIndex,
+      isCustomMode,
     });
 
     return hint;
-  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, approvalStage, arrivedEmails, readIds, hasNewMessages, isRefreshing, nextBatchIndex]);
+  }, [demoVisible, selectedEmailId, activeFolder, reviewResolved, reviewStage, forwardStage, reviewForwardStage, approvalStage, arrivedEmails, readIds, hasNewMessages, isRefreshing, nextBatchIndex, isCustomMode]);
 
   // ── Debug hint changes (dev mode only) ──
   useEffect(() => {
@@ -546,6 +646,17 @@ export default function App() {
       });
     }
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
+
+  if (currentView === 'sequence-builder') {
+    const editingSeq = editingSequenceId ? customSequences.find(s => s.id === editingSequenceId) : null;
+    return (
+      <SequenceBuilder
+        existingSequence={editingSeq}
+        onSave={handleBuilderSave}
+        onCancel={handleBuilderCancel}
+      />
+    );
+  }
 
   return (
     <div className="size-full flex gap-2 p-2 bg-background overflow-hidden">
@@ -602,7 +713,14 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail demoMode={demoMode} onDemoModeChange={setDemoMode} />
+        <AppRail
+          demoMode={demoMode}
+          onDemoModeChange={handleDemoModeChange}
+          customSequences={customSequences}
+          onOpenBuilder={() => handleOpenBuilder()}
+          onEditSequence={(id) => handleOpenBuilder(id)}
+          onDeleteSequence={handleDeleteSequence}
+        />
     </div>
   );
 }

@@ -49,6 +49,7 @@ export interface WorkflowState {
   hasNewMessages: boolean;
   isRefreshing: boolean;
   nextBatchIndex: number;
+  isCustomMode?: boolean;
 }
 
 /* ── Hint Rules Registry ── */
@@ -105,7 +106,7 @@ export const hintRules: HintRule[] = [
     conditions: {
       emailsArrived: ['csr-ai-2'],
       selectedEmailIdNot: ['csr-ai-2'],
-      emailsNotArrived: ['csr-review-1', 'csr-rush-cc'],
+      emailsNotArrived: ['csr-ai-4', 'csr-review-1', 'csr-rush-cc'],
     },
     target: 'email:csr-ai-2',
   },
@@ -113,12 +114,55 @@ export const hintRules: HintRule[] = [
   {
     id: 'tapered-reels-to-next-refresh',
     priority: 930,
-    phase: 'Phase 2→3: After viewing tapered reels CC, refresh for next batch',
+    phase: 'Phase 2→2.5: After viewing tapered reels CC, refresh for next batch',
     conditions: {
       emailsArrived: ['csr-ai-2'],
       selectedEmailId: 'csr-ai-2',
-      emailsNotArrived: ['csr-review-1', 'csr-rush-cc'],
+      emailsNotArrived: ['csr-ai-4', 'csr-review-1', 'csr-rush-cc'],
       hasNewMessages: true,
+    },
+    target: 'action:refresh',
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  //  PHASE 2.5: CUSTOMER-SPECIFIC PRICING (long demo only)
+  //  Same products (ADH-X315, ACT-Z788), different customers/prices
+  // ═══════════════════════════════════════════════════════════
+  {
+    id: 'customer-pricing-cc-1',
+    priority: 928,
+    phase: 'Phase 2.5: Guide to first customer pricing CC (Northeast Motor)',
+    conditions: {
+      emailsArrived: ['csr-ai-4'],
+      emailsNotArrived: ['csr-rush-cc', 'csr-review-1'],
+      customCondition: (state) => !state.readIds.has('csr-ai-4'),
+    },
+    target: 'email:csr-ai-4',
+  },
+
+  {
+    id: 'customer-pricing-cc-2',
+    priority: 926,
+    phase: 'Phase 2.5: Guide to second customer pricing CC (Gulf Coast)',
+    conditions: {
+      emailsArrived: ['csr-ai-5'],
+      emailsNotArrived: ['csr-rush-cc', 'csr-review-1'],
+      customCondition: (state) =>
+        state.readIds.has('csr-ai-4') && !state.readIds.has('csr-ai-5'),
+    },
+    target: 'email:csr-ai-5',
+  },
+
+  {
+    id: 'customer-pricing-to-next-refresh',
+    priority: 924,
+    phase: 'Phase 2.5→3: After viewing both customer CCs, refresh for rush/qty-break',
+    conditions: {
+      emailsArrived: ['csr-ai-5'],
+      emailsNotArrived: ['csr-rush-cc', 'csr-review-1'],
+      hasNewMessages: true,
+      customCondition: (state) =>
+        state.readIds.has('csr-ai-4') && state.readIds.has('csr-ai-5'),
     },
     target: 'action:refresh',
   },
@@ -132,23 +176,10 @@ export const hintRules: HintRule[] = [
     phase: 'Phase 3: Guide to rush re-quote CC',
     conditions: {
       emailsArrived: ['csr-rush-cc'],
-      selectedEmailIdNot: ['csr-rush-cc'],
       emailsNotArrived: ['csr-review-1'],
+      customCondition: (state) => !state.readIds.has('csr-rush-cc'),
     },
     target: 'email:csr-rush-cc',
-  },
-
-  {
-    id: 'rush-to-qtybreak',
-    priority: 915,
-    phase: 'Phase 3: After viewing rush CC, guide to qty-break CC',
-    conditions: {
-      emailsArrived: ['csr-rush-cc', 'csr-ai-3'],
-      selectedEmailId: 'csr-rush-cc',
-      selectedEmailIdNot: ['csr-ai-3'],
-      emailsNotArrived: ['csr-review-1'],
-    },
-    target: 'email:csr-ai-3',
   },
 
   {
@@ -157,8 +188,9 @@ export const hintRules: HintRule[] = [
     phase: 'Phase 3: Guide to qty-break CC email',
     conditions: {
       emailsArrived: ['csr-ai-3'],
-      selectedEmailIdNot: ['csr-ai-3', 'csr-rush-cc'],
       emailsNotArrived: ['csr-review-1'],
+      customCondition: (state) =>
+        state.readIds.has('csr-rush-cc') && !state.readIds.has('csr-ai-3'),
     },
     target: 'email:csr-ai-3',
   },
@@ -169,9 +201,10 @@ export const hintRules: HintRule[] = [
     phase: 'Phase 3→4: After viewing rush/qty-break, refresh for review',
     conditions: {
       emailsArrived: ['csr-ai-3'],
-      selectedEmailId: 'csr-ai-3',
       emailsNotArrived: ['csr-review-1'],
       hasNewMessages: true,
+      customCondition: (state) =>
+        state.readIds.has('csr-rush-cc') && state.readIds.has('csr-ai-3'),
     },
     target: 'action:refresh',
   },
@@ -392,8 +425,54 @@ function evaluateConditions(conditions: HintConditions, state: WorkflowState): b
   return true;
 }
 
+function selectCustomHint(state: WorkflowState): HintTarget {
+  if (state.nextBatchIndex === 0) return 'action:refresh';
+
+  // Interactive workflow buttons (review forward/send, approval reply/send)
+  if (state.selectedEmailId === 'csr-review-1' && !state.reviewResolved) {
+    if (state.reviewStage === 'composing') return 'action:send';
+    if (state.reviewStage === 'pending') return 'action:forward';
+  }
+  if (state.selectedEmailId === 'csr-approval-hold') {
+    if (state.approvalStage === 'composing') return 'action:send';
+    if (state.approvalStage === 'pending') return 'action:reply';
+  }
+
+  // Review workflow intermediate emails
+  if (state.arrivedEmails.has('csr-steve-clarification') && !state.readIds.has('csr-steve-clarification') && !state.reviewResolved) {
+    return 'email:csr-steve-clarification';
+  }
+  if (state.arrivedEmails.has('csr-stonite-final-cc') && !state.readIds.has('csr-stonite-final-cc') && state.reviewForwardStage === 'quoted') {
+    return 'email:csr-stonite-final-cc';
+  }
+
+  // Guide through unread CSR emails, then straight to refresh
+  const allCsr = [
+    'csr-ai-1', 'csr-ai-2', 'csr-ai-3', 'csr-ai-4', 'csr-ai-5',
+    'csr-rush-cc', 'csr-review-1', 'csr-approval-hold', 'csr-daily-summary',
+  ];
+  for (const id of allCsr) {
+    if (state.arrivedEmails.has(id) && !state.readIds.has(id)) {
+      if (state.activeFolder !== 'csr') return 'folder:csr';
+      return `email:${id}`;
+    }
+  }
+
+  if (state.hasNewMessages && !state.isRefreshing) return 'action:refresh';
+
+  return null;
+}
+
 export function selectHint(state: WorkflowState): HintTarget {
   if (!state.demoVisible) return null;
+
+  if (state.isCustomMode) {
+    const hint = selectCustomHint(state);
+    if (import.meta.env.DEV) {
+      console.log(`[Hint System] Custom mode selected: ${hint}`);
+    }
+    return hint;
+  }
 
   const matches = hintRules.filter(rule => evaluateConditions(rule.conditions, state));
 

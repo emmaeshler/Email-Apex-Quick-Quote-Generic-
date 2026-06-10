@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import {
   Reply, ReplyAll, Forward, Archive, Trash2, MoreVertical,
   ChevronDown, ChevronUp, Pin, Printer, Mail, Info, Inbox,
@@ -18,15 +18,11 @@ const fmt = (n: number) =>
 
 function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasAdjustments = table.lineItems.some((item) => item.requestedQty != null);
-  const hasDescriptions = table.lineItems.some((item) => item.description);
-  const hasStock = table.lineItems.some((item) => item.stockStatus);
-  const hasQtyBreakNotes = table.lineItems.some((item) => item.qtyBreakNote);
-  const baseColCount = hasDescriptions ? 7 : 6;
-  const qtyBreakExtra = hasQtyBreakNotes ? 1 : 0;
-  const colCount = (hasStock ? baseColCount + 1 : baseColCount) + qtyBreakExtra;
+  const hasQtyBreakDiscount = table.lineItems.some((item) => item.qtyBreakDiscount);
+  const colCount = hasQtyBreakDiscount ? 5 : 4;
   return (
-    <div className="my-4">
-      <div className="mb-3 pb-2 border-b-2 border-foreground/20">
+    <div className="my-2">
+      <div className="mb-2 pb-1.5 border-b-2 border-foreground/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-size-sm font-w-medium text-foreground">Quote #{table.quoteNumber}</span>
@@ -50,61 +46,58 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-foreground/20">
-            <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Number</th>
-            {hasDescriptions && <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Description</th>}
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Quantity</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
-            {hasStock && <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Availability</th>}
+            <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty</th>
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>
-            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total Price</th>
-            {hasQtyBreakNotes && <th className="py-2 text-left pl-4 text-size-sm font-w-medium text-foreground">Pricing Tier</th>}
+            {hasQtyBreakDiscount && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Discount</th>}
+            <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total</th>
           </tr>
         </thead>
         <tbody>
           {table.lineItems.map((item, i) => {
             const isAdjusted = item.requestedQty != null;
             const moq = item.minOrderQty ?? 1;
-            const brk = item.qtyBreakIncrement ?? 1;
             return (
               <tr key={i} className={`border-b border-border ${isAdjusted ? 'bg-secondary/5' : ''}`}>
-                <td className="py-2.5 pr-4 text-size-sm text-foreground/80">{item.sku}</td>
-                {hasDescriptions && <td className="py-2.5 pr-4 text-size-sm text-foreground/80">{item.description || '—'}</td>}
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
+                <td className="py-1.5 pr-4 text-size-sm text-foreground/80">
+                  <span className="font-w-medium">{item.sku}</span>
+                  {item.description && (
+                    <span className="block text-size-xs text-muted-foreground mt-0.5">{item.description}</span>
+                  )}
+                </td>
+                <td className="py-1.5 px-4 text-right text-size-sm text-foreground/80 align-top">
                   <span>{item.quantity.toLocaleString()}</span>
                   {isAdjusted && (
                     <span className="block text-size-xs text-secondary" style={{ fontSize: '10px', lineHeight: '14px' }}>
-                      req. {item.requestedQty!.toLocaleString()}
+                      req. {item.requestedQty!.toLocaleString()}, min {moq}
+                    </span>
+                  )}
+                  {!isAdjusted && moq > 1 && (
+                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      min {moq}
+                    </span>
+                  )}
+                  {item.stockStatus === 'in-stock' && (
+                    <span className="block text-size-xs" style={{ fontSize: '10px', lineHeight: '14px', color: '#16a34a' }}>In Stock</span>
+                  )}
+                  {item.stockStatus === 'lead-time' && (
+                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      Est. {item.leadTime ?? 'lead time'}
                     </span>
                   )}
                 </td>
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">{moq.toLocaleString()}</td>
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">{brk.toLocaleString()}</td>
-                {hasStock && (
-                  <td className="py-2.5 px-4 text-size-sm text-foreground/80">
-                    {item.stockStatus === 'in-stock' ? (
-                      <span>In Stock | Ready to Ship</span>
-                    ) : item.stockStatus === 'lead-time' ? (
-                      <span>
-                        Available to Order
-                        {item.leadTime && (
-                          <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '11px', lineHeight: '16px' }}>
-                            Est. {item.leadTime}
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
+                <td className="py-1.5 px-4 text-right text-size-sm text-foreground/80 align-top">
+                  {fmt(item.unitPrice)}
+                </td>
+                {hasQtyBreakDiscount && (
+                  <td className="py-1.5 px-4 text-right text-size-sm align-top">
+                    <span style={{ color: '#16a34a' }}>{item.qtyBreakDiscount || '—'}</span>
+                    {item.qtyBreakNote && (
+                      <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>{item.qtyBreakNote}</span>
                     )}
                   </td>
                 )}
-                <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
-                  {fmt(item.unitPrice)}
-                </td>
-                <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">{fmt(item.totalPrice)}</td>
-                {hasQtyBreakNotes && (
-                  <td className="py-2.5 pl-4 text-size-sm text-foreground/70">{item.qtyBreakNote || '—'}</td>
-                )}
+                <td className="py-1.5 pl-4 text-right text-size-sm text-foreground/80 align-top">{fmt(item.totalPrice)}</td>
               </tr>
             );
           })}
@@ -154,8 +147,8 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
             </tr>
           )}
           <tr className="border-t-2 border-foreground/20">
-            <td colSpan={colCount - 1} className="py-3 pr-4 text-size-base font-w-medium text-foreground">TOTAL</td>
-            <td className="py-3 pl-4 text-right text-size-base font-w-medium text-foreground">{fmt(table.total)}</td>
+            <td colSpan={colCount - 1} className="py-2 pr-4 text-size-base font-w-medium text-foreground">TOTAL</td>
+            <td className="py-2 pl-4 text-right text-size-base font-w-medium text-foreground">{fmt(table.total)}</td>
           </tr>
         </tfoot>
         )}
@@ -174,7 +167,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
         </div>
       )}
       {hasAdjustments && (
-        <div className="mt-3 flex items-start gap-2 px-3 py-2 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
+        <div className="mt-2 flex items-start gap-2 px-3 py-1.5 rounded-[var(--radius)] bg-secondary/6" style={{ borderLeft: '3px solid var(--secondary)' }}>
           <ArrowUpCircle size={14} className="text-secondary flex-shrink-0 mt-0.5" />
           <span className="text-size-xs text-foreground/70">
             Highlighted rows indicate quantities adjusted to the next valid order break. All items must be ordered in multiples of their Qty Break, with a minimum of the MOQ shown.
@@ -194,7 +187,7 @@ function InfoBar({ icon: Icon, iconColor, bg, border, children, animate }: {
   animate?: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-2.5 px-4 py-2.5 ${bg} border-b border-border`} style={{ borderLeft: `3px solid ${border}` }}>
+    <div className={`flex items-center gap-2.5 px-4 py-1.5 ${bg} border-b border-border`} style={{ borderLeft: `3px solid ${border}` }}>
       <Icon size={15} className={`${iconColor} flex-shrink-0 ${animate ? 'animate-spin' : ''}`} />
       <span className="text-size-sm text-foreground/80 flex-1">{children}</span>
     </div>
@@ -225,9 +218,9 @@ const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof Cl
 /* ── Outlook-style quoted previous message ── */
 
 function QuotedPreviousBlock({ quoted }: { quoted: QuotedPrevious }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   return (
-    <div className="mt-6 border-t border-border pt-4">
+    <div className="mt-4 border-t border-border pt-3">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-1.5 text-size-xs text-muted-foreground hover:text-foreground/70 transition-colors"
@@ -257,7 +250,7 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
   customerAccount: string;
 }) {
   const hasAnyPricing = items.some((item) => item.unitPrice != null || item.totalPrice != null);
-  const hasAnyDescription = items.some((item) => item.description);
+  const colCount = hasAnyPricing ? 4 : 2;
 
   return (
     <div className="mt-3">
@@ -273,15 +266,10 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-foreground/20">
-            <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Requested Item</th>
-            <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Number</th>
-            {hasAnyDescription && <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item Description</th>}
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Quantity</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">MOQ</th>
-            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty Break</th>
+            <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item</th>
+            <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty</th>
             {hasAnyPricing && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>}
             {hasAnyPricing && <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Est. Total</th>}
-            <th className="py-2 text-left px-4 text-size-sm font-w-medium text-foreground">Details Needed</th>
           </tr>
         </thead>
         <tbody>
@@ -290,69 +278,37 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
 
             return (
               <tr key={i} className="border-b border-border">
-                <td className="py-2.5 pr-4 text-size-sm text-foreground/80">{item.requestedItem}</td>
-                <td className="py-2.5 pr-4 text-size-sm">
-                  {item.matchedItem ? (
-                    item.catalogUrl ? (
-                      <a
-                        href={item.catalogUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 underline underline-offset-2 transition-colors text-accent hover:text-accent/80"
-                      >
-                        {item.matchedItem}
-                        <ExternalLink size={12} className="flex-shrink-0" />
-                      </a>
-                    ) : (
-                      <span className="text-foreground/80">{item.matchedItem}</span>
-                    )
-                  ) : (
-                    <span className="text-muted-foreground italic">—</span>
+                <td className="py-1.5 pr-4 text-size-sm">
+                  <span className="font-w-medium text-foreground/80">{item.matchedItem || item.requestedItem}</span>
+                  {item.description && (
+                    <span className="block text-size-xs text-muted-foreground mt-0.5">{item.description}</span>
+                  )}
+                  {item.details && (
+                    <span className="block text-size-xs text-secondary mt-1">{item.details}</span>
                   )}
                 </td>
-                {hasAnyDescription && (
-                  <td className="py-2.5 pr-4 text-size-sm text-foreground/80">
-                    {item.description || <span className="text-muted-foreground italic">—</span>}
-                  </td>
-                )}
-                <td className="py-2.5 px-4 text-right text-size-sm">
+                <td className="py-1.5 px-4 text-right text-size-sm align-top">
                   {item.quantity != null ? (
                     <span className={qtyBelowMOQ ? 'text-secondary font-w-medium' : 'text-foreground/80'}>{item.quantity.toLocaleString()}</span>
                   ) : (
                     <span className="text-muted-foreground italic">—</span>
                   )}
-                </td>
-                <td className="py-2.5 px-4 text-right text-size-sm">
-                  {item.minOrderQty != null ? (
-                    <span className="text-foreground/80">{item.minOrderQty.toLocaleString()}</span>
-                  ) : (
-                    <span className="text-muted-foreground italic">—</span>
-                  )}
-                </td>
-                <td className="py-2.5 px-4 text-right text-size-sm">
-                  {item.qtyBreakIncrement != null ? (
-                    <span className="text-foreground/80">{item.qtyBreakIncrement.toLocaleString()}</span>
-                  ) : (
-                    <span className="text-muted-foreground italic">—</span>
+                  {item.minOrderQty != null && (
+                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      min {item.minOrderQty}
+                    </span>
                   )}
                 </td>
                 {hasAnyPricing && (
-                  <td className="py-2.5 px-4 text-right text-size-sm text-foreground/80">
+                  <td className="py-1.5 px-4 text-right text-size-sm text-foreground/80 align-top">
                     {item.unitPrice != null ? fmt(item.unitPrice) : <span className="text-muted-foreground italic">—</span>}
                   </td>
                 )}
                 {hasAnyPricing && (
-                  <td className="py-2.5 pl-4 text-right text-size-sm text-foreground/80">
+                  <td className="py-1.5 pl-4 text-right text-size-sm text-foreground/80 align-top">
                     {item.totalPrice != null ? fmt(item.totalPrice) : <span className="text-muted-foreground italic">—</span>}
                   </td>
                 )}
-                <td className="py-2.5 px-4 text-size-sm">
-                  {item.details ? (
-                    <span className="text-secondary font-w-medium">{item.details}</span>
-                  ) : (
-                    <span className="text-muted-foreground italic">—</span>
-                  )}
-                </td>
               </tr>
             );
           })}
@@ -362,9 +318,8 @@ function ReviewMatchTable({ items, quoteNumber, customerAccount }: {
           return (
             <tfoot>
               <tr className="border-t-2 border-foreground/20">
-                <td colSpan={hasAnyDescription ? 8 : 7} className="py-2.5 pr-4 text-right text-size-sm font-w-medium text-foreground">Estimated Total</td>
-                <td className="py-2.5 pl-4 text-right text-size-sm font-w-medium text-foreground">{fmt(estimatedTotal)}</td>
-                <td></td>
+                <td colSpan={colCount - 1} className="py-2.5 pr-4 text-size-sm font-w-medium text-foreground">Estimated Total</td>
+                <td className="py-1.5 pl-4 text-right text-size-sm font-w-medium text-foreground">{fmt(estimatedTotal)}</td>
               </tr>
             </tfoot>
           );
@@ -448,10 +403,10 @@ function ComposeBox({ toEmail, subject, prefillBody, onSend, onDiscard, hintSend
 function MessageHeader({ email }: { email: Email }) {
   const isSystemEmail = email.fromEmail === 'quotes@apex-corp.com' || email.isCcFromAi || email.isReviewRequest;
   return (
-    <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
+    <div className="flex items-start gap-3 px-6 py-3 border-b border-border">
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-        style={{ backgroundColor: getAvatarColor(email.from, isSystemEmail), fontSize: '13px', fontWeight: 600 }}
+        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+        style={{ backgroundColor: getAvatarColor(email.from, isSystemEmail), fontSize: '12px', fontWeight: 600 }}
       >
         {getInitials(email.from, isSystemEmail)}
       </div>
@@ -540,6 +495,24 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   const effectiveOnForwardDiscard = isSteveClarification ? undefined : onForwardDiscard;
   const hasInlineQuote = !!email.inlineQuoteTable;
   const hasCcQuote = !!email.isCcFromAiQuoteTable;
+
+  /* ── Email type chip (faint grey, always visible) ── */
+
+  const getTypeChip = (): string | null => {
+    if (email.id === 'csr-daily-summary') return 'Daily Summary';
+    if (email.isCcFromAiQuoteTable?.isRushOrder || email.inlineQuoteTable?.isRushOrder) return 'Rush Re-Quote';
+    if (email.isCcFromAiQuoteTable?.isQtyBreakComparison || email.inlineQuoteTable?.isQtyBreakComparison) return 'Volume Pricing';
+    if (email.id === 'csr-ai-4' || email.id === 'csr-ai-5' || email.id === 'eis-10-northeast-response' || email.id === 'eis-11-gulfcoast-response') return 'Customer-Specific Pricing';
+    if (isApprovalHold) return 'Approval Threshold';
+    if (isReview) return 'Needs Clarification';
+    if (isSteveClarification) return 'Customer Response';
+    if (email.id === 'csr-stonite-final-cc' || email.id === 'eis-5-response') return 'Resolved Quote';
+    if (email.id === 'csr-ai-1' || email.id === 'eis-1-response') return 'Simple Quote';
+    if (email.id === 'csr-ai-2' || email.id === 'eis-6-response') return 'Product Variation Quoting';
+    if (isDirectQuote) return 'Direct Quote Request';
+    if (isCc || email.quoteStatus === 'auto-quoted' || email.quoteStatus === 'quoted') return 'Auto-Quote';
+    return null;
+  };
 
   /* ── Status tag logic ── */
 
@@ -970,9 +943,14 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
       </div>
 
       {/* Subject + tags */}
-      <div className="px-6 pt-5 pb-3 border-b border-border">
-        <div className="flex items-center gap-3">
+      <div className="px-6 pt-3 pb-2 border-b border-border">
+        <div className="flex items-center gap-2">
           <h1 className="text-size-xl font-w-medium text-foreground flex-1">{email.subject}</h1>
+          {getTypeChip() && (
+            <span className="inline-block px-1.5 py-px font-w-medium flex-shrink-0 border border-foreground/15 text-foreground/45" style={{ fontSize: '10px', lineHeight: '16px' }}>
+              {getTypeChip()}
+            </span>
+          )}
           {getTag()}
         </div>
       </div>
@@ -1001,7 +979,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             subject={email.subject}
             prefillBody={reviewComposeMode === 'reply'
               ? email.reviewReply.body
-              : `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Please review the below items and outstanding questions:\n\n[Review table items above]\n\n${email.bodyAfter || ''}`}
+              : `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Could you confirm the items noted above?\n\nBest regards,\nMorgan\nApex Corp`}
             onSend={onReviewSend}
             onDiscard={() => onReviewStageChange('pending')}
             hintSend={hintTarget === 'action:send'}
@@ -1085,7 +1063,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             <MessageHeader email={email} />
 
             {/* Message body */}
-            <div className="px-6 py-5">
+            <div className="px-6 py-3">
               {renderBody()}
             </div>
 

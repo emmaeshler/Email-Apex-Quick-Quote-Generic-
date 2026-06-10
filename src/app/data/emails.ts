@@ -15,6 +15,7 @@ export interface QuoteLineItem {
   standardTotalPrice?: number;
   priceChangeReason?: string;
   qtyBreakNote?: string;
+  qtyBreakDiscount?: string;
 }
 
 export interface QuoteTable {
@@ -503,7 +504,7 @@ export const csrReview1: Email = {
   preview: 'Draft message ready. Request from Steve Landers needs clarification...',
   body: '',
   bodyBefore: `Draft message ready for customer. The following items need clarification before quoting:`,
-  bodyAfter: `Please let me know these details so I can provide accurate pricing.\n\nBest regards,\nMorgan\nApex Corp`,
+  bodyAfter: `Best regards,\nMorgan\nApex Corp`,
   date: 'May 28, 2026',
   time: '11:18 AM',
   read: false,
@@ -548,7 +549,7 @@ export const csrSteveClarification: Email = {
     fromEmail: 'morgan@apex-corp.com',
     to: 'slanders@stonitecoil.com',
     subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
-    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Please review the below items and outstanding questions:\n\n[Details about quantities and gauges]`,
+    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Could you confirm the items noted above?\n\nBest regards,\nMorgan\nApex Corp`,
     date: 'May 28, 2026',
     time: '11:30 AM',
   },
@@ -627,6 +628,183 @@ export const csrApprovalSentCc: Email = {
     time: '9:45 AM',
     subject: 'Motor Rewind Materials — Full Kit Pricing',
     body: `Good morning,\n\nWe need a quote on a full rewind kit for our 500HP motor overhaul program...`,
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CUSTOMER-SPECIFIC PRICING — Same products, different customers, different prices
+   Shows ADH-X315 + ACT-Z788 quoted to two new customers alongside RCSCA (batch 0)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const northeastMotorQuote: QuoteTable = {
+  quoteNumber: 'Q-1094501',
+  validThrough: 'Jun 27, 2026',
+  customerName: 'Northeast Motor Supply',
+  lineItems: [
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 24.50, totalPrice: 49.00, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 26.15, totalPrice: 156.90, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock' },
+  ],
+  total: 230.65,
+  shipping: {
+    method: 'Air Shipment',
+    cost: 24.75,
+    note: 'Adhesives require overnight air delivery.',
+  },
+  pricingNote: 'Standard catalog pricing applied — no negotiated distributor rate on file for Northeast Motor Supply.',
+};
+
+const gulfCoastQuote: QuoteTable = {
+  quoteNumber: 'Q-1094502',
+  validThrough: 'Jun 27, 2026',
+  customerName: 'Gulf Coast Industrial',
+  lineItems: [
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 17.90, totalPrice: 35.80, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 18.85, totalPrice: 113.10, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock' },
+  ],
+  total: 173.65,
+  shipping: {
+    method: 'Air Shipment',
+    cost: 24.75,
+    note: 'Adhesives require overnight air delivery.',
+  },
+  pricingNote: 'Pricing per Gulf Coast Industrial preferred partner agreement, updated April 2026.',
+};
+
+// Northeast Motor Supply — request
+export const eis10NortheastRequest: Email = {
+  id: 'eis-10-northeast',
+  from: 'Karen Walsh',
+  fromEmail: 'kwalsh@northeastmotor.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'Adhesive & Activator Pricing',
+  preview: 'Hi, we need pricing on ADH-X315 adhesive and ACT-Z788 activator...',
+  body: `Hi,\n\nWe need pricing on ADH-X315 adhesive (2 units) and ACT-Z788 activator (6 units) for a motor repair job.\n\nThanks,\nKaren Walsh\nNortheast Motor Supply`,
+  date: 'May 28, 2026',
+  time: '1:15 PM',
+  read: false,
+};
+
+// Northeast Motor Supply — auto-quote response
+export const eis10NortheastResponse: Email = {
+  id: 'eis-10-northeast-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'kwalsh@northeastmotor.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: Adhesive & Activator Pricing',
+  preview: 'Quote #Q-1094501 — $230.65 for Northeast Motor Supply...',
+  body: '',
+  bodyBefore: `Karen, We matched this request against current catalog pricing and confirmed availability. Please see below for details:`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '1:18 PM',
+  read: false,
+  quoteStatus: 'auto-quoted',
+  inlineQuoteTable: northeastMotorQuote,
+  quotedPrevious: {
+    from: 'Karen Walsh',
+    fromEmail: 'kwalsh@northeastmotor.com',
+    date: 'May 28, 2026',
+    time: '1:15 PM',
+    subject: 'Adhesive & Activator Pricing',
+    body: 'Hi,\n\nWe need pricing on ADH-X315 adhesive (2 units) and ACT-Z788 activator (6 units) for a motor repair job.',
+  },
+};
+
+// Northeast Motor Supply — CSR CC
+export const csr4NortheastCc: Email = {
+  id: 'csr-ai-4',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'kwalsh@northeastmotor.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: Adhesive & Activator Pricing',
+  preview: 'Auto-quoted: Quote #Q-1094501 — $230.65 for Northeast Motor Supply...',
+  body: '',
+  bodyBefore: `Karen, We matched this request against current catalog pricing and confirmed availability. Please see below for details:`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '1:18 PM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Karen Walsh (Northeast Motor Supply)',
+  isCcFromAiQuoteTable: northeastMotorQuote,
+  quotedPrevious: {
+    from: 'Karen Walsh',
+    fromEmail: 'kwalsh@northeastmotor.com',
+    date: 'May 28, 2026',
+    time: '1:15 PM',
+    subject: 'Adhesive & Activator Pricing',
+    body: 'Hi,\n\nWe need pricing on ADH-X315 adhesive (2 units) and ACT-Z788 activator (6 units) for a motor repair job.',
+  },
+};
+
+// Gulf Coast Industrial — request
+export const eis11GulfCoastRequest: Email = {
+  id: 'eis-11-gulfcoast',
+  from: 'Mike Hernandez',
+  fromEmail: 'mhernandez@gulfcoastindustrial.com',
+  to: 'quotes@apex-corp.com',
+  subject: 'Adhesive & Activator — Reorder',
+  preview: 'Need to reorder our usual adhesive and activator — ADH-X315 and ACT-Z788...',
+  body: `Hi,\n\nNeed to reorder our usual adhesive and activator — ADH-X315 (2 units) and ACT-Z788 (6 units).\n\nPlease send over a quote when you can.\n\nThanks,\nMike Hernandez\nGulf Coast Industrial`,
+  date: 'May 28, 2026',
+  time: '1:20 PM',
+  read: false,
+};
+
+// Gulf Coast Industrial — auto-quote response
+export const eis11GulfCoastResponse: Email = {
+  id: 'eis-11-gulfcoast-response',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'mhernandez@gulfcoastindustrial.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: Adhesive & Activator — Reorder',
+  preview: 'Quote #Q-1094502 — $173.65 for Gulf Coast Industrial...',
+  body: '',
+  bodyBefore: `Mike, We matched this reorder against your preferred partner pricing and confirmed availability. Please see below for details:`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '1:23 PM',
+  read: false,
+  quoteStatus: 'auto-quoted',
+  inlineQuoteTable: gulfCoastQuote,
+  quotedPrevious: {
+    from: 'Mike Hernandez',
+    fromEmail: 'mhernandez@gulfcoastindustrial.com',
+    date: 'May 28, 2026',
+    time: '1:20 PM',
+    subject: 'Adhesive & Activator — Reorder',
+    body: 'Need to reorder our usual adhesive and activator — ADH-X315 (2 units) and ACT-Z788 (6 units).',
+  },
+};
+
+// Gulf Coast Industrial — CSR CC
+export const csr5GulfCoastCc: Email = {
+  id: 'csr-ai-5',
+  from: 'Apex Quoting',
+  fromEmail: 'quotes@apex-corp.com',
+  to: 'mhernandez@gulfcoastindustrial.com',
+  cc: 'creisch@apex-corp.com',
+  subject: 're: Adhesive & Activator — Reorder',
+  preview: 'Auto-quoted: Quote #Q-1094502 — $173.65 for Gulf Coast Industrial...',
+  body: '',
+  bodyBefore: `Mike, We matched this reorder against your preferred partner pricing and confirmed availability. Please see below for details:`,
+  bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  date: 'May 28, 2026',
+  time: '1:23 PM',
+  read: false,
+  isCcFromAi: true,
+  originalSender: 'Mike Hernandez (Gulf Coast Industrial)',
+  isCcFromAiQuoteTable: gulfCoastQuote,
+  quotedPrevious: {
+    from: 'Mike Hernandez',
+    fromEmail: 'mhernandez@gulfcoastindustrial.com',
+    date: 'May 28, 2026',
+    time: '1:20 PM',
+    subject: 'Adhesive & Activator — Reorder',
+    body: 'Need to reorder our usual adhesive and activator — ADH-X315 (2 units) and ACT-Z788 (6 units).',
   },
 };
 
@@ -711,9 +889,9 @@ const qtyBreakQuote: QuoteTable = {
   customerName: 'Consolidated Electric',
   isQtyBreakComparison: true,
   lineItems: [
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 12, unitPrice: 8.75, totalPrice: 105.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Standard pricing (1–23 units)' },
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 48, unitPrice: 7.45, totalPrice: 357.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Case pricing — 15% off (24–99 units)' },
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet pricing — 30% off (100+ units)' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 12, unitPrice: 8.75, totalPrice: 105.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Standard (1–23 units)' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 48, unitPrice: 7.45, totalPrice: 357.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Case (24–99 units)', qtyBreakDiscount: '15% off' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet (100+ units)', qtyBreakDiscount: '30% off' },
   ],
   total: 0,
   pricingNote: 'Volume tiers based on manufacturer pack sizes and distributor incentive breaks.',

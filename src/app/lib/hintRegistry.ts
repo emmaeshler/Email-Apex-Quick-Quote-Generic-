@@ -7,9 +7,12 @@
  * Demo order: Auto-quotes → (Rush+QtyBreak in long) → Review → Approval → Daily Summary
  */
 
+import { EMAIL_REGISTRY } from '../data/emailRegistry';
+import { getWorkflowForEmail } from '../data/workflows';
+
 /* ── Types ── */
 
-export type HintTarget = `email:${string}` | `action:${string}` | null;
+export type HintTarget = `email:${string}` | `action:${string}` | `folder:${string}` | null;
 
 export interface HintConditions {
   emailsArrived?: string[];
@@ -428,34 +431,28 @@ function evaluateConditions(conditions: HintConditions, state: WorkflowState): b
 function selectCustomHint(state: WorkflowState): HintTarget {
   if (state.nextBatchIndex === 0) return 'action:refresh';
 
-  // Interactive workflow buttons (review forward/send, approval reply/send)
-  if (state.selectedEmailId === 'csr-review-1' && !state.reviewResolved) {
-    if (state.reviewStage === 'composing') return 'action:send';
-    if (state.reviewStage === 'pending') return 'action:forward';
-  }
-  if (state.selectedEmailId === 'csr-approval-hold') {
-    if (state.approvalStage === 'composing') return 'action:send';
-    if (state.approvalStage === 'pending') return 'action:reply';
-  }
-
-  // Review workflow intermediate emails
-  if (state.arrivedEmails.has('csr-steve-clarification') && !state.readIds.has('csr-steve-clarification') && !state.reviewResolved) {
-    return 'email:csr-steve-clarification';
-  }
-  if (state.arrivedEmails.has('csr-stonite-final-cc') && !state.readIds.has('csr-stonite-final-cc') && state.reviewForwardStage === 'quoted') {
-    return 'email:csr-stonite-final-cc';
-  }
-
-  // Guide through unread CSR emails, then straight to refresh
-  const allCsr = [
-    'csr-ai-1', 'csr-ai-2', 'csr-ai-3', 'csr-ai-4', 'csr-ai-5',
-    'csr-rush-cc', 'csr-review-1', 'csr-approval-hold', 'csr-daily-summary',
-  ];
-  for (const id of allCsr) {
-    if (state.arrivedEmails.has(id) && !state.readIds.has(id)) {
-      if (state.activeFolder !== 'csr') return 'folder:csr';
-      return `email:${id}`;
+  // Interactive workflow buttons — check workflow type via registry
+  if (state.selectedEmailId) {
+    const selectedEntry = EMAIL_REGISTRY.get(state.selectedEmailId);
+    if (selectedEntry) {
+      const wf = getWorkflowForEmail(selectedEntry.email.id);
+      if (wf?.type === 'review' && !state.reviewResolved) {
+        if (state.reviewStage === 'composing') return 'action:send';
+        if (state.reviewStage === 'pending') return 'action:forward';
+      }
+      if (wf?.type === 'approval') {
+        if (state.approvalStage === 'composing') return 'action:send';
+        if (state.approvalStage === 'pending') return 'action:reply';
+      }
     }
+  }
+
+  // Guide through unread CSR emails from registry (sorted by priority)
+  for (const [id, entry] of EMAIL_REGISTRY) {
+    if (entry.folder !== 'csr') continue;
+    if (!state.arrivedEmails.has(id) || state.readIds.has(id)) continue;
+    if (state.activeFolder !== 'csr') return 'folder:csr';
+    return `email:${id}`;
   }
 
   if (state.hasNewMessages && !state.isRefreshing) return 'action:refresh';

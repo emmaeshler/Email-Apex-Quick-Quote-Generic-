@@ -1,15 +1,14 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   DemoDot — a subtle pulsing indicator placed on the next interactive
-   element a presenter should click. Rendered inline by parent components
-   that receive a `hintTarget` string from App.tsx.
+   Demo hint indicators — placed on the next interactive element a
+   presenter should click. Rendered inline by parent components that
+   receive a `hintTarget` string from App.tsx.
+
+   - DemoDot: subtle pulsing dot for emails, refresh, navigation
+   - ActionHint: aggressive pulsing border + glow for action buttons
 
    Toggle all demo hints on/off with the backtick (`) key.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/**
- * Tiny pulsing dot — place inside a `relative` parent.
- * Uses --secondary (orange) from the design-system as the "yellow" cue.
- */
 export function DemoDot({ className = '' }: { className?: string }) {
   return (
     <span
@@ -26,6 +25,39 @@ export function DemoDot({ className = '' }: { className?: string }) {
           style={{ background: 'var(--chart-4)' }}
         />
       </span>
+    </span>
+  );
+}
+
+export function ActionHint({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="relative inline-flex demo-action-hint">
+      <span
+        className="absolute -inset-[3px] rounded-[var(--radius-button)] pointer-events-none z-10"
+        style={{
+          border: '2px solid var(--chart-4)',
+          animation: 'demo-action-pulse 2s ease-in-out infinite',
+        }}
+      />
+      <span
+        className="absolute -inset-[3px] rounded-[var(--radius-button)] pointer-events-none z-10"
+        style={{
+          boxShadow: '0 0 12px 2px var(--chart-4)',
+          opacity: 0.4,
+          animation: 'demo-action-glow 2s ease-in-out infinite',
+        }}
+      />
+      {children}
+      <style>{`
+        @keyframes demo-action-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes demo-action-glow {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.15; }
+        }
+      `}</style>
     </span>
   );
 }

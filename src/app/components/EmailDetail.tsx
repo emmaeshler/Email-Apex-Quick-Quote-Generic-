@@ -6,8 +6,9 @@ import {
   ArrowUpCircle, ExternalLink,
 } from 'lucide-react';
 import type { Email, QuoteTable, ReviewMatchItem, QuotedPrevious } from '../data/emails';
-import { DemoDot } from './DemoGuide';
+import { DemoDot, ActionHint } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
+import { getEmailCategory, getEntry } from '../data/emailRegistry';
 
 /* ── Helpers ── */
 
@@ -19,7 +20,8 @@ const fmt = (n: number) =>
 function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasAdjustments = table.lineItems.some((item) => item.requestedQty != null);
   const hasQtyBreakDiscount = table.lineItems.some((item) => item.qtyBreakDiscount);
-  const colCount = hasQtyBreakDiscount ? 5 : 4;
+  const hasStockStatus = table.lineItems.some((item) => item.stockStatus);
+  const colCount = 4 + (hasQtyBreakDiscount ? 1 : 0) + (hasStockStatus ? 1 : 0);
   return (
     <div className="my-2">
       <div className="mb-2 pb-1.5 border-b-2 border-foreground/20">
@@ -48,6 +50,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
           <tr className="border-b border-foreground/20">
             <th className="py-2 text-left pr-4 text-size-sm font-w-medium text-foreground">Item</th>
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Qty</th>
+            {hasStockStatus && <th className="py-2 text-center px-4 text-size-sm font-w-medium text-foreground">Availability</th>}
             <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Unit Price</th>
             {hasQtyBreakDiscount && <th className="py-2 text-right px-4 text-size-sm font-w-medium text-foreground">Discount</th>}
             <th className="py-2 text-right pl-4 text-size-sm font-w-medium text-foreground">Total</th>
@@ -77,17 +80,31 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                       min {moq}
                     </span>
                   )}
-                  {item.stockStatus === 'in-stock' && (
-                    <span className="block text-size-xs" style={{ fontSize: '10px', lineHeight: '14px', color: '#16a34a' }}>In Stock</span>
-                  )}
-                  {item.stockStatus === 'lead-time' && (
-                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
-                      Est. {item.leadTime ?? 'lead time'}
-                    </span>
-                  )}
                 </td>
+                {hasStockStatus && (
+                  <td className="py-1.5 px-4 text-center text-size-sm align-top">
+                    {item.stockStatus === 'in-stock' && (
+                      <span className="text-size-xs font-w-medium" style={{ fontSize: '10px', lineHeight: '14px', color: '#16a34a' }}>In Stock</span>
+                    )}
+                    {item.stockStatus === 'lead-time' && (
+                      <span className="text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                        Est. {item.leadTime ?? 'lead time'}
+                      </span>
+                    )}
+                  </td>
+                )}
                 <td className="py-1.5 px-4 text-right text-size-sm text-foreground/80 align-top">
                   {fmt(item.unitPrice)}
+                  {item.pricingBasis && (
+                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      {item.pricingBasis}
+                    </span>
+                  )}
+                  {item.standardUnitPrice != null && item.standardUnitPrice !== item.unitPrice && (
+                    <span className="block text-size-xs text-muted-foreground" style={{ fontSize: '10px', lineHeight: '14px' }}>
+                      vs. {fmt(item.standardUnitPrice)} list
+                    </span>
+                  )}
                 </td>
                 {hasQtyBreakDiscount && (
                   <td className="py-1.5 px-4 text-right text-size-sm align-top">
@@ -377,15 +394,23 @@ function ComposeBox({ toEmail, subject, prefillBody, onSend, onDiscard, hintSend
           <p className="whitespace-pre-wrap text-size-sm text-foreground/80">{prefillBody}</p>
         </div>
         <div className="flex items-center gap-2 pt-3 border-t border-border">
-          <div className="relative">
+          {hintSend ? (
+            <ActionHint>
+              <button
+                onClick={onSend}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+              >
+                <Send size={14} /> Send
+              </button>
+            </ActionHint>
+          ) : (
             <button
               onClick={onSend}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
               <Send size={14} /> Send
             </button>
-            {hintSend && <DemoDot />}
-          </div>
+          )}
           <button
             onClick={onDiscard}
             className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors text-size-sm"
@@ -485,7 +510,8 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   const isReview = email.isReviewRequest;
   const isDirectQuote = email.isDirectQuoteRequest;
   const isCc = email.isCcFromAi;
-  const isSteveClarification = email.id === 'csr-steve-clarification';
+  const entry = getEntry(email.id);
+  const isSteveClarification = entry?.role === 'clarification';
   const isApprovalHold = email.isApprovalHold;
 
   // Use reviewForwardStage for Steve's clarification (auto-processed), forwardStage for others
@@ -499,16 +525,8 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
   /* ── Email type chip (faint grey, always visible) ── */
 
   const getTypeChip = (): string | null => {
-    if (email.id === 'csr-daily-summary') return 'Daily Summary';
-    if (email.isCcFromAiQuoteTable?.isRushOrder || email.inlineQuoteTable?.isRushOrder) return 'Rush Re-Quote';
-    if (email.isCcFromAiQuoteTable?.isQtyBreakComparison || email.inlineQuoteTable?.isQtyBreakComparison) return 'Volume Pricing';
-    if (email.id === 'csr-ai-4' || email.id === 'csr-ai-5' || email.id === 'eis-10-northeast-response' || email.id === 'eis-11-gulfcoast-response') return 'Customer-Specific Pricing';
-    if (isApprovalHold) return 'Approval Threshold';
-    if (isReview) return 'Needs Clarification';
-    if (isSteveClarification) return 'Customer Response';
-    if (email.id === 'csr-stonite-final-cc' || email.id === 'eis-5-response') return 'Resolved Quote';
-    if (email.id === 'csr-ai-1' || email.id === 'eis-1-response') return 'Simple Quote';
-    if (email.id === 'csr-ai-2' || email.id === 'eis-6-response') return 'Product Variation Quoting';
+    const category = getEmailCategory(email.id);
+    if (category) return category;
     if (isDirectQuote) return 'Direct Quote Request';
     if (isCc || email.quoteStatus === 'auto-quoted' || email.quoteStatus === 'quoted') return 'Auto-Quote';
     return null;
@@ -802,7 +820,19 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
             <ReplyAll size={16} /> Reply All
           </button>
-          <div className="relative">
+          {hintTarget === 'action:forward' ? (
+            <ActionHint>
+              <button
+                onClick={() => {
+                  onReviewComposeModeChange('forward');
+                  onReviewStageChange('composing');
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+              >
+                <Forward size={16} /> Forward
+              </button>
+            </ActionHint>
+          ) : (
             <button
               onClick={() => {
                 onReviewComposeModeChange('forward');
@@ -812,8 +842,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             >
               <Forward size={16} /> Forward
             </button>
-            {hintTarget === 'action:forward' && <DemoDot />}
-          </div>
+          )}
         </>
       );
     }
@@ -835,15 +864,23 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           <button className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
             <ReplyAll size={16} /> Reply All
           </button>
-          <div className="relative">
+          {hintTarget === 'action:forward' ? (
+            <ActionHint>
+              <button
+                onClick={() => effectiveOnForwardCompose?.()}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+              >
+                <Forward size={16} /> Forward
+              </button>
+            </ActionHint>
+          ) : (
             <button
               onClick={() => effectiveOnForwardCompose?.()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
               <Forward size={16} /> Forward
             </button>
-            {hintTarget === 'action:forward' && <DemoDot />}
-          </div>
+          )}
         </>
       );
     }
@@ -866,15 +903,23 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
     if (isApprovalHold && approvalStage === 'pending') {
       return (
         <>
-          <div className="relative">
+          {hintTarget === 'action:reply' ? (
+            <ActionHint>
+              <button
+                onClick={() => onApprovalCompose?.()}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+              >
+                <Reply size={16} /> Reply
+              </button>
+            </ActionHint>
+          ) : (
             <button
               onClick={() => onApprovalCompose?.()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
             >
               <Reply size={16} /> Reply
             </button>
-            {hintTarget === 'action:reply' && <DemoDot />}
-          </div>
+          )}
           {[{ icon: ReplyAll, label: 'Reply All' }, { icon: Forward, label: 'Forward' }].map(({ icon: Icon, label }) => (
             <button key={label} className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors flex items-center gap-2 text-size-sm">
               <Icon size={16} /> {label}
@@ -1039,15 +1084,23 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                     </p>
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-border">
-                    <div className="relative">
+                    {hintTarget === 'action:send' ? (
+                      <ActionHint>
+                        <button
+                          onClick={() => effectiveOnForwardSend?.()}
+                          className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
+                        >
+                          <Send size={14} /> Send
+                        </button>
+                      </ActionHint>
+                    ) : (
                       <button
                         onClick={() => effectiveOnForwardSend?.()}
                         className="px-4 py-2 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm"
                       >
                         <Send size={14} /> Send
                       </button>
-                      {hintTarget === 'action:send' && <DemoDot />}
-                    </div>
+                    )}
                     <button
                       onClick={() => effectiveOnForwardDiscard?.()}
                       className="px-4 py-2 bg-card border border-border text-foreground rounded-[var(--radius-button)] hover:bg-muted transition-colors text-size-sm"

@@ -4,6 +4,7 @@ import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, Che
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials } from '../lib/avatarUtils';
+import { getEmailCategory, getEntry } from '../data/emailRegistry';
 
 interface Email {
   id: string;
@@ -63,19 +64,55 @@ function CategoryTag({ label, color }: { label: string; color: string }) {
 }
 
 function getTypeChip(email: Email): string | null {
-  if (email.id === 'csr-daily-summary') return 'Daily Summary';
-  if (email.isCcFromAiQuoteTable?.isRushOrder || email.inlineQuoteTable?.isRushOrder) return 'Rush Re-Quote';
-  if (email.isCcFromAiQuoteTable?.isQtyBreakComparison || email.inlineQuoteTable?.isQtyBreakComparison) return 'Volume Pricing';
-  if (email.id === 'csr-ai-4' || email.id === 'csr-ai-5' || email.id === 'eis-10-northeast-response' || email.id === 'eis-11-gulfcoast-response') return 'Client-Specific Pricing';
-  if (email.isApprovalHold) return 'Approval Threshold';
-  if (email.isReviewRequest) return 'Needs Clarification';
-  if (email.id === 'csr-steve-clarification') return 'Customer Response';
-  if (email.id === 'csr-stonite-final-cc' || email.id === 'eis-5-response') return 'Resolved Quote';
-  if (email.id === 'csr-ai-1' || email.id === 'eis-1-response') return 'Simple Quote';
-  if (email.id === 'csr-ai-2' || email.id === 'eis-6-response') return 'Product Variants';
+  const category = getEmailCategory(email.id);
+  if (category) return category;
   if (email.isDirectQuoteRequest) return 'Quote Request';
   if (email.isCcFromAi || email.quoteStatus === 'auto-quoted' || email.quoteStatus === 'quoted') return 'Auto-Quote';
   return null;
+}
+
+interface ThreadGroup {
+  workflowId: string;
+  emails: Email[];
+}
+
+function groupByWorkflow(emails: Email[]): (Email | ThreadGroup)[] {
+  const result: (Email | ThreadGroup)[] = [];
+  const visited = new Set<string>();
+
+  for (const email of emails) {
+    if (visited.has(email.id)) continue;
+    visited.add(email.id);
+
+    const entry = getEntry(email.id);
+    if (!entry) {
+      result.push(email);
+      continue;
+    }
+
+    const siblings = emails.filter(e => {
+      if (visited.has(e.id)) return false;
+      const other = getEntry(e.id);
+      return other && other.workflowId === entry.workflowId;
+    });
+
+    if (siblings.length === 0) {
+      result.push(email);
+    } else {
+      const group: ThreadGroup = {
+        workflowId: entry.workflowId,
+        emails: [email, ...siblings],
+      };
+      siblings.forEach(s => visited.add(s.id));
+      result.push(group);
+    }
+  }
+
+  return result;
+}
+
+function isThreadGroup(item: Email | ThreadGroup): item is ThreadGroup {
+  return 'workflowId' in item && 'emails' in item;
 }
 
 const STATUS_TAG: Record<string, { label: string; color: string }> = {
@@ -108,6 +145,50 @@ function SectionHeader({ label, count, isExpanded, onToggle }: SectionHeaderProp
       </div>
       <span className="text-size-xs text-muted-foreground">{count}</span>
     </button>
+  );
+}
+
+function ThreadRow({
+  group,
+  selectedEmailId,
+  onSelectEmail,
+  renderEmail,
+  hintTarget,
+}: {
+  group: ThreadGroup;
+  selectedEmailId: string | null;
+  onSelectEmail: (id: string) => void;
+  renderEmail: (email: Email) => React.ReactNode;
+  hintTarget: string | null;
+}) {
+  const hasSelectedChild = group.emails.some(e => e.id === selectedEmailId);
+  const [expanded, setExpanded] = useState(hasSelectedChild);
+  const category = getEntry(group.emails[0].id)?.category;
+
+  return (
+    <div className="border-l-2 border-l-primary/20">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-1.5 px-4 py-1.5 text-left hover:bg-muted/30 transition-colors bg-muted/20"
+      >
+        {expanded ? (
+          <ChevronDown size={12} className="text-foreground/50" />
+        ) : (
+          <ChevronRight size={12} className="text-foreground/50" />
+        )}
+        <span className="text-size-xs font-w-medium text-foreground/60">
+          {group.emails.length} messages
+        </span>
+        {category && (
+          <span className="text-size-xs text-muted-foreground ml-auto">{category}</span>
+        )}
+      </button>
+      {expanded && (
+        <div className="divide-y divide-border">
+          {group.emails.map(renderEmail)}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -151,6 +232,10 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   const readEmails = emails.filter(email => {
     const batch = emailBatchMap.get(email.id) ?? 0;
     return batch < currentBatch;
+  }).sort((a, b) => {
+    const batchA = emailBatchMap.get(a.id) ?? 0;
+    const batchB = emailBatchMap.get(b.id) ?? 0;
+    return batchB - batchA;
   });
 
   // Helper function to render an individual email row
@@ -230,7 +315,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
               })();
               if (!statusChip && !typeChip) return null;
               return (
-                <div className="mt-1.5 flex items-center gap-1.5">
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   {statusChip}
                   {typeChip && (
                     <span className="text-muted-foreground" style={{ fontSize: '10px', lineHeight: '16px' }}>
@@ -372,7 +457,18 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
             />
             {unreadExpanded && (
               <div className="divide-y divide-border">
-                {unreadEmails.map(renderEmail)}
+                {groupByWorkflow(unreadEmails).map(item =>
+                  isThreadGroup(item) ? (
+                    <ThreadRow
+                      key={item.workflowId}
+                      group={item}
+                      selectedEmailId={selectedEmailId}
+                      onSelectEmail={onSelectEmail}
+                      renderEmail={renderEmail}
+                      hintTarget={hintTarget}
+                    />
+                  ) : renderEmail(item)
+                )}
               </div>
             )}
           </>
@@ -389,7 +485,18 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
             />
             {readExpanded && (
               <div className="divide-y divide-border">
-                {readEmails.map(renderEmail)}
+                {groupByWorkflow(readEmails).map(item =>
+                  isThreadGroup(item) ? (
+                    <ThreadRow
+                      key={item.workflowId}
+                      group={item}
+                      selectedEmailId={selectedEmailId}
+                      onSelectEmail={onSelectEmail}
+                      renderEmail={renderEmail}
+                      hintTarget={hintTarget}
+                    />
+                  ) : renderEmail(item)
+                )}
               </div>
             )}
           </>

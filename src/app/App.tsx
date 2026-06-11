@@ -8,39 +8,10 @@ import { AppRail } from '@/app/components/AppRail';
 import { SequenceBuilder } from '@/app/components/SequenceBuilder';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import { loadCustomSequences, addCustomSequence, deleteCustomSequence, type CustomSequence } from './data/customSequences';
-import {
-  eisEmails,
-  csrEmails,
-  inboxFolders,
-  csrDailySummary,
-  eis1Jawinder,
-  eis1Response,
-  eis6Dave,
-  eis6Response,
-  csr1CC,
-  csr2CC,
-  eis5Stonite,
-  csrReview1,
-  eisStoniteResponse,
-  csrReviewReplyEmail,
-  csrSteveClarification,
-  csrStoniteFinalCc,
-  eis7MidwestPower,
-  csrApprovalHold,
-  csrApprovalSentCc,
-  eis8Rush,
-  eis8RushResponse,
-  csr3RushCc,
-  eis9QtyBreak,
-  eis9QtyBreakResponse,
-  csrQtyBreakCc,
-  eis10NortheastRequest,
-  eis10NortheastResponse,
-  csr4NortheastCc,
-  eis11GulfCoastRequest,
-  eis11GulfCoastResponse,
-  csr5GulfCoastCc,
-} from './data/emails';
+import { inboxFolders } from './data/emails';
+import { getPresetBatches, savePresetOverride, isPresetCustomized, resetPresetOverride } from './data/demoSequences';
+import { computeVisibleEmails } from './data/computeVisibleEmails';
+import { executeTriggers } from './lib/workflowEngine';
 
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
@@ -66,8 +37,12 @@ export type DemoMode = 'short' | 'full' | (string & {});
 
 function getInitialDemoMode(): DemoMode {
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get('demo');
-  if (mode === 'short' || mode === 'full') return mode;
+  const urlMode = params.get('demo');
+  if (urlMode === 'short' || urlMode === 'full') return urlMode;
+
+  const saved = localStorage.getItem('demoMode');
+  if (saved === 'short' || saved === 'full' || (saved && saved.startsWith('custom:'))) return saved;
+
   return 'full';
 }
 
@@ -119,7 +94,9 @@ export default function App() {
   // ── View state for sequence builder ──
   const [currentView, setCurrentView] = useState<'inbox' | 'sequence-builder'>('inbox');
   const [editingSequenceId, setEditingSequenceId] = useState<string | null>(null);
+  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
   const [customSequences, setCustomSequences] = useState<CustomSequence[]>(loadCustomSequences);
+  const [presetVersion, setPresetVersion] = useState(0);
 
   // ── Demo hint visibility (toggle with ` backtick key) ──
   const [demoVisible, setDemoVisible] = useState(true);
@@ -214,23 +191,46 @@ export default function App() {
       url.searchParams.delete('demo');
     }
     window.history.replaceState({}, '', url.toString());
+    localStorage.setItem('demoMode', mode);
   }, []);
 
   const handleOpenBuilder = useCallback((sequenceId?: string) => {
     setEditingSequenceId(sequenceId || null);
+    setEditingPresetId(null);
+    setCurrentView('sequence-builder');
+  }, []);
+
+  const handleEditPreset = useCallback((presetId: string) => {
+    setEditingPresetId(presetId);
+    setEditingSequenceId(null);
     setCurrentView('sequence-builder');
   }, []);
 
   const handleBuilderSave = useCallback((seq: CustomSequence) => {
-    addCustomSequence(seq);
-    setCustomSequences(loadCustomSequences());
-    setCurrentView('inbox');
-    handleDemoModeChange(`custom:${seq.id}`);
-  }, [handleDemoModeChange]);
+    if (editingPresetId) {
+      savePresetOverride(editingPresetId, seq.batches);
+      setPresetVersion(v => v + 1);
+      setEditingPresetId(null);
+      setCurrentView('inbox');
+      handleDemoModeChange(editingPresetId as DemoMode);
+    } else {
+      addCustomSequence(seq);
+      setCustomSequences(loadCustomSequences());
+      setCurrentView('inbox');
+      handleDemoModeChange(`custom:${seq.id}`);
+    }
+  }, [handleDemoModeChange, editingPresetId]);
 
   const handleBuilderCancel = useCallback(() => {
+    setEditingPresetId(null);
     setCurrentView('inbox');
   }, []);
+
+  const handleResetPreset = useCallback((presetId: string) => {
+    resetPresetOverride(presetId);
+    setPresetVersion(v => v + 1);
+    if (demoMode === presetId) handleDemoModeChange(presetId as DemoMode);
+  }, [demoMode, handleDemoModeChange]);
 
   const handleDeleteSequence = useCallback((id: string) => {
     deleteCustomSequence(id);
@@ -280,43 +280,18 @@ export default function App() {
     setIsRefreshing(false);
   }, [stateHistory]);
 
-  // ── Refresh queue definition — lead with auto-quotes, then human workflows ──
-  // Short demo: 5 batches. Full demo: 6 batches (adds rush + qty-break).
+  // ── Refresh queue — driven by DEMO_PRESETS or custom sequences ──
   const refreshBatches = useMemo(() => {
-    const allBatches: Array<{ emailIds: string[]; fullOnly?: boolean }> = [
-      // Batch 0: Simple auto-quote (adhesive — full flow including CSR CC)
-      { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
-
-      // Batch 1: Multi-product auto-quote (tapered reels — 6 configurations, with CC)
-      { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
-
-      // Batch 2: Customer-specific pricing — same products, different customers (long demo only)
-      { emailIds: ['eis-10-northeast', 'eis-10-northeast-response', 'csr-ai-4', 'eis-11-gulfcoast', 'eis-11-gulfcoast-response', 'csr-ai-5'], fullOnly: true },
-
-      // Batch 3: Rush re-quote + Qty-break comparison (long demo only)
-      { emailIds: ['eis-8-rush', 'eis-8-rush-response', 'csr-rush-cc', 'eis-9-qtybreak', 'eis-9-qtybreak-response', 'csr-ai-3'], fullOnly: true },
-
-      // Batch 4: Review needed (magnet wire — human clarification)
-      { emailIds: ['csr-review-1'] },
-
-      // Batch 5: Approval required (motor rewind — sales rep sign-off)
-      { emailIds: ['csr-approval-hold'] },
-
-      // Batch 6: Daily summary
-      { emailIds: ['csr-daily-summary'] },
-    ];
-
-    if (demoMode === 'short') {
-      return allBatches.filter(b => !b.fullOnly);
-    }
+    if (demoMode === 'short' || demoMode === 'full') return getPresetBatches(demoMode);
     if (demoMode.startsWith('custom:')) {
       const seqId = demoMode.slice(7);
       const seq = customSequences.find(s => s.id === seqId);
       if (seq) return seq.batches.map(b => ({ emailIds: b.emailIds }));
       return [];
     }
-    return allBatches;
-  }, [demoMode, customSequences]);
+    return getPresetBatches('full');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoMode, customSequences, presetVersion]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
@@ -378,81 +353,18 @@ export default function App() {
     else setSelectedReviewEmailId(nextEmail);
   };
 
-  /* ── Build dynamic EIS email list ── */
+  /* ── Build dynamic email lists from registry ── */
   const isCustomMode = demoMode.startsWith('custom:');
-  const effectiveEisEmails = useMemo(() => {
-    const list = [];
 
-    // In custom mode, all emails are gated by arrivedEmails
-    // In built-in modes, some are always present (pre-loaded in EIS inbox)
+  const effectiveEisEmails = useMemo(
+    () => computeVisibleEmails('eis', arrivedEmails),
+    [arrivedEmails],
+  );
 
-    // Request emails (only shown in custom mode when explicitly included)
-    if (isCustomMode && arrivedEmails.has('eis-1')) list.push(eis1Jawinder);
-    if (isCustomMode && arrivedEmails.has('eis-6')) list.push(eis6Dave);
-    if (isCustomMode && arrivedEmails.has('eis-8-rush')) list.push(eis8Rush);
-    if (isCustomMode && arrivedEmails.has('eis-9-qtybreak')) list.push(eis9QtyBreak);
-    if (isCustomMode && arrivedEmails.has('eis-5')) list.push(eis5Stonite);
-    if (isCustomMode && arrivedEmails.has('eis-10-northeast')) list.push(eis10NortheastRequest);
-    if (isCustomMode && arrivedEmails.has('eis-11-gulfcoast')) list.push(eis11GulfCoastRequest);
-
-    // Response emails
-    if (!isCustomMode || arrivedEmails.has('eis-1-response')) list.push(eis1Response);
-    if (!isCustomMode || arrivedEmails.has('eis-8-rush-response')) list.push(eis8RushResponse);
-    if (!isCustomMode || arrivedEmails.has('eis-6-response')) list.push(eis6Response);
-    if (arrivedEmails.has('eis-10-northeast-response')) list.push(eis10NortheastResponse);
-    if (arrivedEmails.has('eis-11-gulfcoast-response')) list.push(eis11GulfCoastResponse);
-    if (arrivedEmails.has('eis-9-qtybreak-response')) list.push(eis9QtyBreakResponse);
-
-    if (!isCustomMode || arrivedEmails.has('eis-7-midwest')) list.push(eis7MidwestPower);
-
-    // WF2: Stonite quote thread (arrives after review workflow completes)
-    if (arrivedEmails.has('eis-stonite-response')) list.unshift(eisStoniteResponse);
-
-    return list;
-  }, [arrivedEmails, isCustomMode]);
-
-  /* ── Build dynamic CSR email list ── */
-  const effectiveCsrEmails = useMemo(() => {
-    // Map email IDs to workflow priority (higher = newer, appears first)
-    const workflowPriority: Record<string, number> = {
-      'csr-daily-summary': 120,       // Daily summary (last/newest)
-      'csr-ai-5': 118,                // Auto-quoted CC — Gulf Coast (customer pricing)
-      'csr-ai-4': 117,                // Auto-quoted CC — Northeast Motor (customer pricing)
-      'csr-ai-3': 116,                // Auto-quoted CC — qty-break
-      'csr-ai-2': 115,                // Auto-quoted CC — tapered reels
-      'csr-ai-1': 114,                // Auto-quoted CC — adhesive
-      'csr-rush-cc': 105,             // Rush re-quote CC — always visible
-      'csr-approval-cc': 80,          // Auto-delivered - Approval sent CC
-      'csr-approval-hold': 75,        // Batch 1 - Approval hold notification
-      'csr-stonite-final-cc': 70,     // Auto-delivered - Stonite final CC (Phase 1c)
-      'csr-steve-clarification': 65,  // Auto-delivered - Steve's clarification (Phase 1b)
-      'csr-review-reply': 60,         // WF2 reply - Morgan's review reply (if used)
-      'csr-review-1': 55,             // Batch 0 - Review email
-    };
-
-    const list = [];
-
-    if (arrivedEmails.has('csr-ai-5')) list.push(csr5GulfCoastCc);
-    if (arrivedEmails.has('csr-ai-4')) list.push(csr4NortheastCc);
-    if (arrivedEmails.has('csr-ai-3')) list.push(csrQtyBreakCc);
-    if (arrivedEmails.has('csr-ai-2')) list.push(csr2CC);
-    if (arrivedEmails.has('csr-ai-1')) list.push(csr1CC);
-    if (arrivedEmails.has('csr-rush-cc')) list.push(csr3RushCc);
-    if (arrivedEmails.has('csr-review-1')) list.push(csrReview1);
-    if (arrivedEmails.has('csr-review-reply')) list.push(csrReviewReplyEmail);
-    if (arrivedEmails.has('csr-steve-clarification')) list.push(csrSteveClarification);
-    if (arrivedEmails.has('csr-stonite-final-cc') && (readIds.has('csr-steve-clarification') || readIds.has('csr-review-reply'))) list.push(csrStoniteFinalCc);
-    if (arrivedEmails.has('csr-approval-hold')) list.push(csrApprovalHold);
-    if (approvalStage === 'sent') list.push(csrApprovalSentCc);
-    if (arrivedEmails.has('csr-daily-summary')) list.push(csrDailySummary);
-
-    // Sort by workflow priority - higher priority appears first (newest at top)
-    return list.sort((a, b) => {
-      const priorityA = workflowPriority[a.id] || 0;
-      const priorityB = workflowPriority[b.id] || 0;
-      return priorityB - priorityA; // Descending order
-    });
-  }, [arrivedEmails, approvalStage, readIds]);
+  const effectiveCsrEmails = useMemo(
+    () => computeVisibleEmails('csr', arrivedEmails, { approvalStage, readIds }),
+    [arrivedEmails, approvalStage, readIds],
+  );
 
   // Build the review folder email list from both inboxes
   const reviewEmails = useMemo(() => {
@@ -526,69 +438,29 @@ export default function App() {
   const handleApprovalSend = () => {
     setStateHistory(h => [...h, captureSnapshot()]);
     setApprovalStage('approved');
-    setTimeout(() => {
-      setApprovalStage('sent');
-      markEmailArrived('csr-approval-cc', nextBatchIndex);
-      markEmailArrived('eis-7-midwest', nextBatchIndex);
-      setScrollTrigger((n) => n + 1);
-    }, 1500);
+    executeTriggers('wf-approval-midwest', 'approve', null, {
+      markEmailArrived,
+      setStage: (key, value) => {
+        if (key === 'approvalStage') setApprovalStage(value as any);
+      },
+      currentBatch: nextBatchIndex,
+      onComplete: () => setScrollTrigger((n) => n + 1),
+    });
   };
 
   // Handle the review send — orchestrate staggered email arrivals
   const handleReviewSend = () => {
     setStateHistory(h => [...h, captureSnapshot()]);
     setReviewStage('sending');
-
-    if (reviewComposeMode === 'reply') {
-      // ── Reply workflow: Morgan provides details internally ──
-
-      // Phase 1: Morgan's reply arrives immediately (it's the one they just sent)
-      setTimeout(() => {
-        markEmailArrived('csr-review-reply', nextBatchIndex);
-      }, 500);
-
-      // Phase 2: Original Stonite request transitions to processing (forwarded to quotes@)
-      setTimeout(() => {
-        markEmailArrived('eis-5', nextBatchIndex); // Original request now shows as being processed
-      }, 1000);
-
-      // Phase 3: EIS quote response arrives after 2-5s (system generated it)
-      const eisDelay = 2000 + Math.random() * 3000; // 2-5s
-      setTimeout(() => {
-        markEmailArrived('eis-stonite-response', nextBatchIndex);
-      }, eisDelay);
-
-      // Phase 4: CSR CC notification arrives 0.7-1.5s after quote response
-      const ccDelay = eisDelay + 700 + Math.random() * 800; // +0.7-1.5s
-      setTimeout(() => {
-        markEmailArrived('csr-stonite-final-cc', nextBatchIndex);
-      }, ccDelay);
-    } else {
-      // ── Forward workflow: Morgan asks customer for clarification ──
-      // Steve's reply CCs quotes@apex-corp.com, so the agent auto-processes it
-
-      // Phase 1: Customer (Steve) responds with details after 3-7s
-      const customerDelay = 3000 + Math.random() * 4000; // 3-7s
-      setTimeout(() => {
-        markEmailArrived('csr-steve-clarification', nextBatchIndex);
-        setReviewStage('resolved');
-        setReviewForwardStage('processing');
-
-        // Phase 2: Original Stonite request shows as being processed
-        setTimeout(() => {
-          markEmailArrived('eis-5', nextBatchIndex);
-        }, 500);
-
-        // Phase 3: Auto-quote generated (2-5s)
-        const quoteDelay = 2000 + Math.random() * 3000;
-        setTimeout(() => {
-          setReviewForwardStage('quoted');
-          markEmailArrived('eis-stonite-response', nextBatchIndex);
-          markEmailArrived('csr-stonite-final-cc', nextBatchIndex);
-          setScrollTrigger((n) => n + 1);
-        }, quoteDelay);
-      }, customerDelay);
-    }
+    executeTriggers('wf-review-stonite', 'send', reviewComposeMode, {
+      markEmailArrived,
+      setStage: (key, value) => {
+        if (key === 'reviewStage') setReviewStage(value as any);
+        if (key === 'reviewForwardStage') setReviewForwardStage(value as any);
+      },
+      currentBatch: nextBatchIndex,
+      onComplete: () => setScrollTrigger((n) => n + 1),
+    });
   };
 
 
@@ -648,7 +520,19 @@ export default function App() {
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
   if (currentView === 'sequence-builder') {
-    const editingSeq = editingSequenceId ? customSequences.find(s => s.id === editingSequenceId) : null;
+    let editingSeq: CustomSequence | null = null;
+    if (editingPresetId) {
+      const batches = getPresetBatches(editingPresetId);
+      editingSeq = {
+        id: editingPresetId,
+        name: editingPresetId === 'short' ? 'Short Demo' : 'Full Demo',
+        batches: batches.map(b => ({ emailIds: b.emailIds })),
+        createdAt: 0,
+        updatedAt: 0,
+      };
+    } else if (editingSequenceId) {
+      editingSeq = customSequences.find(s => s.id === editingSequenceId) ?? null;
+    }
     return (
       <SequenceBuilder
         existingSequence={editingSeq}
@@ -720,6 +604,8 @@ export default function App() {
           onOpenBuilder={() => handleOpenBuilder()}
           onEditSequence={(id) => handleOpenBuilder(id)}
           onDeleteSequence={handleDeleteSequence}
+          onEditPreset={handleEditPreset}
+          onResetPreset={handleResetPreset}
         />
     </div>
   );

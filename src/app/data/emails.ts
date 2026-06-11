@@ -14,6 +14,7 @@ export interface QuoteLineItem {
   standardUnitPrice?: number;
   standardTotalPrice?: number;
   priceChangeReason?: string;
+  pricingBasis?: 'Distributor Rate' | 'Catalog Price' | 'Partner Rate' | 'Contract Price' | 'Volume Tier' | 'Account Rate';
   qtyBreakNote?: string;
   qtyBreakDiscount?: string;
 }
@@ -171,8 +172,8 @@ const rcscaQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'RCSCA',
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock' },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock' },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 26.15 },
   ],
   total: 192.01,
   shipping: {
@@ -180,7 +181,7 @@ const rcscaQuote: QuoteTable = {
     cost: 24.75,
     note: 'Adhesives require overnight air delivery.',
   },
-  pricingNote: 'Pricing pulled from distributor cost sheet (Essex/Superior Essex) updated May 2026.',
+  pricingNote: 'Pricing reflects your current account rates, valid as of May 2026.',
 };
 
 const stoniteFinalQuote: QuoteTable = {
@@ -188,8 +189,8 @@ const stoniteFinalQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'Stonite Coil Corp',
   lineItems: [
-    { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 25, unitPrice: 14.25, totalPrice: 356.25, minOrderQty: 25, qtyBreakIncrement: 25, requestedQty: 15, stockStatus: 'in-stock' },
-    { sku: 'SDPZ-22.5-RT', description: 'Round Taper, #22.5 AWG, SDPZ Coating', quantity: 100, unitPrice: 16.90, totalPrice: 1690, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'in-stock' },
+    { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 25, unitPrice: 14.25, totalPrice: 356.25, minOrderQty: 25, qtyBreakIncrement: 25, requestedQty: 15, stockStatus: 'in-stock', pricingBasis: 'Account Rate' },
+    { sku: 'SDPZ-22.5-RT', description: 'Round Taper, #22.5 AWG, SDPZ Coating', quantity: 100, unitPrice: 16.90, totalPrice: 1690, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'in-stock', pricingBasis: 'Account Rate' },
   ],
   total: 2071.25,
   shipping: {
@@ -197,7 +198,7 @@ const stoniteFinalQuote: QuoteTable = {
     cost: 25.00,
     note: 'Heavyweight wire shipment via designated carrier.',
   },
-  pricingNote: 'Pricing based on Stonite Coil Corp account history and current distributor schedule.',
+  pricingNote: 'Pricing reflects your current account rates, valid as of May 2026.',
 };
 
 const motionQuote: QuoteTable = {
@@ -205,14 +206,14 @@ const motionQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'Motion Industries Inc.',
   lineItems: [
-    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 2, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
+    { sku: 'BRT40XF17M', description: 'TAPE,ARAMID,FLAT BRAIDED,500YD,WHT', quantity: 2, unitPrice: 259.10, totalPrice: 518, minOrderQty: 2, qtyBreakIncrement: 1, stockStatus: 'in-stock', pricingBasis: 'Contract Price' },
   ],
   total: 545.50,
   shipping: {
     method: 'Ground',
     cost: 27.50,
   },
-  pricingNote: 'Pricing per Motion Industries negotiated rate schedule, updated May 2026.',
+  pricingNote: 'Pricing per your current agreement, valid as of May 2026.',
 };
 
 const taperedReelQuote: QuoteTable = {
@@ -220,12 +221,12 @@ const taperedReelQuote: QuoteTable = {
   validThrough: 'Jul 14, 2026',
   customerName: 'Tri-State Coil Winding',
   lineItems: [
-    { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 14.68, totalPrice: 146.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 15.32, totalPrice: 153.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 15.48, totalPrice: 154.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
-    { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 16.92, totalPrice: 169.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 17.39, totalPrice: 173.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks' },
-    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 11.25, totalPrice: 112.50, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
+    { sku: 'TR115-11AWG-RED', description: '10-11" Tapered Reel/Box (115), 11 AWG, Red', quantity: 10, unitPrice: 14.68, totalPrice: 146.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks', pricingBasis: 'Catalog Price' },
+    { sku: 'TR115-14AWG-RED', description: '10-11" Tapered Reel/Box (115), 14 AWG, Red', quantity: 10, unitPrice: 15.32, totalPrice: 153.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks', pricingBasis: 'Catalog Price' },
+    { sku: 'TR115-15AWG-RED', description: '10-11" Tapered Reel/Box (115), 15 AWG, Red', quantity: 10, unitPrice: 15.48, totalPrice: 154.80, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock', pricingBasis: 'Catalog Price' },
+    { sku: 'TR115-16AWG-RED', description: '10-11" Tapered Reel/Box (115), 16 AWG, Red', quantity: 10, unitPrice: 16.92, totalPrice: 169.20, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks', pricingBasis: 'Catalog Price' },
+    { sku: 'TR115-17AWG-RED', description: '10-11" Tapered Reel/Box (115), 17 AWG, Red', quantity: 10, unitPrice: 17.39, totalPrice: 173.90, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'lead-time', leadTime: '2–4 weeks', pricingBasis: 'Catalog Price' },
+    { sku: 'SP060-14AWG-RED', description: '6" Spool (060), 14 AWG, Red', quantity: 10, unitPrice: 11.25, totalPrice: 112.50, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock', pricingBasis: 'Catalog Price' },
   ],
   total: 945.90,
   shipping: {
@@ -233,7 +234,7 @@ const taperedReelQuote: QuoteTable = {
     cost: 35.50,
     note: 'Standard packaging shipment.',
   },
-  pricingNote: 'Prices based on current Essex catalog rates and Tri-State Industrial account terms.',
+  pricingNote: 'Quoted at current standard rates, valid through Jul 14, 2026.',
 };
 
 const stoniteMatchItems: ReviewMatchItem[] = [
@@ -273,11 +274,11 @@ const midwestPowerQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'Midwest Power Generators',
   lineItems: [
-    { sku: 'INS-H220-NMN', description: 'NMN Laminate, Class H, 0.020" Sheet', quantity: 50, unitPrice: 89.40, totalPrice: 4470.00, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock' },
-    { sku: 'VPI-1260-5GAL', description: 'VPI Resin 1260, 5-Gallon Pail', quantity: 4, unitPrice: 312.00, totalPrice: 1248.00, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock' },
-    { sku: 'BRG-6205-2RS', description: 'Ball Bearing 6205-2RS, Sealed', quantity: 24, unitPrice: 18.50, totalPrice: 444.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock' },
-    { sku: 'SLT-NMN-14', description: 'Slot Liner, NMN, 14" Cut Length', quantity: 200, unitPrice: 3.85, totalPrice: 770.00, minOrderQty: 100, qtyBreakIncrement: 50, stockStatus: 'in-stock' },
-    { sku: 'KAP-HN-1MIL', description: 'Kapton Tape HN, 1mil × 1" × 36yd', quantity: 36, unitPrice: 142.50, totalPrice: 5130.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'lead-time', leadTime: '1–2 weeks' },
+    { sku: 'INS-H220-NMN', description: 'NMN Laminate, Class H, 0.020" Sheet', quantity: 50, unitPrice: 89.40, totalPrice: 4470.00, minOrderQty: 10, qtyBreakIncrement: 10, stockStatus: 'in-stock', pricingBasis: 'Contract Price' },
+    { sku: 'VPI-1260-5GAL', description: 'VPI Resin 1260, 5-Gallon Pail', quantity: 4, unitPrice: 312.00, totalPrice: 1248.00, minOrderQty: 1, qtyBreakIncrement: 1, stockStatus: 'in-stock', pricingBasis: 'Contract Price' },
+    { sku: 'BRG-6205-2RS', description: 'Ball Bearing 6205-2RS, Sealed', quantity: 24, unitPrice: 18.50, totalPrice: 444.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', pricingBasis: 'Contract Price' },
+    { sku: 'SLT-NMN-14', description: 'Slot Liner, NMN, 14" Cut Length', quantity: 200, unitPrice: 3.85, totalPrice: 770.00, minOrderQty: 100, qtyBreakIncrement: 50, stockStatus: 'in-stock', pricingBasis: 'Contract Price' },
+    { sku: 'KAP-HN-1MIL', description: 'Kapton Tape HN, 1mil × 1" × 36yd', quantity: 36, unitPrice: 142.50, totalPrice: 5130.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'lead-time', leadTime: '1–2 weeks', pricingBasis: 'Contract Price' },
   ],
   total: 11328.00,
   shipping: {
@@ -291,7 +292,7 @@ const midwestPowerQuote: QuoteTable = {
     amount: 919.00,
     note: 'You\'re saving here because shipping a full truckload reduces the per-unit cost to get your order out the door. We calculated 7.5% based on what we actually save on freight and handling at that volume.',
   },
-  pricingNote: 'Contract pricing for Midwest Power Systems. Truckload discount calculated from actual freight savings.',
+  pricingNote: 'Pricing per your current agreement. Truckload discount calculated from freight savings.',
 };
 
 /* ── Quote data for rush re-quote workflow (RCSCA rush) ── */
@@ -304,8 +305,8 @@ const rushRcscaQuote: QuoteTable = {
   comparisonNote: 'Rush pricing compared to standard quote Q-1093928',
   standardTotal: 192.01,
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock' },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock' },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 26.15 },
   ],
   rushFee: {
     label: 'Rush Processing Fee (25%)',
@@ -320,7 +321,7 @@ const rushRcscaQuote: QuoteTable = {
     standardMethod: 'Air Shipment',
     standardCost: 24.75,
   },
-  pricingNote: 'Base pricing from distributor cost sheet (Essex). Rush surcharge applied per expedite policy.',
+  pricingNote: 'Your account rates apply. Rush surcharge added per expedite policy.',
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -351,7 +352,7 @@ export const eis1Response: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Quote #Q-1093928 — $192.01 for RCSCA. Jawinder, Please see below for details...',
   body: '',
-  bodyBefore: `Jawinder, We matched this request against your distributor pricing from Essex and confirmed current availability. Please see below for details:`,
+  bodyBefore: `Jawinder, We've reviewed your account and confirmed your current rates. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:33 AM',
@@ -378,7 +379,7 @@ export const csr1CC: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Auto-quoted: Quote #Q-1093928 — $192.01 for RCSCA...',
   body: '',
-  bodyBefore: `Jawinder, We matched this request against your distributor pricing from Essex and confirmed current availability. Please see below for details:`,
+  bodyBefore: `Jawinder, We've reviewed your account and confirmed your current rates. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:33 AM',
@@ -421,7 +422,7 @@ export const eis6Response: Email = {
   preview: 'Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects current Essex catalog rates for Tri-State Industrial's account.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects your current account rates.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -448,7 +449,7 @@ export const csr2CC: Email = {
   preview: 'Auto-quoted: Quote #Q-4150772 — $945.90 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects current Essex catalog rates for Tri-State Industrial's account.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
+  bodyAfter: `All items are available for order. Stock availability varies by configuration — in-stock items are ready to ship immediately, while others carry standard manufacturing lead times.\n\nAll pricing reflects your current account rates.\n\nPlease reply to confirm which options you'd like to proceed with, or let us know if you'd like to adjust quantities.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -641,8 +642,8 @@ const northeastMotorQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'Northeast Motor Supply',
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 24.50, totalPrice: 49.00, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock' },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 26.15, totalPrice: 156.90, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock' },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 24.50, totalPrice: 49.00, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Catalog Price' },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 26.15, totalPrice: 156.90, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock', pricingBasis: 'Catalog Price' },
   ],
   total: 230.65,
   shipping: {
@@ -650,7 +651,7 @@ const northeastMotorQuote: QuoteTable = {
     cost: 24.75,
     note: 'Adhesives require overnight air delivery.',
   },
-  pricingNote: 'Standard catalog pricing applied — no negotiated distributor rate on file for Northeast Motor Supply.',
+  pricingNote: 'Quoted at current standard rates, valid as of May 2026.',
 };
 
 const gulfCoastQuote: QuoteTable = {
@@ -658,8 +659,8 @@ const gulfCoastQuote: QuoteTable = {
   validThrough: 'Jun 27, 2026',
   customerName: 'Gulf Coast Industrial',
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 17.90, totalPrice: 35.80, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock' },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 18.85, totalPrice: 113.10, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock' },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 17.90, totalPrice: 35.80, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Partner Rate', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 18.85, totalPrice: 113.10, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock', pricingBasis: 'Partner Rate', standardUnitPrice: 26.15 },
   ],
   total: 173.65,
   shipping: {
@@ -667,7 +668,7 @@ const gulfCoastQuote: QuoteTable = {
     cost: 24.75,
     note: 'Adhesives require overnight air delivery.',
   },
-  pricingNote: 'Pricing per Gulf Coast Industrial preferred partner agreement, updated April 2026.',
+  pricingNote: 'Pricing reflects your current account rates, valid as of April 2026.',
 };
 
 // Northeast Motor Supply — request
@@ -694,7 +695,7 @@ export const eis10NortheastResponse: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Quote #Q-1094501 — $230.65 for Northeast Motor Supply...',
   body: '',
-  bodyBefore: `Karen, We matched this request against current catalog pricing and confirmed availability. Please see below for details:`,
+  bodyBefore: `Karen, We've confirmed availability and prepared competitive pricing for your request. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '1:18 PM',
@@ -721,7 +722,7 @@ export const csr4NortheastCc: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Auto-quoted: Quote #Q-1094501 — $230.65 for Northeast Motor Supply...',
   body: '',
-  bodyBefore: `Karen, We matched this request against current catalog pricing and confirmed availability. Please see below for details:`,
+  bodyBefore: `Karen, We've confirmed availability and prepared competitive pricing for your request. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '1:18 PM',
@@ -763,7 +764,7 @@ export const eis11GulfCoastResponse: Email = {
   subject: 're: Adhesive & Activator — Reorder',
   preview: 'Quote #Q-1094502 — $173.65 for Gulf Coast Industrial...',
   body: '',
-  bodyBefore: `Mike, We matched this reorder against your preferred partner pricing and confirmed availability. Please see below for details:`,
+  bodyBefore: `Mike, We've reviewed your account and confirmed your current rates for this reorder. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '1:23 PM',
@@ -790,7 +791,7 @@ export const csr5GulfCoastCc: Email = {
   subject: 're: Adhesive & Activator — Reorder',
   preview: 'Auto-quoted: Quote #Q-1094502 — $173.65 for Gulf Coast Industrial...',
   body: '',
-  bodyBefore: `Mike, We matched this reorder against your preferred partner pricing and confirmed availability. Please see below for details:`,
+  bodyBefore: `Mike, We've reviewed your account and confirmed your current rates for this reorder. Please see below for details:`,
   bodyAfter: `Thank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '1:23 PM',
@@ -836,7 +837,7 @@ export const eis8RushResponse: Email = {
   subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
   preview: 'Rush Quote #Q-1094215 — $258.08 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '2:13 PM',
@@ -863,7 +864,7 @@ export const csr3RushCc: Email = {
   subject: 're: Adhesive & Activator Pricing — Need Friday Delivery',
   preview: 'Rush Quote #Q-1094215 — $258.08 for RCSCA (standard: $192.01)...',
   body: '',
-  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard pricing from quote Q-1093928 is shown alongside the rush pricing below.`,
+  bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items, and shipping has been upgraded to Priority Overnight. For reference, your standard quote Q-1093928 is shown alongside the rush pricing below.`,
   bodyAfter: `Estimated delivery: Friday, May 29 (overnight shipment).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.01) remains valid through Jun 27, 2026.\n\nPlease reply to confirm rush or standard delivery.\n\nThank you for reaching out to Apex. We appreciate the opportunity to connect and are excited to support your needs.`,
   date: 'May 28, 2026',
   time: '2:13 PM',
@@ -889,12 +890,12 @@ const qtyBreakQuote: QuoteTable = {
   customerName: 'Consolidated Electric',
   isQtyBreakComparison: true,
   lineItems: [
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 12, unitPrice: 8.75, totalPrice: 105.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Standard (1–23 units)' },
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 48, unitPrice: 7.45, totalPrice: 357.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Case (24–99 units)', qtyBreakDiscount: '15% off' },
-    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet (100+ units)', qtyBreakDiscount: '30% off' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 12, unitPrice: 8.75, totalPrice: 105.00, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Standard (1–23 units)', pricingBasis: 'Volume Tier' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 48, unitPrice: 7.45, totalPrice: 357.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Case (24–99 units)', qtyBreakDiscount: '15% off', pricingBasis: 'Volume Tier' },
+    { sku: 'SRT-500', description: 'Silicone Rescue Tape, 1"x12ft, Red', quantity: 144, unitPrice: 6.15, totalPrice: 885.60, minOrderQty: 12, qtyBreakIncrement: 12, stockStatus: 'in-stock', qtyBreakNote: 'Pallet (100+ units)', qtyBreakDiscount: '30% off', pricingBasis: 'Volume Tier' },
   ],
   total: 0,
-  pricingNote: 'Volume tiers based on manufacturer pack sizes and distributor incentive breaks.',
+  pricingNote: 'Volume tiers based on manufacturer pack sizes.',
 };
 
 export const eis9QtyBreak: Email = {
@@ -1013,7 +1014,7 @@ export const eisStoniteResponse: Email = {
   preview: 'Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing pulled from current distributor schedules for Stonite Coil Corp's account.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account rates.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,
@@ -1200,7 +1201,7 @@ export const csrStoniteFinalCc: Email = {
   preview: 'Resolved: Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing pulled from current distributor schedules for Stonite Coil Corp's account.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account rates.\n\nStandard lead time is 5–7 business days. Please reply to confirm or if you'd like to adjust quantities.\n\nBest regards,\nApex Quoting System\nApex Supply Corporation`,
   date: 'May 28, 2026',
   time: '11:45 AM',
   read: false,

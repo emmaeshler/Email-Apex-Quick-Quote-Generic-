@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Plus, Mail, Calendar, Users, Star, CheckSquare,
-  GitBranch, Cloud, MoreHorizontal, Pencil, Trash2, AlertTriangle,
+  GitBranch, Cloud, MoreHorizontal, Pencil, Trash2, AlertTriangle, RotateCcw,
 } from 'lucide-react';
 import type { DemoMode } from '../App';
 import type { CustomSequence } from '../data/customSequences';
+import { isPresetCustomized } from '../data/demoSequences';
 
 interface AppRailProps {
   demoMode: DemoMode;
@@ -13,6 +14,8 @@ interface AppRailProps {
   onOpenBuilder: () => void;
   onEditSequence: (id: string) => void;
   onDeleteSequence: (id: string) => void;
+  onEditPreset: (presetId: string) => void;
+  onResetPreset: (presetId: string) => void;
 }
 
 function DeleteConfirmModal({ sequenceName, onConfirm, onCancel }: {
@@ -90,7 +93,7 @@ function DeleteConfirmModal({ sequenceName, onConfirm, onCancel }: {
   );
 }
 
-export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBuilder, onEditSequence, onDeleteSequence }: AppRailProps) {
+export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBuilder, onEditSequence, onDeleteSequence, onEditPreset, onResetPreset }: AppRailProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomSequence | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -146,22 +149,44 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-size-xs font-w-medium text-foreground/70 uppercase tracking-wide">Demo Mode</p>
                 </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDemoModeChange('short'); setShowPicker(false); }}
-                  className={`w-full text-left px-3 py-2.5 text-size-sm transition-colors ${
-                    demoMode === 'short' ? 'bg-primary/10 text-primary font-w-medium' : 'text-foreground hover:bg-muted'
-                  }`}
-                >
-                  Short Demo
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDemoModeChange('full'); setShowPicker(false); }}
-                  className={`w-full text-left px-3 py-2.5 text-size-sm transition-colors ${
-                    demoMode === 'full' ? 'bg-primary/10 text-primary font-w-medium' : 'text-foreground hover:bg-muted'
-                  }`}
-                >
-                  Full Demo
-                </button>
+                {(['short', 'full'] as const).map(presetId => {
+                  const isActive = demoMode === presetId;
+                  const isCustomized = isPresetCustomized(presetId);
+                  return (
+                    <div
+                      key={presetId}
+                      className={`group flex items-center gap-1 px-3 py-2 transition-colors ${
+                        isActive ? 'bg-primary/10' : 'hover:bg-muted'
+                      }`}
+                    >
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDemoModeChange(presetId); setShowPicker(false); }}
+                        className={`flex-1 text-left text-size-sm truncate ${
+                          isActive ? 'text-primary font-w-medium' : 'text-foreground'
+                        }`}
+                      >
+                        {presetId === 'short' ? 'Short Demo' : 'Full Demo'}
+                        {isCustomized && <span className="text-size-xs text-muted-foreground ml-1">·edited</span>}
+                      </button>
+                      {isCustomized && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onResetPreset(presetId); }}
+                          className="p-1 rounded hover:bg-border/40 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all"
+                          title="Reset to default"
+                        >
+                          <RotateCcw size={12} />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onEditPreset(presetId); setShowPicker(false); }}
+                        className="p-1 rounded hover:bg-border/40 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all"
+                        title="Edit sequence"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
 
                 {/* Custom sequences */}
                 {customSequences.length > 0 && (

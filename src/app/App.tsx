@@ -11,6 +11,7 @@ import { loadCustomSequences, addCustomSequence, deleteCustomSequence, type Cust
 import { inboxFolders } from './data/emails';
 import { getPresetBatches, savePresetOverride, isPresetCustomized, resetPresetOverride } from './data/demoSequences';
 import { computeVisibleEmails } from './data/computeVisibleEmails';
+import { EMAIL_REGISTRY } from './data/emailRegistry';
 import { executeTriggers } from './lib/workflowEngine';
 
 // Re-export types so existing imports from './App' still work
@@ -22,6 +23,7 @@ interface StateSnapshot {
   nextBatchIndex: number;
   selectedCsrEmailId: string | null;
   selectedEisEmailId: string | null;
+  selectedAutoQuotedEmailId: string | null;
   selectedReviewEmailId: string | null;
   reviewResolved: boolean;
   reviewStage: string;
@@ -48,9 +50,10 @@ function getInitialDemoMode(): DemoMode {
 
 export default function App() {
   const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
-  const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'review'>('csr');
+  const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'auto-quoted' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
+  const [selectedAutoQuotedEmailId, setSelectedAutoQuotedEmailId] = useState<string | null>(null);
   const [selectedReviewEmailId, setSelectedReviewEmailId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [emailListCollapsed, setEmailListCollapsed] = useState(false);
@@ -168,6 +171,7 @@ export default function App() {
     setActiveFolder('csr');
     setSelectedCsrEmailId(null);
     setSelectedEisEmailId(null);
+    setSelectedAutoQuotedEmailId(null);
     setSelectedReviewEmailId(null);
     setReviewResolved(false);
     setReviewStage('pending');
@@ -247,6 +251,7 @@ export default function App() {
     nextBatchIndex,
     selectedCsrEmailId,
     selectedEisEmailId,
+    selectedAutoQuotedEmailId,
     selectedReviewEmailId,
     reviewResolved,
     reviewStage,
@@ -256,7 +261,7 @@ export default function App() {
     approvalStage,
     hiddenIds: new Set(hiddenIds),
     readIds: new Set(readIds),
-  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedCsrEmailId, selectedEisEmailId, selectedReviewEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
+  }), [arrivedEmails, emailBatchMap, nextBatchIndex, selectedCsrEmailId, selectedEisEmailId, selectedAutoQuotedEmailId, selectedReviewEmailId, reviewResolved, reviewStage, reviewComposeMode, reviewForwardStage, forwardStage, approvalStage, hiddenIds, readIds]);
 
   const handleBack = useCallback(() => {
     if (stateHistory.length === 0) return;
@@ -267,6 +272,7 @@ export default function App() {
     setNextBatchIndex(prev.nextBatchIndex);
     setSelectedCsrEmailId(prev.selectedCsrEmailId);
     setSelectedEisEmailId(prev.selectedEisEmailId);
+    setSelectedAutoQuotedEmailId(prev.selectedAutoQuotedEmailId);
     setSelectedReviewEmailId(prev.selectedReviewEmailId);
     setReviewResolved(prev.reviewResolved);
     setReviewStage(prev.reviewStage as any);
@@ -350,6 +356,7 @@ export default function App() {
     const nextEmail = list.length > 0 ? list[0].id : null;
     if (activeFolder === 'csr') setSelectedCsrEmailId(nextEmail);
     else if (activeFolder === 'eis') setSelectedEisEmailId(nextEmail);
+    else if (activeFolder === 'auto-quoted') setSelectedAutoQuotedEmailId(nextEmail);
     else setSelectedReviewEmailId(nextEmail);
   };
 
@@ -365,6 +372,15 @@ export default function App() {
     () => computeVisibleEmails('csr', arrivedEmails, { approvalStage, readIds }),
     [arrivedEmails, approvalStage, readIds],
   );
+
+  // Build the auto-quoted folder — always shows all auto-quoted emails from the registry
+  // (no arrival gating, so the folder is pre-populated for demos)
+  const autoQuotedEmails = useMemo(() => {
+    return [...EMAIL_REGISTRY.values()]
+      .filter((entry) => entry.folder === 'eis' && entry.email.quoteStatus === 'auto-quoted')
+      .sort((a, b) => b.sortPriority - a.sortPriority)
+      .map((entry) => ({ ...entry.email, read: true }));
+  }, []);
 
   // Build the review folder email list from both inboxes
   const reviewEmails = useMemo(() => {
@@ -384,6 +400,7 @@ export default function App() {
   const dynamicFolders = useMemo(() => {
     const csrUnread = effectiveCsrEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
     const eisUnread = effectiveEisEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
+    const autoQuotedUnread = autoQuotedEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
     const reviewUnread = reviewEmails.filter((e) => !e.read && !readIds.has(e.id) && !hiddenIds.has(e.id)).length;
 
     return inboxFolders.map((folder) => {
@@ -393,20 +410,36 @@ export default function App() {
       if (folder.id === 'eis') {
         return { ...folder, count: effectiveEisEmails.length, unreadCount: eisUnread };
       }
+      if (folder.id === 'auto-quoted') {
+        return { ...folder, count: autoQuotedEmails.length, unreadCount: autoQuotedUnread };
+      }
       if (folder.id === 'review') {
         return { ...folder, count: reviewEmails.length, unreadCount: reviewUnread };
       }
       return folder;
     });
-  }, [effectiveCsrEmails, effectiveEisEmails, reviewEmails, readIds, hiddenIds]);
+  }, [effectiveCsrEmails, effectiveEisEmails, autoQuotedEmails, reviewEmails, readIds, hiddenIds]);
 
-  // Set default selection for review folder
+  // Set default selection for auto-quoted and review folders
+  const effectiveAutoQuotedEmailId = selectedAutoQuotedEmailId ?? (autoQuotedEmails.length > 0 ? autoQuotedEmails[0].id : null);
   const effectiveReviewEmailId = selectedReviewEmailId ?? (reviewEmails.length > 0 ? reviewEmails[0].id : null);
 
-  const currentEmails = activeFolder === 'csr' ? effectiveCsrEmails : activeFolder === 'eis' ? effectiveEisEmails : reviewEmails;
+  const currentEmails =
+    activeFolder === 'csr' ? effectiveCsrEmails :
+    activeFolder === 'eis' ? effectiveEisEmails :
+    activeFolder === 'auto-quoted' ? autoQuotedEmails :
+    reviewEmails;
   const visibleEmails = currentEmails.filter((e) => !hiddenIds.has(e.id));
-  const selectedEmailId = activeFolder === 'csr' ? selectedCsrEmailId : activeFolder === 'eis' ? selectedEisEmailId : effectiveReviewEmailId;
-  const setSelectedEmailId = activeFolder === 'csr' ? setSelectedCsrEmailId : activeFolder === 'eis' ? setSelectedEisEmailId : setSelectedReviewEmailId;
+  const selectedEmailId =
+    activeFolder === 'csr' ? selectedCsrEmailId :
+    activeFolder === 'eis' ? selectedEisEmailId :
+    activeFolder === 'auto-quoted' ? effectiveAutoQuotedEmailId :
+    effectiveReviewEmailId;
+  const setSelectedEmailId =
+    activeFolder === 'csr' ? setSelectedCsrEmailId :
+    activeFolder === 'eis' ? setSelectedEisEmailId :
+    activeFolder === 'auto-quoted' ? setSelectedAutoQuotedEmailId :
+    setSelectedReviewEmailId;
   const selectedEmail = visibleEmails.find((e) => e.id === selectedEmailId) || null;
 
   // Mark emails as read when selected, and snapshot for per-email back
@@ -466,6 +499,7 @@ export default function App() {
 
   // Determine the effective folderType for EmailDetail rendering
   const getEmailFolderType = (emailId: string | null): 'csr' | 'eis' => {
+    if (activeFolder === 'auto-quoted') return 'eis';
     if (activeFolder !== 'review' || !emailId) return activeFolder === 'eis' ? 'eis' : 'csr';
     if (emailId.startsWith('eis')) return 'eis';
     return 'csr';
@@ -547,7 +581,7 @@ export default function App() {
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
-          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'review')}
+          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'auto-quoted' | 'review')}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           hintTarget={hintTarget}
@@ -557,8 +591,8 @@ export default function App() {
           selectedEmailId={selectedEmailId}
           onSelectEmail={handleSelectEmail}
           onDeleteEmail={handleDeleteEmail}
-          folderType={activeFolder === 'review' ? 'review' : activeFolder}
-          folderLabel={activeFolder === 'csr' ? 'CSR Inbox' : activeFolder === 'eis' ? 'Apex Quote Inbox' : 'Flagged for Review'}
+          folderType={activeFolder === 'review' ? 'review' : activeFolder === 'auto-quoted' ? 'eis' : activeFolder}
+          folderLabel={activeFolder === 'csr' ? 'CSR Inbox' : activeFolder === 'eis' ? 'Apex Quote Inbox' : activeFolder === 'auto-quoted' ? 'Auto Quoted' : 'Flagged for Review'}
           collapsed={emailListCollapsed}
           onToggleCollapse={() => setEmailListCollapsed(!emailListCollapsed)}
           reviewResolved={reviewResolved}

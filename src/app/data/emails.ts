@@ -1285,7 +1285,7 @@ export interface InboxFolderDef {
   id: string;
   label: string;
   sublabel?: string;
-  icon: 'inbox' | 'zap' | 'flag';
+  icon: 'inbox' | 'zap' | 'flag' | 'check-circle';
   count: number;
   unreadCount: number;
   children?: InboxFolderDef[];
@@ -1323,6 +1323,14 @@ export const inboxFolders: InboxFolderDef[] = [
     icon: 'zap' as const,
     count: eisEmails.length,
     unreadCount: eisEmails.filter((e) => !e.read).length,
+  },
+  {
+    id: 'auto-quoted',
+    label: 'Auto Quoted',
+    sublabel: 'Apex Quoting',
+    icon: 'check-circle' as const,
+    count: eisEmails.filter((e) => e.quoteStatus === 'auto-quoted').length,
+    unreadCount: eisEmails.filter((e) => e.quoteStatus === 'auto-quoted' && !e.read).length,
   },
   {
     id: 'review',

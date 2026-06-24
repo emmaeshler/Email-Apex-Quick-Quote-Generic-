@@ -1,6 +1,6 @@
 'use client';
 
-import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import type { InboxFolderDef } from '../data/emails';
@@ -105,18 +105,22 @@ export function InboxSidebar({
 
   const csrId = getFolderId('csr');
   const eisId = getFolderId('eis');
+  const autoQuotedId = getFolderId('auto-quoted');
   const reviewId = getFolderId('review');
 
   const isCsrActive = activeFolderId === csrId;
   const isEisActive = activeFolderId === eisId;
+  const isAutoQuotedActive = activeFolderId === autoQuotedId;
   const isReviewActive = activeFolderId === reviewId;
 
   const csrFolder = folders.find(f => f.id === 'csr');
   const eisFolder = folders.find(f => f.id === 'eis');
+  const autoQuotedFolder = folders.find(f => f.id === 'auto-quoted');
   const reviewFolder = folders.find(f => f.id === 'review');
 
   const isCsrHinted = hintTarget === `folder:${csrId}`;
   const isEisHinted = hintTarget === `folder:${eisId}`;
+  const isAutoQuotedHinted = hintTarget === `folder:${autoQuotedId}`;
   const isReviewHinted = hintTarget === `folder:${reviewId}`;
 
   return (
@@ -243,6 +247,15 @@ export function InboxSidebar({
                 isActive={isEisActive}
                 onClick={() => onFolderSelect(eisId)}
                 isHinted={isEisHinted}
+              />
+              <FolderItem
+                icon={CheckCircle}
+                label="Auto Quoted"
+                count={autoQuotedFolder?.count ?? 0}
+                isActive={isAutoQuotedActive}
+                onClick={() => onFolderSelect(autoQuotedId)}
+                indent
+                isHinted={isAutoQuotedHinted}
               />
             </div>
           )}

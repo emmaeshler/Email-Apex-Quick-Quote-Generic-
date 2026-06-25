@@ -1,17 +1,24 @@
 import { useState } from 'react'
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  SvgIcon,
+  Paper,
+  CircularProgress,
+} from '@mui/material'
 import { useAuth } from './AuthContext'
-import { Button } from '@/app/components/ui/button'
-import { Input } from '@/app/components/ui/input'
-import { Label } from '@/app/components/ui/label'
 
 function I2PLogo() {
   return (
-    <svg width="44" height="44" viewBox="0 0 28 28" fill="none">
+    <SvgIcon sx={{ fontSize: 44 }} viewBox="0 0 28 28">
       <rect x={0} y={0} width={12} height={12} fill="#d4712a" />
       <rect x={16} y={0} width={12} height={12} fill="#e8944a" />
       <rect x={0} y={16} width={12} height={12} fill="#1e2a3a" />
       <rect x={16} y={16} width={12} height={12} fill="#d4712a" />
-    </svg>
+    </SvgIcon>
   )
 }
 
@@ -36,61 +43,88 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
-      <div className="w-full max-w-[400px] mx-4 p-8 bg-white rounded-xl border border-[#e0e0e0] text-center">
+    <Box sx={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: '#f5f5f5',
+    }}>
+      <Paper
+        elevation={0}
+        sx={{
+          width: { xs: '100%', sm: 400 },
+          mx: { xs: 2, sm: 'auto' },
+          p: { xs: 3, sm: 5 },
+          borderRadius: 3,
+          border: '1px solid #e0e0e0',
+          textAlign: 'center',
+        }}
+      >
         <I2PLogo />
-        <h1 className="mt-4 mb-1 text-[22px] font-bold text-[#1a1a2e]">
+        <Typography sx={{ mt: 2, mb: 0.5, fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>
           Email Quoting Demo
-        </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          Sign in to access the demo
-        </p>
+        </Typography>
+        <Typography sx={{ mb: 3, fontSize: 14, color: 'text.secondary' }}>
+          Sign in to access your account
+        </Typography>
 
         {error && (
-          <div className="mb-4 p-3 text-sm text-left text-red-700 bg-red-50 border border-red-200 rounded-md">
+          <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
             {error}
-          </div>
+          </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-left">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email or Username</Label>
-            <Input
-              id="email"
-              type="text"
-              autoComplete="username"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="Email or Username"
+            type="text"
+            name="email"
+            autoComplete="username"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            autoFocus
+            size="small"
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            size="small"
+            sx={{ mb: 2 }}
+          />
           <Button
+            fullWidth
             type="submit"
-            className="w-full bg-[#00446a] hover:bg-[#003555]"
+            variant="contained"
             disabled={submitting}
+            sx={{
+              bgcolor: '#00446a',
+              textTransform: 'none',
+              fontWeight: 600,
+              py: 1.2,
+              '&:hover': { bgcolor: '#003555' },
+            }}
           >
-            {submitting ? 'Signing in...' : 'Sign In'}
+            {submitting ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Sign In'}
           </Button>
         </form>
-        <a
+        <Typography
+          component="a"
           href="https://password-admin.vercel.app/forgot-password"
           target="_blank"
           rel="noopener noreferrer"
-          className="block mt-3 text-[13px] text-[#666] hover:underline"
+          sx={{ display: 'block', mt: 1.5, fontSize: 13, color: '#666', textAlign: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
         >
           Forgot password?
-        </a>
-      </div>
-    </div>
+        </Typography>
+      </Paper>
+    </Box>
   )
 }

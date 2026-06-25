@@ -10,6 +10,43 @@ import {
   CircularProgress,
 } from '@mui/material'
 import { useAuth } from './AuthContext'
+import { checkUser, setupAccount } from './authApi'
+
+const PASSWORD_RULES = [
+  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+  { label: 'One uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter', test: (p: string) => /[a-z]/.test(p) },
+  { label: 'One number', test: (p: string) => /\d/.test(p) },
+  { label: 'One special character (!@#$%^&*…)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+]
+
+function validatePassword(password: string): string | null {
+  for (const rule of PASSWORD_RULES) {
+    if (!rule.test(password)) return rule.label.toLowerCase()
+  }
+  return null
+}
+
+function PasswordChecklist({ password }: { password: string }) {
+  if (!password) return null
+  return (
+    <Box component="ul" sx={{ listStyle: 'none', p: 0, mb: 2, mt: 0.5 }}>
+      {PASSWORD_RULES.map(rule => {
+        const pass = rule.test(password)
+        return (
+          <Box
+            component="li"
+            key={rule.label}
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.75, fontSize: 12, color: pass ? 'success.main' : '#999', mb: 0.25 }}
+          >
+            <span style={{ fontSize: 10 }}>{pass ? '✓' : '•'}</span>
+            {rule.label}
+          </Box>
+        )
+      })}
+    </Box>
+  )
+}
 
 function I2PLogo() {
   return (
@@ -22,24 +59,91 @@ function I2PLogo() {
   )
 }
 
+type Step = 'username' | 'password' | 'setup'
+
 export default function LoginPage() {
-  const { login } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const { login, setSession } = useAuth()
+  const [step, setStep] = useState<Step>('username')
+  const [username, setUsername] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [prefill, setPrefill] = useState<{ firstName?: string; lastName?: string }>({})
+  const [setupPassword, setSetupPassword] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUsernameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!username.trim()) {
+      setError('Please enter your email or username.')
+      return
+    }
+    setError(null)
+    setSubmitting(true)
+
+    const result = await checkUser(username.trim())
+    setSubmitting(false)
+
+    if (result.status === 'needs_setup') {
+      setPrefill({ firstName: result.firstName ?? '', lastName: result.lastName ?? '' })
+      setStep('setup')
+    } else if (result.status === 'expired') {
+      setError('This account has expired. Please contact your administrator.')
+    } else {
+      setStep('password')
+    }
+  }
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!email.trim() || !password) {
-      setError('Please enter your email or username and password.')
+    const form = new FormData(e.currentTarget as HTMLFormElement)
+    const password = form.get('password') as string
+    if (!password) {
+      setError('Please enter your password.')
       return
     }
     setSubmitting(true)
-    const err = await login(email.trim(), password)
+    const err = await login(username.trim(), password)
     setSubmitting(false)
     if (err) setError(err)
+  }
+
+  const handleSetupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    const form = new FormData(e.currentTarget as HTMLFormElement)
+    const firstName = (form.get('firstName') as string)?.trim()
+    const lastName = (form.get('lastName') as string)?.trim()
+    const password = form.get('password') as string
+    const confirm = form.get('confirm') as string
+
+    if (!firstName || !lastName) {
+      setError('First and last name are required.')
+      return
+    }
+    const pwError = validatePassword(password)
+    if (pwError) {
+      setError(`Password needs ${pwError}.`)
+      return
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setSubmitting(true)
+    const result = await setupAccount(username.trim(), firstName, lastName, password)
+    setSubmitting(false)
+    if ('error' in result) {
+      setError(result.error)
+    } else {
+      setSession(result.session)
+    }
+  }
+
+  const handleBack = () => {
+    setStep('username')
+    setError(null)
+    setSetupPassword('')
   }
 
   return (
@@ -75,55 +179,176 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="Email or Username"
-            type="text"
-            name="email"
-            autoComplete="username"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            autoFocus
-            size="small"
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            fullWidth
-            label="Password"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            size="small"
-            sx={{ mb: 2 }}
-          />
-          <Button
-            fullWidth
-            type="submit"
-            variant="contained"
-            disabled={submitting}
-            sx={{
-              bgcolor: '#00446a',
-              textTransform: 'none',
-              fontWeight: 600,
-              py: 1.2,
-              '&:hover': { bgcolor: '#003555' },
-            }}
+        {step === 'username' && (
+          <form onSubmit={handleUsernameSubmit}>
+            <TextField
+              fullWidth
+              label="Email or Username"
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              autoFocus
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={submitting}
+              sx={{
+                bgcolor: '#00446a',
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 1.2,
+                '&:hover': { bgcolor: '#003555' },
+              }}
+            >
+              {submitting ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Continue'}
+            </Button>
+          </form>
+        )}
+
+        {step === 'password' && (
+          <form onSubmit={handlePasswordSubmit}>
+            <input type="hidden" name="username" autoComplete="username" value={username} />
+            <Typography sx={{ mb: 2, fontSize: 14, color: 'text.secondary', textAlign: 'left' }}>
+              Signing in as <strong>{username}</strong>
+            </Typography>
+            <TextField
+              fullWidth
+              label="Password"
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              autoFocus
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={submitting}
+              sx={{
+                bgcolor: '#00446a',
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 1.2,
+                '&:hover': { bgcolor: '#003555' },
+              }}
+            >
+              {submitting ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Sign In'}
+            </Button>
+            <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Button
+                onClick={handleBack}
+                sx={{ textTransform: 'none', fontSize: 13, color: '#666', p: 0, minWidth: 0 }}
+              >
+                &larr; Back
+              </Button>
+              <Typography
+                component="a"
+                href="https://password-admin.vercel.app/forgot-password"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ fontSize: 13, color: '#666', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+              >
+                Forgot password?
+              </Typography>
+            </Box>
+          </form>
+        )}
+
+        {step === 'setup' && (
+          <form onSubmit={handleSetupSubmit}>
+            <input type="hidden" name="username" autoComplete="username" value={username} />
+            <Alert severity="info" sx={{ mb: 2, textAlign: 'left' }}>
+              Welcome! Set up your account to get started.
+            </Alert>
+            <TextField
+              fullWidth
+              label="First Name"
+              name="firstName"
+              autoComplete="given-name"
+              defaultValue={prefill.firstName}
+              required
+              autoFocus
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Last Name"
+              name="lastName"
+              autoComplete="family-name"
+              defaultValue={prefill.lastName}
+              required
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Password"
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              required
+              size="small"
+              value={setupPassword}
+              onChange={e => setSetupPassword(e.target.value)}
+              sx={{ mb: 0.5 }}
+            />
+            <PasswordChecklist password={setupPassword} />
+            <TextField
+              fullWidth
+              label="Confirm Password"
+              type="password"
+              name="confirm"
+              autoComplete="new-password"
+              required
+              size="small"
+              sx={{ mb: 2 }}
+            />
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              disabled={submitting}
+              sx={{
+                bgcolor: '#00446a',
+                textTransform: 'none',
+                fontWeight: 600,
+                py: 1.2,
+                '&:hover': { bgcolor: '#003555' },
+              }}
+            >
+              {submitting ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Create Account'}
+            </Button>
+            <Box sx={{ mt: 1.5, textAlign: 'left' }}>
+              <Button
+                onClick={handleBack}
+                sx={{ textTransform: 'none', fontSize: 13, color: '#666', p: 0, minWidth: 0 }}
+              >
+                &larr; Back
+              </Button>
+            </Box>
+          </form>
+        )}
+
+        {step === 'username' && (
+          <Typography
+            component="a"
+            href="https://password-admin.vercel.app/forgot-password"
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ display: 'block', mt: 1.5, fontSize: 13, color: '#666', textAlign: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
           >
-            {submitting ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Sign In'}
-          </Button>
-        </form>
-        <Typography
-          component="a"
-          href="https://password-admin.vercel.app/forgot-password"
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={{ display: 'block', mt: 1.5, fontSize: 13, color: '#666', textAlign: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-        >
-          Forgot password?
-        </Typography>
+            Forgot password?
+          </Typography>
+        )}
       </Paper>
     </Box>
   )

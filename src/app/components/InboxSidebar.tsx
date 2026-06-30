@@ -83,7 +83,7 @@ export function InboxSidebar({
 
   if (collapsed) {
     return (
-      <div className="w-12 bg-sidebar flex flex-col overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
+      <div className="w-12 bg-background flex flex-col overflow-y-auto transition-all duration-200">
         <div className="flex items-center justify-center px-0 py-3 border-b border-sidebar-border">
           <button
             onClick={onToggleCollapse}
@@ -124,13 +124,12 @@ export function InboxSidebar({
   const isReviewHinted = hintTarget === `folder:${reviewId}`;
 
   return (
-    <div className="w-64 bg-background flex flex-col overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-        <p className="text-size-base font-semibold text-foreground">Folders</p>
+    <div className="w-64 bg-background flex flex-col overflow-y-auto transition-all duration-200">
+      {/* Collapse button */}
+      <div className="flex items-center justify-end px-3 py-2">
         <button
           onClick={onToggleCollapse}
-          className="p-1 hover:bg-muted rounded-[var(--radius)] transition-colors text-muted-foreground hover:text-foreground"
+          className="p-1 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
           title="Collapse folder pane"
         >
           <ChevronsLeft size={16} />

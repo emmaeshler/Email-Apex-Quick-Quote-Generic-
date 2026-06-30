@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, Fragment } from 'react';
 import {
-  Reply, ReplyAll, Forward, Archive, Trash2, MoreVertical,
-  ChevronDown, ChevronUp, Pin, Printer, Mail, Info, Inbox,
+  Reply, ReplyAll, Forward,
+  ChevronDown, ChevronUp, Info, Inbox,
   CheckCircle, Clock, Loader2, AlertTriangle, Send, X,
-  ArrowUpCircle, ExternalLink,
+  ArrowUpCircle, Bot,
 } from 'lucide-react';
 import type { Email, QuoteTable, ReviewMatchItem, QuotedPrevious } from '../data/emails';
 import { DemoDot, ActionHint } from './DemoGuide';
-import { getAvatarColor, getInitials } from '../lib/avatarUtils';
+import { getAvatarColor, getInitials, getAvatarImage } from '../lib/avatarUtils';
 import { getEmailCategory, getEntry } from '../data/emailRegistry';
 
 /* ── Helpers ── */
@@ -235,7 +235,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; icon: typeof Cl
 /* ── Outlook-style quoted previous message ── */
 
 function QuotedPreviousBlock({ quoted }: { quoted: QuotedPrevious }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   return (
     <div className="mt-4 border-t border-border pt-3">
       <button
@@ -427,14 +427,27 @@ function ComposeBox({ toEmail, subject, prefillBody, onSend, onDiscard, hintSend
 
 function MessageHeader({ email }: { email: Email }) {
   const isSystemEmail = email.fromEmail === 'quotes@apex-corp.com' || email.isCcFromAi || email.isReviewRequest;
+  const avatarImg = getAvatarImage(email.from, isSystemEmail);
   return (
     <div className="flex items-start gap-3 px-6 py-3 border-b border-border">
-      <div
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-        style={{ backgroundColor: getAvatarColor(email.from, isSystemEmail), fontSize: '12px', fontWeight: 600 }}
-      >
-        {getInitials(email.from, isSystemEmail)}
-      </div>
+      {isSystemEmail ? (
+        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+          <Bot size={18} className="text-primary" />
+        </div>
+      ) : avatarImg ? (
+        <img
+          src={avatarImg}
+          alt={email.from}
+          className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
+        />
+      ) : (
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+          style={{ backgroundColor: getAvatarColor(email.from, isSystemEmail), fontSize: '12px', fontWeight: 600 }}
+        >
+          {getInitials(email.from, isSystemEmail)}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-1.5 min-w-0">
@@ -766,12 +779,13 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
         {isDirectQuote && effectiveForwardStage === 'quoted' && email.forwardAiResponse && (
           <div className="mt-8 border-t-2 border-foreground/15 pt-6">
             <div className="flex items-center gap-2 mb-4">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-                style={{ backgroundColor: getAvatarColor('Apex Quoting', true), fontSize: '11px', fontWeight: 600 }}
-              >
-                AQ
-              </div>
+              {(() => {
+                return (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+                    <Bot size={16} className="text-primary" />
+                  </div>
+                );
+              })()}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1.5">
@@ -953,40 +967,6 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
   return (
     <div className="flex-1 min-w-0 flex flex-col bg-card rounded-lg shadow-lg">
-      {/* Toolbar */}
-      <div className="border-b border-border bg-muted">
-        <div className="flex items-center gap-1 px-4 py-2">
-          <button className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors">
-            <Archive size={18} className="text-foreground/70" />
-          </button>
-          <button
-            onClick={() => onDeleteEmail?.(email.id)}
-            className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={18} className="text-foreground/70" />
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          {[ChevronDown, Pin].map((Icon, i) => (
-            <button key={i} className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors">
-              <Icon size={18} className="text-foreground/70" />
-            </button>
-          ))}
-          <div className="w-px h-6 bg-border mx-1" />
-          <button className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors">
-            <Printer size={18} className="text-foreground/70" />
-          </button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <button className="p-2 hover:bg-border/40 rounded-[var(--radius)] transition-colors">
-            <MoreVertical size={18} className="text-foreground/70" />
-          </button>
-          <div className="flex-1" />
-          <button className="px-4 py-1.5 bg-primary text-primary-foreground rounded-[var(--radius-button)] hover:bg-primary/90 transition-colors flex items-center gap-2 text-size-sm">
-            <Mail size={14} /> New Message
-          </button>
-        </div>
-      </div>
-
       {/* Subject + tags */}
       <div className="px-6 pt-3 pb-2 border-b border-border">
         <div className="flex items-center gap-2">
@@ -1124,8 +1104,8 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
             {isSteveClarification && (effectiveForwardStage === 'processing' || effectiveForwardStage === 'quoted') && (
               <div className="border-t-2 border-foreground/10">
                 <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
-                  <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-size-sm">
-                    Q
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+                    <Bot size={20} className="text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -1164,12 +1144,25 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                 <div className="border-t-2 border-foreground/10">
                   {/* Thread message header */}
                   <div className="flex items-start gap-3 px-6 py-4 border-b border-border">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-                      style={{ backgroundColor: getAvatarColor(thr.from, thr.fromEmail === 'quotes@apex-corp.com'), fontSize: '13px', fontWeight: 600 }}
-                    >
-                      {getInitials(thr.from, thr.fromEmail === 'quotes@apex-corp.com')}
-                    </div>
+                    {(() => {
+                      const thrSystem = thr.fromEmail === 'quotes@apex-corp.com';
+                      if (thrSystem) return (
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+                          <Bot size={20} className="text-primary" />
+                        </div>
+                      );
+                      const thrAvatarImg = getAvatarImage(thr.from, false);
+                      return thrAvatarImg ? (
+                        <img src={thrAvatarImg} alt={thr.from} className="w-10 h-10 rounded-full flex-shrink-0 object-cover" />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                          style={{ backgroundColor: getAvatarColor(thr.from, false), fontSize: '13px', fontWeight: 600 }}
+                        >
+                          {getInitials(thr.from, false)}
+                        </div>
+                      );
+                    })()}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-baseline gap-1.5 min-w-0">

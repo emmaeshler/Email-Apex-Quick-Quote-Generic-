@@ -13,6 +13,10 @@ import { getPresetBatches, savePresetOverride, isPresetCustomized, resetPresetOv
 import { computeVisibleEmails } from './data/computeVisibleEmails';
 import { EMAIL_REGISTRY } from './data/emailRegistry';
 import { executeTriggers } from './lib/workflowEngine';
+import {
+  Search, Mail, Trash2, Archive, FolderInput, Flag, MailOpen,
+  MessageSquare, RefreshCw, Ban, RotateCcw, MoreHorizontal, Sparkles, ChevronDown,
+} from 'lucide-react';
 
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
@@ -577,7 +581,76 @@ export default function App() {
   }
 
   return (
-    <div className="size-full flex gap-2 p-2 bg-background overflow-hidden">
+    <div className="size-full flex flex-col bg-background overflow-hidden">
+      {/* Outlook-style search bar */}
+      <div className="flex items-center px-4 py-1.5 bg-background">
+        <div className="flex-1 flex justify-center">
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-card rounded-full w-full max-w-lg border border-border cursor-text shadow-sm">
+            <Search size={14} className="text-muted-foreground" />
+            <span className="text-size-sm text-muted-foreground">Search</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Outlook-style toolbar ribbon */}
+      <div className="flex items-center gap-0.5 px-3 py-1.5 bg-background">
+        <button className="flex items-center gap-1.5 px-5 py-1.5 border-2 border-primary text-primary bg-card rounded-full text-size-sm hover:bg-primary/5 transition-colors shadow-sm">
+          <Mail size={16} /> New Mail
+        </button>
+        <div className="w-px h-5 bg-border mx-2" />
+        <button
+          onClick={() => selectedEmailId && handleDeleteEmail(selectedEmailId)}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors"
+        >
+          <Trash2 size={16} /> Delete
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <Archive size={16} /> Archive
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <FolderInput size={16} /> Move <ChevronDown size={10} className="text-foreground/40" />
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <Flag size={16} /> Flag <ChevronDown size={10} className="text-foreground/40" />
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <MailOpen size={16} /> Mark Unread
+        </button>
+        <div className="w-px h-5 bg-border mx-2" />
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <MessageSquare size={16} /> Chat
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <RefreshCw size={16} /> Sync
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <Ban size={16} /> Block
+        </button>
+        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <RotateCcw size={16} /> Recall
+        </button>
+        <div className="w-px h-5 bg-border mx-2" />
+        <button className="p-2 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
+          <MoreHorizontal size={16} />
+        </button>
+        <div className="flex-1" />
+        <button className="flex items-center gap-1.5 px-3 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
+          <Sparkles size={16} /> Copilot <ChevronDown size={10} className="text-foreground/40" />
+        </button>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex gap-1.5 p-1.5 overflow-hidden">
+        <AppRail
+          demoMode={demoMode}
+          onDemoModeChange={handleDemoModeChange}
+          customSequences={customSequences}
+          onOpenBuilder={() => handleOpenBuilder()}
+          onEditSequence={(id) => handleOpenBuilder(id)}
+          onDeleteSequence={handleDeleteSequence}
+          onEditPreset={handleEditPreset}
+          onResetPreset={handleResetPreset}
+        />
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
@@ -631,16 +704,7 @@ export default function App() {
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail
-          demoMode={demoMode}
-          onDemoModeChange={handleDemoModeChange}
-          customSequences={customSequences}
-          onOpenBuilder={() => handleOpenBuilder()}
-          onEditSequence={(id) => handleOpenBuilder(id)}
-          onDeleteSequence={handleDeleteSequence}
-          onEditPreset={handleEditPreset}
-          onResetPreset={handleResetPreset}
-        />
+      </div>
     </div>
   );
 }

@@ -144,7 +144,7 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
             {label === 'Mail' && showPicker && (
               <div
                 ref={pickerRef}
-                className="absolute right-full mr-2 top-0 bg-card border border-border rounded-lg shadow-xl z-50 w-52 overflow-hidden"
+                className="absolute left-full ml-2 top-0 bg-card border border-border rounded-lg shadow-xl z-50 w-52 overflow-hidden"
               >
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-size-xs font-w-medium text-foreground/70 uppercase tracking-wide">Demo Mode</p>

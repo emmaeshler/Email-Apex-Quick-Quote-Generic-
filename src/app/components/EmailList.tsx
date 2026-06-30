@@ -1,9 +1,9 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, ChevronLeft, Inbox } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, ChevronLeft, Inbox, Bot } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
-import { getAvatarColor, getInitials } from '../lib/avatarUtils';
+import { getAvatarColor, getInitials, getAvatarImage } from '../lib/avatarUtils';
 import { getEmailCategory, getEntry } from '../data/emailRegistry';
 
 interface Email {
@@ -262,12 +262,29 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         {isHinted && <DemoDot className="top-3 left-1.5" />}
         <div className="flex items-start gap-3">
           {!email.read && <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-            style={{ backgroundColor: getAvatarColor(email.from, !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com')), fontSize: '11px', fontWeight: 600 }}
-          >
-            {getInitials(email.from, !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com'))}
-          </div>
+          {(() => {
+            const isSystem = !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com');
+            const avatarImg = getAvatarImage(email.from, isSystem);
+            if (isSystem) return (
+              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+                <Bot size={16} className="text-primary" />
+              </div>
+            );
+            return avatarImg ? (
+              <img
+                src={avatarImg}
+                alt={email.from}
+                className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                style={{ backgroundColor: getAvatarColor(email.from, isSystem), fontSize: '11px', fontWeight: 600 }}
+              >
+                {getInitials(email.from, isSystem)}
+              </div>
+            );
+          })()}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
               <span className={`text-size-sm ${!email.read ? 'font-w-medium text-foreground' : 'font-w-normal text-foreground/70'}`}>
@@ -418,11 +435,11 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         </div>
 
         {/* Focused/Other toggle */}
-        <div className="mt-3 mb-2 inline-flex bg-muted/50 rounded-lg p-1">
-          <button className="px-3 py-1.5 text-size-sm font-w-medium bg-background text-primary rounded-md transition-colors">
+        <div className="mt-3 mb-2 flex gap-1">
+          <button className="px-4 py-1.5 text-size-sm font-w-medium bg-card text-foreground rounded-md border border-border/60 shadow-sm transition-colors">
             Focused
           </button>
-          <button className="px-3 py-1.5 text-size-sm font-w-normal text-muted-foreground rounded-md transition-colors hover:text-foreground">
+          <button className="px-4 py-1.5 text-size-sm font-w-medium text-white rounded-md transition-colors" style={{ backgroundColor: '#6264a7' }}>
             Other
           </button>
         </div>

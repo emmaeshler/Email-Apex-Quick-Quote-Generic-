@@ -12,7 +12,7 @@ const AVATAR_COLORS = [
 ];
 
 const AVATAR_IMAGES: Record<string, string> = {
-  'Jawinder Schahal': '/avatars/men/mobile-07.jpg',
+  'Jawinder Schahal': '/avatars/men/jawinder.jpg',
   'Dave Morrison': '/avatars/men/mobile-02.jpg',
   'Steve Landers': '/avatars/men/mobile-03.jpg',
   'Gary Tillman': '/avatars/men/mobile-07.jpg',

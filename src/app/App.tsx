@@ -14,8 +14,9 @@ import { computeVisibleEmails } from './data/computeVisibleEmails';
 import { EMAIL_REGISTRY } from './data/emailRegistry';
 import { executeTriggers } from './lib/workflowEngine';
 import {
-  Search, Mail, Trash2, Archive, FolderInput, Flag, MailOpen,
+  Search, SquarePen, Trash2, Archive, FolderInput, Flag, MailOpen,
   MessageSquare, RefreshCw, Ban, RotateCcw, MoreHorizontal, Sparkles, ChevronDown,
+  Share2, Bell, Menu, LayoutGrid, Maximize2,
 } from 'lucide-react';
 
 // Re-export types so existing imports from './App' still work
@@ -122,6 +123,20 @@ export default function App() {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleKey]);
+
+  // Auto-enter fullscreen: try immediately on mount, fall back to first click
+  useEffect(() => {
+    const go = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      document.removeEventListener('click', go);
+    };
+    document.documentElement.requestFullscreen().catch(() => {
+      document.addEventListener('click', go);
+    });
+    return () => document.removeEventListener('click', go);
+  }, []);
 
   // Sync reviewStage when reviewResolved changes
   useEffect(() => {
@@ -582,60 +597,89 @@ export default function App() {
 
   return (
     <div className="size-full flex flex-col bg-background overflow-hidden">
-      {/* Outlook-style search bar */}
-      <div className="flex items-center px-4 py-1.5 bg-background">
+      {/* Outlook-style grey title bar */}
+      <div className="flex items-center px-3 py-1" style={{ backgroundColor: '#e5e5e5' }}>
+        <div className="flex items-center gap-1.5 mr-3 flex-shrink-0">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ffbd2e' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#28c840' }} />
+        </div>
         <div className="flex-1 flex justify-center">
-          <div className="flex items-center gap-2 px-4 py-1.5 bg-card rounded-full w-full max-w-lg border border-border cursor-text shadow-sm">
-            <Search size={14} className="text-muted-foreground" />
-            <span className="text-size-sm text-muted-foreground">Search</span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full w-full max-w-lg cursor-text" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
+            <Search size={12} className="text-neutral-500" />
+            <span className="text-size-xs text-neutral-500">Search</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 ml-3 flex-shrink-0">
+          <Share2 size={14} className="text-neutral-500 cursor-pointer" />
+          <Maximize2
+            size={12}
+            className="text-neutral-500 cursor-pointer hover:text-neutral-700 transition-colors"
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                document.documentElement.requestFullscreen().catch(() => {});
+              }
+            }}
+          />
+          <div className="relative cursor-pointer">
+            <Bell size={14} className="text-neutral-500" />
+            <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 rounded-full flex items-center justify-center font-w-medium" style={{ backgroundColor: '#3b82f6', color: 'white', fontSize: '9px' }}>2</span>
           </div>
         </div>
       </div>
 
       {/* Outlook-style toolbar ribbon */}
-      <div className="flex items-center gap-0.5 px-3 py-1.5 bg-background">
-        <button className="flex items-center gap-1.5 px-5 py-1.5 border-2 border-primary text-primary bg-card rounded-full text-size-sm hover:bg-primary/5 transition-colors shadow-sm">
-          <Mail size={16} /> New Mail
+      <div className="flex items-center gap-0.5 px-2 py-1 bg-background border-b border-border">
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors mr-0.5">
+          <Menu size={15} />
         </button>
-        <div className="w-px h-5 bg-border mx-2" />
+        <button className="flex items-center gap-1 px-4 py-1 border-2 border-primary text-primary bg-card rounded-full text-size-xs hover:bg-primary/5 transition-colors shadow-sm">
+          <SquarePen size={13} /> New Mail
+        </button>
+        <div className="w-px h-4 bg-border mx-1.5" />
         <button
           onClick={() => selectedEmailId && handleDeleteEmail(selectedEmailId)}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors"
         >
-          <Trash2 size={16} /> Delete
+          <Trash2 size={13} /> Delete
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <Archive size={16} /> Archive
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Archive size={13} /> Archive
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <FolderInput size={16} /> Move <ChevronDown size={10} className="text-foreground/40" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <FolderInput size={13} /> Move <ChevronDown size={9} className="text-foreground/40" />
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <Flag size={16} /> Flag <ChevronDown size={10} className="text-foreground/40" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Flag size={13} /> Flag <ChevronDown size={9} className="text-foreground/40" />
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <MailOpen size={16} /> Mark Unread
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <MailOpen size={13} /> Mark Unread
         </button>
-        <div className="w-px h-5 bg-border mx-2" />
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <MessageSquare size={16} /> Chat
+        <div className="w-px h-4 bg-border mx-1.5" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <MessageSquare size={13} /> Chat
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <RefreshCw size={16} /> Sync
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <RefreshCw size={13} /> Sync
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <Ban size={16} /> Block
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Ban size={13} /> Block
         </button>
-        <button className="flex items-center gap-1 px-2.5 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <RotateCcw size={16} /> Recall
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <RotateCcw size={13} /> Recall
         </button>
-        <div className="w-px h-5 bg-border mx-2" />
-        <button className="p-2 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
-          <MoreHorizontal size={16} />
+        <div className="w-px h-4 bg-border mx-1.5" />
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
+          <MoreHorizontal size={13} />
         </button>
         <div className="flex-1" />
-        <button className="flex items-center gap-1.5 px-3 py-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-sm transition-colors">
-          <Sparkles size={16} /> Copilot <ChevronDown size={10} className="text-foreground/40" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Sparkles size={13} /> Copilot <ChevronDown size={9} className="text-foreground/40" />
+        </button>
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
+          <LayoutGrid size={13} />
         </button>
       </div>
 

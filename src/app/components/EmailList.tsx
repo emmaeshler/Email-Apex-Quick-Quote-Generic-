@@ -1,6 +1,6 @@
 'use client';
 
-import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, ChevronLeft, Inbox, Bot } from 'lucide-react';
+import { Zap, ChevronsLeft, ChevronsRight, Flag, Trash2, RefreshCw, Loader2, ChevronDown, ChevronRight, ChevronLeft, Inbox, Bot, SlidersHorizontal } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import { getAvatarColor, getInitials, getAvatarImage } from '../lib/avatarUtils';
@@ -196,6 +196,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   const scrollRef = useRef<HTMLDivElement>(null);
   const [unreadExpanded, setUnreadExpanded] = useState(true);
   const [readExpanded, setReadExpanded] = useState(true);
+  const [focusedTab, setFocusedTab] = useState<'focused' | 'other'>('other');
 
   // Auto-scroll the hinted email into view whenever hintTarget changes
   useEffect(() => {
@@ -247,7 +248,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         key={email.id}
         data-email-id={email.id}
         onClick={() => onSelectEmail(email.id)}
-        className={`group relative p-4 cursor-pointer transition-all duration-300 ${
+        className={`group relative px-3 py-2.5 cursor-pointer transition-all duration-300 ${
           isNew
             ? 'border-l-4 border-l-accent'
             : selectedEmailId === email.id
@@ -260,44 +261,44 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         } : undefined}
       >
         {isHinted && <DemoDot className="top-3 left-1.5" />}
-        <div className="flex items-start gap-3">
-          {!email.read && <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
+        <div className="flex items-start gap-2">
+          {!email.read && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
           {(() => {
             const isSystem = !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com');
             const avatarImg = getAvatarImage(email.from, isSystem);
             if (isSystem) return (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
-                <Bot size={16} className="text-primary" />
+              <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
+                <Bot size={13} className="text-primary" />
               </div>
             );
             return avatarImg ? (
               <img
                 src={avatarImg}
                 alt={email.from}
-                className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
+                className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
               />
             ) : (
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-                style={{ backgroundColor: getAvatarColor(email.from, isSystem), fontSize: '11px', fontWeight: 600 }}
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                style={{ backgroundColor: getAvatarColor(email.from, isSystem), fontSize: '10px', fontWeight: 600 }}
               >
                 {getInitials(email.from, isSystem)}
               </div>
             );
           })()}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <span className={`text-size-sm ${!email.read ? 'font-w-medium text-foreground' : 'font-w-normal text-foreground/70'}`}>
+            <div className="flex items-center justify-between mb-0.5">
+              <span className={`text-size-xs ${!email.read ? 'font-w-medium text-foreground' : 'font-w-normal text-foreground/70'}`}>
                 {email.from}
               </span>
-              <span className="text-size-xs text-muted-foreground whitespace-nowrap">
+              <span className="text-muted-foreground whitespace-nowrap" style={{ fontSize: '10px' }}>
                 {email.date !== 'May 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}
               </span>
             </div>
-            <div className={`text-size-sm mb-1 truncate ${!email.read ? 'font-w-semibold text-primary' : 'font-w-normal text-foreground/70'}`}>
+            <div className={`text-size-xs mb-0.5 truncate ${!email.read ? 'font-w-semibold text-primary' : 'font-w-normal text-foreground/70'}`}>
               {email.subject}
             </div>
-            <div className={`text-size-xs truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`}>{email.preview}</div>
+            <div className={`truncate ${!email.read ? 'text-foreground/60' : 'text-muted-foreground'}`} style={{ fontSize: '10px' }}>{email.preview}</div>
             {(() => {
               const typeChip = getTypeChip(email);
               const statusChip = (() => {
@@ -383,30 +384,63 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   }
 
   return (
-    <div ref={scrollRef} className="w-80 flex-shrink-0 bg-card overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
+    <div ref={scrollRef} className="w-72 flex-shrink-0 bg-card overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+      <div className="border-b border-border">
+        {/* Focused/Other segmented toggle */}
+        <div className="flex items-center px-3 pt-2 pb-1">
+          <div className="inline-flex rounded-full border border-border/60 overflow-hidden flex-shrink-0">
+            <button
+              onClick={() => setFocusedTab('focused')}
+              className={`px-3 py-0.5 text-size-xs font-w-medium transition-colors ${
+                focusedTab === 'focused'
+                  ? 'bg-foreground text-background'
+                  : 'bg-card text-foreground/60 hover:bg-muted'
+              }`}
+            >
+              Focused
+            </button>
+            <button
+              onClick={() => setFocusedTab('other')}
+              className={`px-3 py-0.5 text-size-xs font-w-medium transition-colors ${
+                focusedTab === 'other'
+                  ? 'bg-foreground text-background'
+                  : 'bg-card text-foreground/60 hover:bg-muted'
+              }`}
+            >
+              Other
+            </button>
+          </div>
+          <div className="flex-1" />
+          <button className="p-1 text-foreground/50 hover:text-foreground/70 transition-colors">
+            <SlidersHorizontal size={12} />
+          </button>
+        </div>
+
+        {/* Folder title + actions */}
+        <div className="flex items-center justify-between px-3 pb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
             {onBack && (
               <button
                 onClick={onBack}
                 disabled={!canGoBack}
-                className={`p-1 rounded-[var(--radius)] transition-colors flex-shrink-0 ${
+                className={`p-0.5 rounded-[var(--radius)] transition-colors flex-shrink-0 ${
                   canGoBack
                     ? 'text-foreground/70 hover:bg-muted hover:text-foreground'
                     : 'text-muted-foreground/30 cursor-not-allowed'
                 }`}
                 title="Go back one step"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} />
               </button>
             )}
-            {folderType === 'eis' && <Zap size={16} className="text-secondary flex-shrink-0" />}
-            {folderType === 'review' && <Flag size={16} className="text-secondary flex-shrink-0" />}
-            <h2 className="text-size-lg font-w-medium text-foreground truncate">{folderLabel || 'Inbox'}</h2>
+            {folderType === 'eis' && <Zap size={12} className="text-secondary flex-shrink-0" />}
+            {folderType === 'review' && <Flag size={12} className="text-secondary flex-shrink-0" />}
+            <span className="text-size-xs text-muted-foreground truncate">
+              {folderLabel || 'Inbox'} · {emails.length} message{emails.length !== 1 ? 's' : ''}
+            </span>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {onRefresh && (
               <button
                 onClick={onRefresh}
@@ -421,7 +455,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
                 title={isRefreshing ? 'Loading...' : hasNewMessages ? 'Check for new messages' : 'No new messages'}
               >
                 {hintTarget === 'action:refresh' && <DemoDot className="top-0 right-0" />}
-                <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+                <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
               </button>
             )}
             <button
@@ -429,24 +463,10 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
               className="p-1 hover:bg-muted rounded-[var(--radius)] transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
               title="Collapse message list"
             >
-              <ChevronsLeft size={16} />
+              <ChevronsLeft size={14} />
             </button>
           </div>
         </div>
-
-        {/* Focused/Other toggle */}
-        <div className="mt-3 mb-2 flex gap-1">
-          <button className="px-4 py-1.5 text-size-sm font-w-medium bg-card text-foreground rounded-md border border-border/60 shadow-sm transition-colors">
-            Focused
-          </button>
-          <button className="px-4 py-1.5 text-size-sm font-w-medium text-white rounded-md transition-colors" style={{ backgroundColor: '#6264a7' }}>
-            Other
-          </button>
-        </div>
-
-        <p className="text-size-sm text-muted-foreground mt-1">
-          {emails.length} message{emails.length !== 1 ? 's' : ''}
-        </p>
       </div>
 
       {/* Loading banner */}
@@ -467,7 +487,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         {unreadEmails.length > 0 && (
           <>
             <SectionHeader
-              label="Unread"
+              label="Pinned"
               count={unreadEmails.length}
               isExpanded={unreadExpanded}
               onToggle={() => setUnreadExpanded(!unreadExpanded)}
@@ -495,7 +515,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         {readEmails.length > 0 && (
           <>
             <SectionHeader
-              label="Read"
+              label="Today"
               count={readEmails.length}
               isExpanded={readExpanded}
               onToggle={() => setReadExpanded(!readExpanded)}

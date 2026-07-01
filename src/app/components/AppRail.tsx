@@ -123,11 +123,11 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
 
   return (
     <>
-      <div className="w-12 flex-shrink-0 flex flex-col items-center py-3 gap-1 bg-background">
+      <div className="w-10 flex-shrink-0 flex flex-col items-center py-2 gap-0.5 bg-background">
         {railItems.map(({ icon: Icon, label, isActive, isAction, onClick }) => (
           <div
             key={label}
-            className={`relative w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
+            className={`relative w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
               onClick ? 'cursor-pointer' : 'cursor-default'
             } ${
               isActive
@@ -139,7 +139,7 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
             title={label}
             onClick={onClick}
           >
-            <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+            <Icon size={16} strokeWidth={isActive ? 2 : 1.5} />
 
             {label === 'Mail' && showPicker && (
               <div

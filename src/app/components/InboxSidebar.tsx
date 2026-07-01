@@ -1,6 +1,6 @@
 'use client';
 
-import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, CheckCircle } from 'lucide-react';
+import { Inbox, Send, Trash2, Archive, AlertOctagon, Mail, ChevronRight, ChevronDown, ChevronsLeft, ChevronsRight, CheckCircle, Pencil, Flag, Rss, Cloud, Users, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { DemoDot } from './DemoGuide';
 import type { InboxFolderDef } from '../data/emails';
@@ -28,17 +28,17 @@ function FolderItem({ icon: Icon, label, count, isActive = false, onClick, inden
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-colors relative ${
+      className={`w-full flex items-center gap-1.5 px-3 py-1 text-left transition-colors relative ${
         isActive
           ? 'bg-primary/10 text-primary'
           : 'hover:bg-muted/50 text-foreground'
-      } ${indent ? 'pl-10' : ''}`}
+      } ${indent ? 'pl-8' : ''}`}
     >
       {isHinted && <DemoDot className="top-1 right-2" />}
-      <Icon size={18} className={isActive ? 'text-primary' : 'text-foreground/70'} />
-      <span className="flex-1 text-size-base font-normal truncate">{label}</span>
+      <Icon size={15} className={isActive ? 'text-primary' : 'text-foreground/70'} />
+      <span className="flex-1 text-size-sm font-normal truncate">{label}</span>
       {count !== undefined && count > 0 && (
-        <span className={`text-size-sm font-normal ${isActive ? 'text-primary' : 'text-foreground/70'}`}>
+        <span className={`text-size-xs font-normal ${isActive ? 'text-primary' : 'text-foreground/70'}`}>
           {count}
         </span>
       )}
@@ -56,14 +56,14 @@ function SectionHeader({ label, isExpanded, onToggle }: SectionHeaderProps) {
   return (
     <button
       onClick={onToggle}
-      className="w-full flex items-center gap-1 px-4 py-2 text-left hover:bg-muted/30 transition-colors"
+      className="w-full flex items-center gap-1 px-3 py-1 text-left hover:bg-muted/30 transition-colors"
     >
       {isExpanded ? (
-        <ChevronDown size={16} className="text-foreground/70" />
+        <ChevronDown size={13} className="text-foreground/70" />
       ) : (
-        <ChevronRight size={16} className="text-foreground/70" />
+        <ChevronRight size={13} className="text-foreground/70" />
       )}
-      <span className="text-size-base font-semibold text-foreground truncate">{label}</span>
+      <span className="text-size-sm font-semibold text-foreground truncate">{label}</span>
     </button>
   );
 }
@@ -79,7 +79,8 @@ export function InboxSidebar({
   const [morganExpanded, setMorganExpanded] = useState(true);
   const [quotesExpanded, setQuotesExpanded] = useState(true);
   const [reviewExpanded, setReviewExpanded] = useState(false);
-  const [favoritesExpanded, setFavoritesExpanded] = useState(false);
+  const [favoritesExpanded, setFavoritesExpanded] = useState(true);
+  const [savedSearchExpanded, setSavedSearchExpanded] = useState(false);
 
   if (collapsed) {
     return (
@@ -124,108 +125,121 @@ export function InboxSidebar({
   const isReviewHinted = hintTarget === `folder:${reviewId}`;
 
   return (
-    <div className="w-64 bg-background flex flex-col overflow-y-auto transition-all duration-200">
-      {/* Collapse button */}
-      <div className="flex items-center justify-end px-3 py-2">
-        <button
-          onClick={onToggleCollapse}
-          className="p-1 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
-          title="Collapse folder pane"
-        >
-          <ChevronsLeft size={16} />
-        </button>
-      </div>
-
+    <div className="w-56 bg-background flex flex-col overflow-y-auto transition-all duration-200">
       <div className="flex-1 overflow-y-auto">
         {/* Favorites Section */}
         <div className="pt-2">
-          <SectionHeader
-            label="Favorites"
-            isExpanded={favoritesExpanded}
-            onToggle={() => setFavoritesExpanded(!favoritesExpanded)}
-          />
-          {favoritesExpanded && (
-            <div>
-              <FolderItem
-                icon={Inbox}
-                label="Inbox"
-                count={csrFolder?.count ?? 0}
-                isActive={false}
-                onClick={() => onFolderSelect(csrId)}
-                isHinted={false}
-              />
-              <FolderItem
-                icon={Send}
-                label="Sent"
-                count={0}
-                isActive={false}
-                onClick={() => {}}
-              />
-              <FolderItem
-                icon={Trash2}
-                label="Deleted Items"
-                count={14}
-                isActive={false}
-                onClick={() => {}}
+          <div className="flex items-center">
+            <div className="flex-1 min-w-0">
+              <SectionHeader
+                label="Favorites"
+                isExpanded={favoritesExpanded}
+                onToggle={() => setFavoritesExpanded(!favoritesExpanded)}
               />
             </div>
-          )}
-        </div>
-
-        {/* morgan@apex-corp.com Section */}
-        <div className="pt-2">
-          <SectionHeader
-            label="morgan@apex-corp.com"
-            isExpanded={morganExpanded}
-            onToggle={() => setMorganExpanded(!morganExpanded)}
-          />
-          {morganExpanded && (
+            <button
+              onClick={onToggleCollapse}
+              className="p-1 mr-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground flex-shrink-0"
+              title="Collapse folder pane"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+          </div>
+          {favoritesExpanded && (
             <div>
-              <FolderItem
-                icon={Inbox}
-                label="Inbox"
-                count={csrFolder?.count ?? 0}
-                isActive={isCsrActive}
-                onClick={() => onFolderSelect(csrId)}
-                isHinted={isCsrHinted}
+              {/* Account section nested under Favorites */}
+              <SectionHeader
+                label="morgan@apex-corp.com"
+                isExpanded={morganExpanded}
+                onToggle={() => setMorganExpanded(!morganExpanded)}
               />
-              <FolderItem
-                icon={Mail}
-                label="OEM"
-                count={3}
-                isActive={false}
-                onClick={() => {}}
-                indent
-              />
-              <FolderItem
-                icon={Mail}
-                label="AM/MRO"
-                count={5}
-                isActive={false}
-                onClick={() => {}}
-                indent
-              />
-              <FolderItem
-                icon={Trash2}
-                label="Deleted Items"
-                count={14}
-                isActive={false}
-                onClick={() => {}}
-              />
-              <FolderItem
-                icon={Archive}
-                label="Archive"
-                count={47}
-                isActive={false}
-                onClick={() => {}}
-              />
-              <FolderItem
-                icon={AlertOctagon}
-                label="Junk Email"
-                count={2}
-                isActive={false}
-                onClick={() => {}}
-              />
+              {morganExpanded && (
+                <div>
+                  <FolderItem
+                    icon={Inbox}
+                    label="Inbox"
+                    count={794}
+                    isActive={isCsrActive}
+                    onClick={() => onFolderSelect(csrId)}
+                    indent
+                    isHinted={isCsrHinted}
+                  />
+                  <FolderItem
+                    icon={Pencil}
+                    label="Drafts"
+                    count={47}
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Send}
+                    label="Sent"
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Trash2}
+                    label="Deleted Ite..."
+                    count={5266}
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Archive}
+                    label="Archive"
+                    count={226}
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={MessageSquare}
+                    label="Conversation Hist..."
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={AlertOctagon}
+                    label="Junk Email"
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Flag}
+                    label="Reported"
+                    count={1}
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Rss}
+                    label="RSS Feeds"
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Cloud}
+                    label="Online Archive"
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                  <FolderItem
+                    icon={Users}
+                    label="Groups"
+                    isActive={false}
+                    onClick={() => {}}
+                    indent
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -261,7 +275,7 @@ export function InboxSidebar({
         </div>
 
         {/* Flagged for Review Section */}
-        <div className="pt-2 pb-2">
+        <div className="pt-2">
           <SectionHeader
             label="Flagged for Review"
             isExpanded={reviewExpanded}
@@ -279,6 +293,15 @@ export function InboxSidebar({
               />
             </div>
           )}
+        </div>
+
+        {/* Saved Searches Section */}
+        <div className="pt-2 pb-2">
+          <SectionHeader
+            label="Saved Searches"
+            isExpanded={savedSearchExpanded}
+            onToggle={() => setSavedSearchExpanded(!savedSearchExpanded)}
+          />
         </div>
       </div>
     </div>

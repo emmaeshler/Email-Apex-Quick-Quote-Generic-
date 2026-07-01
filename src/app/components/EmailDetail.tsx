@@ -727,6 +727,11 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
     if (isApprovalHold && email.approvalQuoteTable) {
       return (
         <>
+          <p className="text-size-sm mb-2">
+            <a href="#" onClick={(e) => e.preventDefault()} className="text-accent underline hover:text-accent/80 cursor-pointer">
+              Click here to view decision support analytics
+            </a>
+          </p>
           {email.bodyBefore && <p className="whitespace-pre-wrap text-size-sm text-foreground/80">{email.bodyBefore}</p>}
           <QuoteTableView table={email.approvalQuoteTable} />
           {email.bodyAfter && <p className="whitespace-pre-wrap text-size-sm text-foreground/80">{email.bodyAfter}</p>}

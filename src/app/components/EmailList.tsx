@@ -20,6 +20,7 @@ interface Email {
   isReviewRequest?: boolean;
   isDirectQuoteRequest?: boolean;
   isApprovalHold?: boolean;
+  originalSender?: string;
   inlineQuoteTable?: { isRushOrder?: boolean; isQtyBreakComparison?: boolean };
   isCcFromAiQuoteTable?: { isRushOrder?: boolean; isQtyBreakComparison?: boolean };
 }
@@ -243,6 +244,11 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   const renderEmail = (email: Email) => {
     const isHinted = hintTarget === `email:${email.id}`;
     const isNew = newEmailIds.has(email.id);
+    const isSystem = !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com');
+    const humanName = isSystem && email.originalSender
+      ? email.originalSender.replace(/\s*\(.*\)$/, '')
+      : null;
+    const displayName = humanName || email.from;
     return (
       <div
         key={email.id}
@@ -264,13 +270,29 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
         <div className="flex items-start gap-2">
           {!email.read && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
           {(() => {
-            const isSystem = !!(email.isCcFromAi || email.isReviewRequest || email.fromEmail === 'quotes@apex-corp.com');
-            const avatarImg = getAvatarImage(email.from, isSystem);
+            if (isSystem && humanName) {
+              const avatarImg = getAvatarImage(humanName, false);
+              return avatarImg ? (
+                <img
+                  src={avatarImg}
+                  alt={humanName}
+                  className="w-7 h-7 rounded-full flex-shrink-0 object-cover"
+                />
+              ) : (
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white"
+                  style={{ backgroundColor: getAvatarColor(humanName, false), fontSize: '10px', fontWeight: 600 }}
+                >
+                  {getInitials(humanName, false)}
+                </div>
+              );
+            }
             if (isSystem) return (
               <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20">
                 <Bot size={13} className="text-primary" />
               </div>
             );
+            const avatarImg = getAvatarImage(email.from, false);
             return avatarImg ? (
               <img
                 src={avatarImg}
@@ -280,16 +302,16 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
             ) : (
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white"
-                style={{ backgroundColor: getAvatarColor(email.from, isSystem), fontSize: '10px', fontWeight: 600 }}
+                style={{ backgroundColor: getAvatarColor(email.from, false), fontSize: '10px', fontWeight: 600 }}
               >
-                {getInitials(email.from, isSystem)}
+                {getInitials(email.from, false)}
               </div>
             );
           })()}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-0.5">
               <span className={`text-size-xs ${!email.read ? 'font-w-medium text-foreground' : 'font-w-normal text-foreground/70'}`}>
-                {email.from}
+                {displayName}
               </span>
               <span className="text-muted-foreground whitespace-nowrap" style={{ fontSize: '10px' }}>
                 {email.date !== 'May 28, 2026' ? email.date.replace(', 2026', '') + ' ' : ''}{email.time}

@@ -17,14 +17,8 @@ export function computeVisibleEmails(
   for (const [id, entry] of EMAIL_REGISTRY) {
     if (entry.folder !== folder) continue;
 
-    // Stonite final CC only visible after reading the clarification or review reply
-    if (id === 'csr-stonite-final-cc' && ctx?.readIds) {
-      if (!ctx.readIds.has('csr-steve-clarification') && !ctx.readIds.has('csr-review-reply')) {
-        if (!arrivedEmails.has(id)) continue;
-        // Even if arrived, gate on having read the prerequisite
-        if (!ctx.readIds.has('csr-steve-clarification') && !ctx.readIds.has('csr-review-reply')) continue;
-      }
-    }
+    // Stonite final CC is shown inline in Steve's clarification thread, not as a separate inbox entry
+    if (id === 'csr-stonite-final-cc') continue;
 
     // Approval CC is stage-driven, not arrival-driven
     if (id === 'csr-approval-cc') {

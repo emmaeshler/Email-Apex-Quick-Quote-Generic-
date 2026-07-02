@@ -14,7 +14,7 @@ export interface QuoteLineItem {
   standardUnitPrice?: number;
   standardTotalPrice?: number;
   priceChangeReason?: string;
-  pricingBasis?: 'Distributor Rate' | 'Catalog Price' | 'Partner Rate' | 'Contract Price' | 'Volume Tier' | 'Account Rate';
+  pricingBasis?: 'Distributor Pricing' | 'Catalog Price' | 'Partner Pricing' | 'Contract Price' | 'Volume Tier' | 'Account Pricing';
   qtyBreakNote?: string;
   qtyBreakDiscount?: string;
 }
@@ -141,6 +141,19 @@ export interface Email {
   aiResponse?: EmailThread;
   reviewFinalQuote?: EmailThread;
   forwardAiResponse?: EmailThread;
+  threadHistory?: Array<{
+    from: string;
+    fromEmail: string;
+    to: string;
+    cc?: string;
+    subject?: string;
+    body: string;
+    bodyBefore?: string;
+    bodyAfter?: string;
+    quoteTable?: QuoteTable;
+    date: string;
+    time: string;
+  }>;
   customerReply?: {
     from: string;
     fromEmail: string;
@@ -173,15 +186,15 @@ const rcscaQuote: QuoteTable = {
   validThrough: 'Feb 27, 2026',
   customerName: 'RCSCA',
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 24.50 },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 26.15 },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Pricing', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Pricing', standardUnitPrice: 26.15 },
   ],
   total: 192.26,
   shipping: {
     method: 'Standard',
     cost: 25.00,
   },
-  pricingNote: 'Pricing reflects your current account rates, valid as of January 2026.',
+  pricingNote: 'Pricing reflects your current account pricing, valid as of January 2026.',
 };
 
 const stoniteFinalQuote: QuoteTable = {
@@ -189,15 +202,15 @@ const stoniteFinalQuote: QuoteTable = {
   validThrough: 'Feb 27, 2026',
   customerName: 'Stonite Coil Corp',
   lineItems: [
-    { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 25, unitPrice: 14.25, totalPrice: 356.25, minOrderQty: 25, qtyBreakIncrement: 25, requestedQty: 15, stockStatus: 'in-stock', pricingBasis: 'Account Rate' },
-    { sku: 'SDPZ-22.5-RT', description: 'Round Taper, #22.5 AWG, SDPZ Coating', quantity: 100, unitPrice: 16.90, totalPrice: 1690, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'in-stock', pricingBasis: 'Account Rate' },
+    { sku: 'MW27HPLRT', description: 'Round Taper, #27 AWG, HPL Coating', quantity: 25, unitPrice: 14.25, totalPrice: 356.25, minOrderQty: 25, qtyBreakIncrement: 25, requestedQty: 15, stockStatus: 'in-stock', pricingBasis: 'Account Pricing' },
+    { sku: 'SDPZ-22.5-RT', description: 'Round Taper, #22.5 AWG, SDPZ Coating', quantity: 100, unitPrice: 16.90, totalPrice: 1690, minOrderQty: 25, qtyBreakIncrement: 25, stockStatus: 'in-stock', pricingBasis: 'Account Pricing' },
   ],
   total: 2071.25,
   shipping: {
     method: 'Standard',
     cost: 25.00,
   },
-  pricingNote: 'Pricing reflects your current account rates, valid as of January 2026.',
+  pricingNote: 'Pricing reflects your current account pricing, valid as of January 2026.',
 };
 
 const motionQuote: QuoteTable = {
@@ -232,7 +245,7 @@ const taperedReelQuote: QuoteTable = {
     method: 'Standard',
     cost: 25.00,
   },
-  pricingNote: 'Quoted at current standard rates, valid through Mar 14, 2026.',
+  pricingNote: 'Quoted at current standard pricing, valid through Mar 14, 2026.',
 };
 
 const stoniteMatchItems: ReviewMatchItem[] = [
@@ -302,8 +315,8 @@ const rushRcscaQuote: QuoteTable = {
   comparisonNote: 'Rush pricing compared to standard quote Q-1093928',
   standardTotal: 192.26,
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 24.50 },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Rate', standardUnitPrice: 26.15 },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 19.76, totalPrice: 39.52, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 1, stockStatus: 'in-stock', pricingBasis: 'Distributor Pricing', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 21.29, totalPrice: 127.74, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Distributor Pricing', standardUnitPrice: 26.15 },
   ],
   rushFee: {
     label: 'Rush Processing Fee (25%)',
@@ -315,7 +328,7 @@ const rushRcscaQuote: QuoteTable = {
     method: 'Overnight',
     cost: 45.00,
   },
-  pricingNote: 'Your account rates apply. Rush surcharge added per expedite policy.',
+  pricingNote: 'Your account pricing applies. Rush surcharge added per expedite policy.',
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -346,8 +359,8 @@ export const eis1Response: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Quote #Q-1093928 — $192.26 for RCSCA. Jawinder, Please see below for details...',
   body: '',
-  bodyBefore: `Jawinder, We've reviewed your account and confirmed your current rates. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyBefore: `Jawinder, We've reviewed your request and provided your quote below.`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:33 AM',
   read: false,
@@ -374,8 +387,8 @@ export const csr1CC: Email = {
   subject: 're: Adhesive & Activator Pricing',
   preview: 'Auto-quoted: Quote #Q-1093928 — $192.26 for RCSCA...',
   body: '',
-  bodyBefore: `Jawinder, We've reviewed your account and confirmed your current rates. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyBefore: `Jawinder, We've reviewed your request and provided your quote below.`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:33 AM',
   read: false,
@@ -418,7 +431,7 @@ export const eis6Response: Email = {
   preview: 'Quote #Q-4150772 — $935.40 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -446,7 +459,7 @@ export const csr2CC: Email = {
   preview: 'Auto-quoted: Quote #Q-4150772 — $935.40 for Tri-State Coil Winding...',
   body: '',
   bodyBefore: `Dave, Please see below for all available tapered reel and spool packaging options matching your request.`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:09 AM',
   read: false,
@@ -543,15 +556,39 @@ export const csrSteveClarification: Email = {
   read: false,
   forwardTo: 'quotes@apex-corp.com',
   forwardNote: `Please quote the below thread per customer specifications.`,
-  quotedPrevious: {
-    from: 'Morgan',
-    fromEmail: 'morgan@apex-corp.com',
-    to: 'slanders@stonitecoil.com',
-    subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
-    body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Could you confirm the items noted above?\n\nBest regards,\nMorgan\nApex Corp`,
-    date: 'Jan 28, 2026',
-    time: '11:30 AM',
-  },
+  threadHistory: [
+    {
+      from: 'Steve Landers',
+      fromEmail: 'slanders@stonitecoil.com',
+      to: 'morgan@apex-corp.com',
+      subject: 'Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+      body: `Good morning Morgan,\n\nI need pricing for 27 gauge HPL round tapers - we need about 15 units.\n\nAlso need a quote on 24 gauge SDPZ round tapers.\n\nThanks,\nSteve Landers\nStonite Coil Corp`,
+      date: 'Jan 28, 2026',
+      time: '11:15 AM',
+    },
+    {
+      from: 'Morgan',
+      fromEmail: 'morgan@apex-corp.com',
+      to: 'slanders@stonitecoil.com',
+      subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+      body: `Hi Steve,\n\nThank you for the quote request. I've reviewed your request and need a few additional details to provide accurate pricing. Could you confirm the items noted above?\n\nBest regards,\nMorgan\nApex Corp`,
+      date: 'Jan 28, 2026',
+      time: '11:30 AM',
+    },
+    {
+      from: 'Apex Quoting',
+      fromEmail: 'quotes@apex-corp.com',
+      to: 'slanders@stonitecoil.com',
+      cc: 'morgan@apex-corp.com',
+      subject: 'Re: Magnet Wire Pricing — HPL & SDPZ Round Tapers',
+      body: '',
+      bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
+      bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account pricing.\n\nStandard lead time is 5–7 business days.\n\nThank you for doing business with us. Please follow up with any questions.`,
+      quoteTable: stoniteFinalQuote,
+      date: 'Jan 28, 2026',
+      time: '11:45 AM',
+    },
+  ],
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -614,7 +651,7 @@ export const csrApprovalSentCc: Email = {
   preview: 'Approved & Sent: Quote #Q-5571039 — $11,168.00 for Midwest Power Generators...',
   body: '',
   bodyBefore: `Gary, Please see below for details of your requested quote for the 500HP motor rewind kit.\n\nAll requested items have been matched and priced. Kapton tape has a 1–2 week lead time; all other items are in stock and ready to ship.`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '9:51 AM',
   read: false,
@@ -650,7 +687,7 @@ const northeastMotorQuote: QuoteTable = {
     method: 'Standard',
     cost: 25.00,
   },
-  pricingNote: 'Quoted at current standard rates, valid as of January 2026.',
+  pricingNote: 'Quoted at current standard pricing, valid as of January 2026.',
 };
 
 const gulfCoastQuote: QuoteTable = {
@@ -658,15 +695,15 @@ const gulfCoastQuote: QuoteTable = {
   validThrough: 'Feb 27, 2026',
   customerName: 'Gulf Coast Industrial',
   lineItems: [
-    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 17.90, totalPrice: 35.80, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Partner Rate', standardUnitPrice: 24.50 },
-    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 18.85, totalPrice: 113.10, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock', pricingBasis: 'Partner Rate', standardUnitPrice: 26.15 },
+    { sku: 'ADH-X315', description: 'X315 Thermal Output Adhesive 25ML System', quantity: 2, unitPrice: 17.90, totalPrice: 35.80, minOrderQty: 2, qtyBreakIncrement: 2, requestedQty: 2, stockStatus: 'in-stock', pricingBasis: 'Partner Pricing', standardUnitPrice: 24.50 },
+    { sku: 'ACT-Z788', description: 'Z788 7 Activator 1.75OZ Bottle', quantity: 6, unitPrice: 18.85, totalPrice: 113.10, minOrderQty: 6, qtyBreakIncrement: 6, requestedQty: 6, stockStatus: 'in-stock', pricingBasis: 'Partner Pricing', standardUnitPrice: 26.15 },
   ],
   total: 173.90,
   shipping: {
     method: 'Standard',
     cost: 25.00,
   },
-  pricingNote: 'Pricing reflects your current account rates, valid as of December 2025.',
+  pricingNote: 'Pricing reflects your current account pricing, valid as of December 2025.',
 };
 
 // Northeast Motor Supply — request
@@ -694,7 +731,7 @@ export const eis10NortheastResponse: Email = {
   preview: 'Quote #Q-1094501 — $230.90 for Northeast Motor Supply...',
   body: '',
   bodyBefore: `Karen, We've confirmed availability and prepared competitive pricing for your request. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '1:18 PM',
   read: false,
@@ -722,7 +759,7 @@ export const csr4NortheastCc: Email = {
   preview: 'Auto-quoted: Quote #Q-1094501 — $230.90 for Northeast Motor Supply...',
   body: '',
   bodyBefore: `Karen, We've confirmed availability and prepared competitive pricing for your request. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '1:18 PM',
   read: false,
@@ -764,8 +801,8 @@ export const eis11GulfCoastResponse: Email = {
   subject: 're: Adhesive & Activator — Reorder',
   preview: 'Quote #Q-1094502 — $173.90 for Gulf Coast Industrial...',
   body: '',
-  bodyBefore: `Mike, We've reviewed your account and confirmed your current rates for this reorder. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyBefore: `Mike, We've reviewed your request and provided your quote below.`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '1:23 PM',
   read: false,
@@ -792,8 +829,8 @@ export const csr5GulfCoastCc: Email = {
   subject: 're: Adhesive & Activator — Reorder',
   preview: 'Auto-quoted: Quote #Q-1094502 — $173.90 for Gulf Coast Industrial...',
   body: '',
-  bodyBefore: `Mike, We've reviewed your account and confirmed your current rates for this reorder. Please see below for details:`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyBefore: `Mike, We've reviewed your request and provided your quote below.`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '1:23 PM',
   read: false,
@@ -840,7 +877,7 @@ export const eis8RushResponse: Email = {
   preview: 'Rush Quote #Q-1094215 — $254.08 for RCSCA (standard: $192.26)...',
   body: '',
   bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items. For reference, your standard quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Friday, Jan 30 (expedited).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.26) remains valid through Feb 27, 2026.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Estimated delivery: Friday, Jan 30 (expedited).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.26) remains valid through Feb 27, 2026.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '2:13 PM',
   read: false,
@@ -868,7 +905,7 @@ export const csr3RushCc: Email = {
   preview: 'Rush Quote #Q-1094215 — $254.08 for RCSCA (standard: $192.26)...',
   body: '',
   bodyBefore: `Jawinder, We've prepared a rush quote to meet your Friday delivery timeline.\n\nA 25% rush surcharge has been applied to all line items. For reference, your standard quote Q-1093928 is shown alongside the rush pricing below.`,
-  bodyAfter: `Estimated delivery: Friday, Jan 30 (expedited).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.26) remains valid through Feb 27, 2026.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Estimated delivery: Friday, Jan 30 (expedited).\n\nIf standard delivery timing works instead, your original quote Q-1093928 ($192.26) remains valid through Feb 27, 2026.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '2:13 PM',
   read: false,
@@ -926,7 +963,7 @@ export const eis9QtyBreakResponse: Email = {
   preview: 'Quote #Q-5571040 — Pricing for Consolidated Electric...',
   body: '',
   bodyBefore: `Lisa, Please see below for details of your requested quote.\n\nNote: Since this item is available at volume discount tiers, we've included pricing at multiple quantity breaks so you can choose the best option for your restock.`,
-  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:18 AM',
   read: false,
@@ -953,7 +990,7 @@ export const csrQtyBreakCc: Email = {
   preview: 'Auto-quoted: Quote #Q-5571040 — Pricing for Consolidated Electric...',
   body: '',
   bodyBefore: `Lisa, Please see below for details of your requested quote.\n\nNote: Since this item is available at volume discount tiers, we've included pricing at multiple quantity breaks so you can choose the best option for your restock.`,
-  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Volume tiers are based on manufacturer pack sizes. The 48-unit case price reflects a full-case discount, while 144+ units qualify for pallet pricing from the manufacturer. Orders at any quantity will be priced at the nearest qualifying tier.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '10:18 AM',
   read: false,
@@ -997,7 +1034,7 @@ export const csrHermanDirect: Email = {
     time: '9:52 AM',
     isAiGenerated: true,
     bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
-    bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+    bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
     quoteTable: motionQuote,
   },
 };
@@ -1020,7 +1057,7 @@ export const eisStoniteResponse: Email = {
   preview: 'Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account rates.\n\nStandard lead time is 5–7 business days.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account pricing.\n\nStandard lead time is 5–7 business days.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '11:45 AM',
   read: false,
@@ -1070,7 +1107,7 @@ export const eisMotionResponse: Email = {
   preview: 'Quote #Q-3018483 — $543.00 for Motion Industries Inc....',
   body: '',
   bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '11:57 AM',
   read: false,
@@ -1211,7 +1248,7 @@ export const csrStoniteFinalCc: Email = {
   preview: 'Resolved: Quote #Q-8320281 — $2,071.25 for Stonite Coil Corp...',
   body: '',
   bodyBefore: `Hi Steve - great to hear from you! Here is your quote as requested.\n\nNote: I've adjusted your #27 HPL quantity to 25 units to meet the minimum order requirement. For the SDPZ coating, we carry #22.5 gauge which aligns with your typical specifications for this application and will meet your requirements.`,
-  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account rates.\n\nStandard lead time is 5–7 business days.\n\nPlease follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `All quantities meet minimum order requirements (MOQ 25, order breaks of 25). Pricing reflects your current account pricing.\n\nStandard lead time is 5–7 business days.\n\nThank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '11:45 AM',
   read: false,
@@ -1239,7 +1276,7 @@ export const csrMotionCc: Email = {
   preview: 'Auto-quoted: Quote #Q-3018483 — $543.00 for Motion Industries Inc....',
   body: '',
   bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
-  bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+  bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
   date: 'Jan 28, 2026',
   time: '11:57 AM',
   read: false,
@@ -1278,7 +1315,7 @@ export const csrHermanReply: Email = {
     time: '11:57 AM',
     subject: 'Re: Aramid Braided Tape Pricing — P/N BRT40XF17M',
     bodyBefore: `Herman, Please see below for details of your requested quote.\n\nNote: Since you didn't specify a quantity, we've quoted 2 units (the minimum order quantity for this item). If you need a different quantity, we'd be happy to provide updated pricing — larger orders may qualify for volume discounts and more competitive pricing tiers.`,
-    bodyAfter: `Please follow up with any questions. Thanks for reaching out!`,
+    bodyAfter: `Thank you for doing business with us. Please follow up with any questions.`,
     quoteTable: motionQuote,
     quotedPrevious: {
       from: 'Herman',

@@ -33,17 +33,17 @@ export function ActionHint({ children }: { children: React.ReactNode }) {
   return (
     <span className="relative inline-flex demo-action-hint">
       <span
-        className="absolute -inset-[3px] rounded-[var(--radius-button)] pointer-events-none z-10"
+        className="absolute -inset-[5px] rounded-full pointer-events-none z-10"
         style={{
           border: '2px solid var(--chart-4)',
           animation: 'demo-action-pulse 2s ease-in-out infinite',
         }}
       />
       <span
-        className="absolute -inset-[3px] rounded-[var(--radius-button)] pointer-events-none z-10"
+        className="absolute -inset-[5px] rounded-full pointer-events-none z-10"
         style={{
-          boxShadow: '0 0 12px 2px var(--chart-4)',
-          opacity: 0.4,
+          boxShadow: '0 0 16px 4px var(--chart-4)',
+          opacity: 0.45,
           animation: 'demo-action-glow 2s ease-in-out infinite',
         }}
       />
@@ -51,11 +51,11 @@ export function ActionHint({ children }: { children: React.ReactNode }) {
       <style>{`
         @keyframes demo-action-pulse {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          50% { opacity: 0.4; }
         }
         @keyframes demo-action-glow {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.15; }
+          0%, 100% { opacity: 0.45; }
+          50% { opacity: 0.1; }
         }
       `}</style>
     </span>

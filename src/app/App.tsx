@@ -145,7 +145,7 @@ export default function App() {
 
   // ── Mark review as resolved when user views final quote ──
   useEffect(() => {
-    if (selectedCsrEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
+    if ((selectedCsrEmailId === 'csr-stonite-final-cc' || selectedCsrEmailId === 'csr-steve-clarification') && reviewForwardStage === 'quoted' && !reviewResolved) {
       setReviewResolved(true);
     }
   }, [selectedCsrEmailId, reviewForwardStage, reviewResolved]);

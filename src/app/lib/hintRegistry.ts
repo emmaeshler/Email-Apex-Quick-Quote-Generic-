@@ -279,14 +279,14 @@ export const hintRules: HintRule[] = [
   {
     id: 'stonite-final-email',
     priority: 800,
-    phase: 'Phase 4c: Guide to final quote email',
+    phase: 'Phase 4c: Guide to final quote in thread',
     conditions: {
       reviewForwardStage: 'quoted',
       reviewResolved: false,
-      emailsArrived: ['csr-stonite-final-cc'],
-      selectedEmailIdNot: ['csr-stonite-final-cc'],
+      emailsArrived: ['csr-steve-clarification'],
+      selectedEmailIdNot: ['csr-steve-clarification'],
     },
-    target: 'email:csr-stonite-final-cc',
+    target: 'email:csr-steve-clarification',
   },
 
   {
@@ -295,7 +295,7 @@ export const hintRules: HintRule[] = [
     phase: 'Phase 4c→5: After viewing quote, refresh for approval hold',
     conditions: {
       reviewResolved: true,
-      selectedEmailId: 'csr-stonite-final-cc',
+      selectedEmailId: 'csr-steve-clarification',
       emailsNotArrived: ['csr-approval-hold'],
       hasNewMessages: true,
     },
@@ -307,7 +307,7 @@ export const hintRules: HintRule[] = [
     priority: 780,
     phase: 'Phase 4c→5: Guide to approval hold if already loaded',
     conditions: {
-      selectedEmailId: 'csr-stonite-final-cc',
+      selectedEmailId: 'csr-steve-clarification',
       emailsArrived: ['csr-approval-hold'],
     },
     target: 'email:csr-approval-hold',

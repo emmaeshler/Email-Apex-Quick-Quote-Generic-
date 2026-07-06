@@ -22,12 +22,14 @@ interface FolderItemProps {
   onClick: () => void;
   indent?: boolean;
   isHinted?: boolean;
+  folderId?: string;
 }
 
-function FolderItem({ icon: Icon, label, count, isActive = false, onClick, indent = false, isHinted = false }: FolderItemProps) {
+function FolderItem({ icon: Icon, label, count, isActive = false, onClick, indent = false, isHinted = false, folderId }: FolderItemProps) {
   return (
     <button
       onClick={onClick}
+      data-folder-id={folderId}
       className={`w-full flex items-center gap-1.5 px-3 py-1 text-left transition-colors relative ${
         isActive
           ? 'bg-primary/10 text-primary'
@@ -126,7 +128,7 @@ export function InboxSidebar({
 
   return (
     <div className="w-56 bg-background flex flex-col overflow-y-auto transition-all duration-200">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" data-folder-list>
         {/* Favorites Section */}
         <div className="pt-2">
           <div className="flex items-center">
@@ -163,6 +165,7 @@ export function InboxSidebar({
                     onClick={() => onFolderSelect(csrId)}
                     indent
                     isHinted={isCsrHinted}
+                    folderId="csr"
                   />
                   <FolderItem
                     icon={Pencil}
@@ -260,6 +263,7 @@ export function InboxSidebar({
                 isActive={isEisActive}
                 onClick={() => onFolderSelect(eisId)}
                 isHinted={isEisHinted}
+                folderId="eis"
               />
               <FolderItem
                 icon={CheckCircle}
@@ -269,6 +273,7 @@ export function InboxSidebar({
                 onClick={() => onFolderSelect(autoQuotedId)}
                 indent
                 isHinted={isAutoQuotedHinted}
+                folderId="auto-quoted"
               />
             </div>
           )}
@@ -290,6 +295,7 @@ export function InboxSidebar({
                 isActive={isReviewActive}
                 onClick={() => onFolderSelect(reviewId)}
                 isHinted={isReviewHinted}
+                folderId="review"
               />
             </div>
           )}

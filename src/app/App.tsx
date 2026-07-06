@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
 import { AppRail } from '@/app/components/AppRail';
 import { SequenceBuilder } from '@/app/components/SequenceBuilder';
+import { PresenterView } from '@/app/components/PresenterView';
+import { WalkthroughOverlay } from '@/app/components/WalkthroughOverlay';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import { loadCustomSequences, addCustomSequence, deleteCustomSequence, type CustomSequence } from './data/customSequences';
 import { inboxFolders } from './data/emails';
@@ -40,21 +42,25 @@ interface StateSnapshot {
   readIds: Set<string>;
 }
 
-export type DemoMode = 'short' | 'full' | (string & {});
+export type DemoMode = 'short' | 'full' | 'walkthrough' | 'presenter' | (string & {});
 
 function getInitialDemoMode(): DemoMode {
   const params = new URLSearchParams(window.location.search);
   const urlMode = params.get('demo');
-  if (urlMode === 'short' || urlMode === 'full') return urlMode;
+  if (urlMode === 'short' || urlMode === 'full' || urlMode === 'walkthrough' || urlMode === 'presenter') return urlMode;
 
   const saved = localStorage.getItem('demoMode');
-  if (saved === 'short' || saved === 'full' || (saved && saved.startsWith('custom:'))) return saved;
+  if (saved === 'short' || saved === 'full' || saved === 'walkthrough' || saved === 'presenter' || (saved && saved.startsWith('custom:'))) return saved;
 
-  return 'full';
+  return 'short';
 }
 
 export default function App() {
   const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
+  const [demoLength, setDemoLength] = useState<'short' | 'full'>(() => {
+    const initial = getInitialDemoMode();
+    return initial === 'full' ? 'full' : 'short';
+  });
   const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'auto-quoted' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
@@ -112,20 +118,39 @@ export default function App() {
   // ── Scroll-to-top trigger — increments whenever new emails appear at the top ──
   const [scrollTrigger, setScrollTrigger] = useState(0);
 
+  // ── Presenter window detection (true in the pop-out controls window) ──
+  const [isPresenterWindow] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('presenterView') === 'true';
+  });
+
+  // ── Walkthrough state ──
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  const [walkthroughStepId, setWalkthroughStepId] = useState<string | null>(null);
+
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === '`' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       setDemoVisible((v) => !v);
     }
-  }, []);
+    if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && demoMode === 'presenter' && !isPresenterWindow) {
+      e.preventDefault();
+      window.open(
+        window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
+        'PresenterView',
+        'width=1280,height=720'
+      );
+    }
+  }, [demoMode, isPresenterWindow]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleKey]);
 
-  // Auto-enter fullscreen: try immediately on mount, fall back to first click
+  // Auto-enter fullscreen on the main display (skip for presenter controls window)
   useEffect(() => {
+    if (isPresenterWindow) return;
     const go = () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -136,7 +161,54 @@ export default function App() {
       document.addEventListener('click', go);
     });
     return () => document.removeEventListener('click', go);
-  }, []);
+  }, [isPresenterWindow]);
+
+  // ── BroadcastChannel: let the presenter controls window drive navigation ──
+  const handleBackRef = useRef<(() => void) | null>(null);
+  const handleRefreshRef = useRef<(() => void) | null>(null);
+  useEffect(() => { handleBackRef.current = handleBack; }, [handleBack]);
+  useEffect(() => { handleRefreshRef.current = handleRefresh; }, [handleRefresh]);
+
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+  const hintTargetRef = useRef<string | null>(null);
+  const presenterStateRef = useRef({
+    activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+    canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+    hintTarget: null as string | null,
+  });
+
+  useEffect(() => {
+    presenterStateRef.current = {
+      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+      hintTarget: hintTargetRef.current,
+    };
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages]);
+
+  useEffect(() => {
+    if (isPresenterWindow || demoMode !== 'presenter') return;
+    const channel = new BroadcastChannel('presenter-channel');
+    presenterChannelRef.current = channel;
+
+    channel.onmessage = (event: MessageEvent) => {
+      if (event.data.type === 'navigate') {
+        if (event.data.direction === 'prev') handleBackRef.current?.();
+        else handleRefreshRef.current?.();
+      }
+      if (event.data.type === 'stateRequest') {
+        channel.postMessage({ type: 'stateSync', state: presenterStateRef.current });
+      }
+    };
+
+    return () => { channel.close(); presenterChannelRef.current = null; };
+  }, [isPresenterWindow, demoMode]);
+
+  // Auto-open walkthrough in walkthrough mode
+  useEffect(() => {
+    if (demoMode === 'walkthrough') {
+      setWalkthroughOpen(true);
+    }
+  }, [demoMode]);
 
   // Sync reviewStage when reviewResolved changes
   useEffect(() => {
@@ -187,6 +259,19 @@ export default function App() {
   // ── Switch demo mode — full reset ──
   const handleDemoModeChange = useCallback((mode: DemoMode) => {
     setDemoMode(mode);
+
+    if (mode === 'short' || mode === 'full') {
+      setDemoLength(mode);
+    }
+
+    if (mode === 'presenter' && !isPresenterWindow) {
+      window.open(
+        window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
+        'PresenterView',
+        'width=1280,height=720'
+      );
+    }
+
     setActiveFolder('csr');
     setSelectedCsrEmailId(null);
     setSelectedEisEmailId(null);
@@ -215,7 +300,7 @@ export default function App() {
     }
     window.history.replaceState({}, '', url.toString());
     localStorage.setItem('demoMode', mode);
-  }, []);
+  }, [isPresenterWindow]);
 
   const handleOpenBuilder = useCallback((sequenceId?: string) => {
     setEditingSequenceId(sequenceId || null);
@@ -308,6 +393,8 @@ export default function App() {
   // ── Refresh queue — driven by DEMO_PRESETS or custom sequences ──
   const refreshBatches = useMemo(() => {
     if (demoMode === 'short' || demoMode === 'full') return getPresetBatches(demoMode);
+    if (demoMode === 'walkthrough') return getPresetBatches('full');
+    if (demoMode === 'presenter') return getPresetBatches(demoLength);
     if (demoMode.startsWith('custom:')) {
       const seqId = demoMode.slice(7);
       const seq = customSequences.find(s => s.id === seqId);
@@ -316,7 +403,7 @@ export default function App() {
     }
     return getPresetBatches('full');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoMode, customSequences, presetVersion]);
+  }, [demoMode, demoLength, customSequences, presetVersion]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
@@ -572,6 +659,21 @@ export default function App() {
     }
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
+  // ── Broadcast full state (incl. hintTarget) to presenter window ──
+  useEffect(() => {
+    hintTargetRef.current = hintTarget;
+    presenterChannelRef.current?.postMessage({
+      type: 'stateSync',
+      state: { activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+        canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages, hintTarget },
+    });
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, hintTarget]);
+
+  // Presenter controls window — render only the controller UI
+  if (isPresenterWindow) {
+    return <PresenterView onClose={() => window.close()} />;
+  }
+
   if (currentView === 'sequence-builder') {
     let editingSeq: CustomSequence | null = null;
     if (editingPresetId) {
@@ -595,7 +697,8 @@ export default function App() {
     );
   }
 
-  return (
+  // Main content component that can be rendered in both normal and presenter view
+  const mainContent = (
     <div className="size-full flex flex-col bg-background overflow-hidden">
       {/* Outlook-style grey title bar */}
       <div className="flex items-center px-3 py-1" style={{ backgroundColor: '#e5e5e5' }}>
@@ -687,6 +790,7 @@ export default function App() {
       <div className="flex-1 flex gap-1.5 p-1.5 overflow-hidden">
         <AppRail
           demoMode={demoMode}
+          demoLength={demoLength}
           onDemoModeChange={handleDemoModeChange}
           customSequences={customSequences}
           onOpenBuilder={() => handleOpenBuilder()}
@@ -694,6 +798,7 @@ export default function App() {
           onDeleteSequence={handleDeleteSequence}
           onEditPreset={handleEditPreset}
           onResetPreset={handleResetPreset}
+          forceShowPicker={walkthroughStepId === 'mail-icon' ? true : undefined}
         />
         <InboxSidebar
           folders={dynamicFolders}
@@ -750,5 +855,16 @@ export default function App() {
         />
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {mainContent}
+
+      {/* Walkthrough overlay */}
+      {walkthroughOpen && (
+        <WalkthroughOverlay onClose={() => setWalkthroughOpen(false)} onStepChange={setWalkthroughStepId} />
+      )}
+    </>
   );
 }

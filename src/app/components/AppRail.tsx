@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Plus, Mail, Calendar, Users, Star, CheckSquare,
   GitBranch, Cloud, MoreHorizontal, Pencil, Trash2, AlertTriangle, RotateCcw,
+  BookOpen, Presentation,
 } from 'lucide-react';
 import type { DemoMode } from '../App';
 import type { CustomSequence } from '../data/customSequences';
@@ -9,6 +10,7 @@ import { isPresetCustomized } from '../data/demoSequences';
 
 interface AppRailProps {
   demoMode: DemoMode;
+  demoLength: 'short' | 'full';
   onDemoModeChange: (mode: DemoMode) => void;
   customSequences: CustomSequence[];
   onOpenBuilder: () => void;
@@ -16,6 +18,7 @@ interface AppRailProps {
   onDeleteSequence: (id: string) => void;
   onEditPreset: (presetId: string) => void;
   onResetPreset: (presetId: string) => void;
+  forceShowPicker?: boolean;
 }
 
 function DeleteConfirmModal({ sequenceName, onConfirm, onCancel }: {
@@ -93,13 +96,17 @@ function DeleteConfirmModal({ sequenceName, onConfirm, onCancel }: {
   );
 }
 
-export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBuilder, onEditSequence, onDeleteSequence, onEditPreset, onResetPreset }: AppRailProps) {
+export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequences, onOpenBuilder, onEditSequence, onDeleteSequence, onEditPreset, onResetPreset, forceShowPicker }: AppRailProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomSequence | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!showPicker) return;
+    if (forceShowPicker !== undefined) setShowPicker(forceShowPicker);
+  }, [forceShowPicker]);
+
+  useEffect(() => {
+    if (!showPicker || forceShowPicker) return;
     const handleClick = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setShowPicker(false);
@@ -107,7 +114,7 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [showPicker]);
+  }, [showPicker, forceShowPicker]);
 
   const railItems = [
     { icon: Plus, label: 'New', isAction: true },
@@ -144,55 +151,75 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
             {label === 'Mail' && showPicker && (
               <div
                 ref={pickerRef}
-                className="absolute left-full ml-2 top-0 bg-card border border-border rounded-lg shadow-xl z-50 w-52 overflow-hidden"
+                className="absolute left-full ml-2 top-0 bg-card border border-border rounded-lg shadow-xl z-50 w-64 overflow-hidden"
               >
+                {/* Demo Mode Section */}
                 <div className="px-3 py-2 border-b border-border">
-                  <p className="text-size-xs font-w-medium text-foreground/70 uppercase tracking-wide">Demo Mode</p>
+                  <p className="text-size-xs font-w-semibold uppercase tracking-wider text-foreground/50">Demo Mode</p>
                 </div>
-                {(['short', 'full'] as const).map(presetId => {
-                  const isActive = demoMode === presetId;
-                  const isCustomized = isPresetCustomized(presetId);
-                  return (
-                    <div
-                      key={presetId}
-                      className={`group flex items-center gap-1 px-3 py-2 transition-colors ${
-                        isActive ? 'bg-primary/10' : 'hover:bg-muted'
-                      }`}
-                    >
+
+                {/* Toggle between Short/Full */}
+                <div className="px-3 py-3 border-b border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-size-xs text-foreground/70 font-w-medium">Length:</span>
+                    <div className="flex items-center bg-muted/60 rounded-[var(--radius)] p-0.5">
+                      {(['short', 'full'] as const).map(presetId => {
+                        const isSelected = demoMode === presetId || (demoMode !== 'short' && demoMode !== 'full' && presetId === demoLength);
+                        const isCustomized = isPresetCustomized(presetId);
+                        return (
+                          <button
+                            key={presetId}
+                            onClick={(e) => { e.stopPropagation(); onDemoModeChange(presetId); }}
+                            className={`relative px-3 py-1 rounded text-size-xs font-w-medium transition-all ${
+                              isSelected
+                                ? 'bg-primary text-white shadow-sm'
+                                : 'text-foreground/50 hover:text-foreground/70'
+                            }`}
+                          >
+                            {presetId === 'short' ? 'Short' : 'Full'}
+                            {isCustomized && <span className="ml-1 text-primary">*</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Edit buttons for current mode */}
+                  {(demoMode === 'short' || demoMode === 'full') && isPresetCustomized(demoMode) && (
+                    <div className="flex items-center gap-1 mt-2">
                       <button
-                        onClick={(e) => { e.stopPropagation(); onDemoModeChange(presetId); setShowPicker(false); }}
-                        className={`flex-1 text-left text-size-sm truncate ${
-                          isActive ? 'text-primary font-w-medium' : 'text-foreground'
-                        }`}
+                        onClick={(e) => { e.stopPropagation(); onResetPreset(demoMode); }}
+                        className="flex items-center gap-1 px-2 py-1 text-size-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
                       >
-                        {presetId === 'short' ? 'Short Demo' : 'Full Demo'}
-                        {isCustomized && <span className="text-size-xs text-muted-foreground ml-1">·edited</span>}
+                        <RotateCcw size={11} />
+                        Reset
                       </button>
-                      {isCustomized && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onResetPreset(presetId); }}
-                          className="p-1 rounded hover:bg-border/40 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all"
-                          title="Reset to default"
-                        >
-                          <RotateCcw size={12} />
-                        </button>
-                      )}
                       <button
-                        onClick={(e) => { e.stopPropagation(); onEditPreset(presetId); setShowPicker(false); }}
-                        className="p-1 rounded hover:bg-border/40 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-all"
-                        title="Edit sequence"
+                        onClick={(e) => { e.stopPropagation(); onEditPreset(demoMode); setShowPicker(false); }}
+                        className="flex items-center gap-1 px-2 py-1 text-size-xs text-muted-foreground hover:text-foreground rounded hover:bg-muted transition-colors"
                       >
-                        <Pencil size={12} />
+                        <Pencil size={11} />
+                        Edit
                       </button>
                     </div>
-                  );
-                })}
+                  )}
+                </div>
+
+                {/* Edit or Add Demo Sequence */}
+                <div className="border-b border-border/50">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onOpenBuilder(); setShowPicker(false); }}
+                    className="w-full text-left px-3 py-2.5 text-size-sm text-primary hover:bg-primary/5 transition-colors"
+                  >
+                    Edit or Add Demo Sequence
+                  </button>
+                </div>
 
                 {/* Custom sequences */}
                 {customSequences.length > 0 && (
                   <>
-                    <div className="px-3 py-1.5 border-t border-border">
-                      <p className="text-size-xs font-w-medium text-foreground/70 uppercase tracking-wide">Custom</p>
+                    <div className="px-3 py-2 border-b border-border/50 bg-muted/20">
+                      <p className="text-size-xs font-w-medium text-foreground/70 uppercase tracking-wide">Custom Sequences</p>
                     </div>
                     {customSequences.map(seq => {
                       const isActive = demoMode === `custom:${seq.id}`;
@@ -231,14 +258,27 @@ export function AppRail({ demoMode, onDemoModeChange, customSequences, onOpenBui
                   </>
                 )}
 
-                {/* Add new */}
-                <div className="border-t border-border">
+                {/* Walkthrough & Presenter items */}
+                <div className="border-t border-border/50">
                   <button
-                    onClick={(e) => { e.stopPropagation(); onOpenBuilder(); setShowPicker(false); }}
-                    className="w-full text-left px-3 py-2.5 text-size-sm text-primary hover:bg-primary/5 transition-colors flex items-center gap-1.5"
+                    onClick={(e) => { e.stopPropagation(); onDemoModeChange('walkthrough'); setShowPicker(false); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm transition-colors ${
+                      demoMode === 'walkthrough' ? 'text-primary font-w-medium bg-primary/5' : 'text-foreground hover:bg-muted'
+                    }`}
+                    title="Step-by-step guided tour of the delivery workflow"
                   >
-                    <Plus size={14} />
-                    Add New Sequence
+                    <BookOpen size={15} className={demoMode === 'walkthrough' ? 'text-primary' : 'text-foreground/50'} />
+                    Delivery Walkthrough
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDemoModeChange('presenter'); setShowPicker(false); }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm transition-colors ${
+                      demoMode === 'presenter' ? 'text-primary font-w-medium bg-primary/5' : 'text-foreground hover:bg-muted'
+                    }`}
+                    title="Opens a speaker notes panel for live presentations"
+                  >
+                    <Presentation size={15} className={demoMode === 'presenter' ? 'text-primary' : 'text-foreground/50'} />
+                    Presenter View
                   </button>
                 </div>
               </div>

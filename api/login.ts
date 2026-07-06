@@ -11,12 +11,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ ok: false, error: 'Email and password are required' })
   }
 
-  const session = await authenticateUser(email, password)
-  if (!session) {
-    return res.status(401).json({ ok: false, error: 'Invalid credentials' })
-  }
+  try {
+    const session = await authenticateUser(email, password)
+    if (!session) {
+      return res.status(401).json({ ok: false, error: 'Invalid credentials' })
+    }
 
-  const token = await createSessionToken(session)
-  res.setHeader('Set-Cookie', sessionCookie(token, 86400))
-  return res.status(200).json({ ok: true, session })
+    const token = await createSessionToken(session)
+    res.setHeader('Set-Cookie', sessionCookie(token, 86400))
+    return res.status(200).json({ ok: true, session })
+  } catch {
+    return res.status(500).json({ ok: false, error: 'Unable to connect to authentication service' })
+  }
 }

@@ -33,8 +33,12 @@ export async function setupAccount(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, firstName, lastName, password }),
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      return { error: data?.error ?? 'Setup failed' }
+    }
     const data = await res.json()
-    if (!res.ok || !data.ok) return { error: data.error ?? 'Setup failed' }
+    if (!data.ok) return { error: data.error ?? 'Setup failed' }
     return { session: data.session }
   } catch {
     return { error: 'Unable to reach the server. Please try again.' }
@@ -48,8 +52,12 @@ export async function login(email: string, password: string): Promise<{ session:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => null)
+      return { error: data?.error ?? 'Invalid credentials' }
+    }
     const data = await res.json()
-    if (!res.ok || !data.ok) return { error: data.error ?? 'Invalid credentials' }
+    if (!data.ok) return { error: data.error ?? 'Invalid credentials' }
     return { session: data.session }
   } catch {
     return { error: 'Unable to reach the server. Please try again.' }

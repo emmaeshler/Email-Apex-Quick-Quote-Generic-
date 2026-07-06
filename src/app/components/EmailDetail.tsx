@@ -8,6 +8,7 @@ import {
 import type { Email, QuoteTable, ReviewMatchItem, QuotedPrevious } from '../data/emails';
 import { DemoDot, ActionHint } from './DemoGuide';
 import { getAvatarColor, getInitials, getAvatarImage } from '../lib/avatarUtils';
+import imgMorgan from '../../../public/avatars/women/THCiUmVZcgxHodGCK3EyYo.jpg';
 import { getEmailCategory, getEntry } from '../data/emailRegistry';
 
 /* ── Helpers ── */
@@ -23,7 +24,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
   const hasStockStatus = table.lineItems.some((item) => item.stockStatus);
   const colCount = 4 + (hasQtyBreakDiscount ? 1 : 0) + (hasStockStatus ? 1 : 0);
   return (
-    <div className="my-4 border border-border rounded-lg bg-muted/20 overflow-hidden">
+    <div className="my-4 border border-border rounded-lg bg-muted/20">
       <div className="px-4 py-3 bg-muted/40 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -47,7 +48,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
       </div>
       <div className="px-4">
         <table className="w-full border-collapse">
-          <thead>
+          <thead className="sticky top-0 z-10 bg-card">
             <tr className="border-b-2 border-foreground/15">
               <th className="py-2.5 text-left pr-4 text-size-sm font-w-medium text-foreground">Item</th>
               <th className="py-2.5 text-right px-4 text-size-sm font-w-medium text-foreground">Qty</th>
@@ -605,6 +606,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
   const [topFade, setTopFade] = useState(0);
   const [bottomFade, setBottomFade] = useState(0);
+  const [showOlderReplies, setShowOlderReplies] = useState(false);
 
   useEffect(() => {
     const el = contentScrollRef.current;
@@ -637,6 +639,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
 
   // Auto-scroll to bottom when email changes (show original request first for demo)
   useEffect(() => {
+    setShowOlderReplies(false);
     if (contentScrollRef.current) {
       setTimeout(() => {
         contentScrollRef.current?.scrollTo({ top: contentScrollRef.current.scrollHeight, behavior: 'auto' });
@@ -1136,7 +1139,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                 <div className="mt-6 pt-4 border-t border-foreground/10">
                   <div className="flex items-start gap-3">
                     <img
-                      src="/avatars/women/THCiUmVZcgxHodGCK3EyYo.jpg"
+                      src={imgMorgan}
                       alt="Morgan Reisch"
                       className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
                     />
@@ -1348,7 +1351,22 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
                     {getInfoBar()}
                     {renderBody()}
                   </div>
-                  {older.map(renderThreadMsg)}
+                  {older.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setShowOlderReplies(!showOlderReplies)}
+                        className="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors group"
+                      >
+                        <div className="flex-1 h-px bg-foreground/10" />
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-border bg-muted/50 group-hover:bg-muted group-hover:border-foreground/20 transition-colors text-size-xs text-muted-foreground group-hover:text-foreground/70 flex-shrink-0">
+                          {showOlderReplies ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                          {older.length} earlier {older.length === 1 ? 'reply' : 'replies'}
+                        </span>
+                        <div className="flex-1 h-px bg-foreground/10" />
+                      </button>
+                      {showOlderReplies && older.map(renderThreadMsg)}
+                    </>
+                  )}
                 </>
               );
             })()}

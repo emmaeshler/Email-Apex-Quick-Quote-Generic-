@@ -18,25 +18,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Auth not configured' })
   }
 
-  const redis = new Redis({ url, token })
-  const users = (await redis.get<AuthUser[]>('auth:users')) ?? []
-  const user = users.find(u => u.email.toLowerCase() === username.toLowerCase())
+  try {
+    const redis = new Redis({ url, token })
+    const users = (await redis.get<AuthUser[]>('auth:users')) ?? []
+    const user = users.find(u => u.email.toLowerCase() === username.toLowerCase())
 
-  if (!user) {
-    return res.json({ status: 'not_found' })
+    if (!user) {
+      return res.json({ status: 'not_found' })
+    }
+
+    if (user.expiresAt && Date.now() > user.expiresAt) {
+      return res.json({ status: 'expired' })
+    }
+
+    if (user.hash === '') {
+      return res.json({
+        status: 'needs_setup',
+        firstName: user.firstName ?? null,
+        lastName: user.lastName ?? null,
+      })
+    }
+
+    return res.json({ status: 'active' })
+  } catch {
+    return res.status(500).json({ error: 'Unable to connect to authentication service' })
   }
-
-  if (user.expiresAt && Date.now() > user.expiresAt) {
-    return res.json({ status: 'expired' })
-  }
-
-  if (user.hash === '') {
-    return res.json({
-      status: 'needs_setup',
-      firstName: user.firstName ?? null,
-      lastName: user.lastName ?? null,
-    })
-  }
-
-  return res.json({ status: 'active' })
 }

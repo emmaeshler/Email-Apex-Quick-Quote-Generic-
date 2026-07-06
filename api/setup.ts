@@ -26,31 +26,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Auth not configured' })
   }
 
-  const redis = new Redis({ url, token })
-  const users = (await redis.get<AuthUser[]>('auth:users')) ?? []
-  const idx = users.findIndex(u => u.email.toLowerCase() === username.toLowerCase())
+  try {
+    const redis = new Redis({ url, token })
+    const users = (await redis.get<AuthUser[]>('auth:users')) ?? []
+    const idx = users.findIndex(u => u.email.toLowerCase() === username.toLowerCase())
 
-  if (idx === -1 || users[idx].hash !== '') {
-    return res.status(400).json({ error: 'Account not eligible for setup' })
+    if (idx === -1 || users[idx].hash !== '') {
+      return res.status(400).json({ error: 'Account not eligible for setup' })
+    }
+
+    const user = users[idx]
+    const salt = await genSalt(10)
+    const hashed = await hash(password, salt)
+
+    user.hash = hashed
+    if (firstName?.trim()) user.firstName = firstName.trim()
+    if (lastName?.trim()) user.lastName = lastName.trim()
+    users[idx] = user
+    await redis.set('auth:users', users)
+
+    const nameParts = [user.firstName, user.lastName].filter(Boolean)
+    const session = {
+      email: user.email,
+      displayName: nameParts.length > 0 ? nameParts.join(' ') : undefined,
+    }
+
+    const jwt = await createSessionToken(session)
+    res.setHeader('Set-Cookie', sessionCookie(jwt, 86400))
+    return res.status(200).json({ ok: true, session })
+  } catch {
+    return res.status(500).json({ ok: false, error: 'Unable to connect to authentication service' })
   }
-
-  const user = users[idx]
-  const salt = await genSalt(10)
-  const hashed = await hash(password, salt)
-
-  user.hash = hashed
-  if (firstName?.trim()) user.firstName = firstName.trim()
-  if (lastName?.trim()) user.lastName = lastName.trim()
-  users[idx] = user
-  await redis.set('auth:users', users)
-
-  const nameParts = [user.firstName, user.lastName].filter(Boolean)
-  const session = {
-    email: user.email,
-    displayName: nameParts.length > 0 ? nameParts.join(' ') : undefined,
-  }
-
-  const jwt = await createSessionToken(session)
-  res.setHeader('Set-Cookie', sessionCookie(jwt, 86400))
-  return res.status(200).json({ ok: true, session })
 }

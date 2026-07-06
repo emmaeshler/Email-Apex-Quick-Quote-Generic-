@@ -1,3 +1,11 @@
+import imgJawinder from '../../../public/avatars/men/jawinder.jpg';
+import imgMobile02 from '../../../public/avatars/men/mobile-02.jpg';
+import imgMobile03 from '../../../public/avatars/men/mobile-03.jpg';
+import imgMobile07 from '../../../public/avatars/men/mobile-07.jpg';
+import imgWomenMobile01 from '../../../public/avatars/women/mobile-01.jpg';
+import imgRandomFemale1 from '../../../public/avatars/women/Random_female_face_1.jpg';
+import imgMorgan from '../../../public/avatars/women/THCiUmVZcgxHodGCK3EyYo.jpg';
+
 const AVATAR_COLORS = [
   '#A4262C', // red
   '#CA5010', // orange
@@ -12,16 +20,16 @@ const AVATAR_COLORS = [
 ];
 
 const AVATAR_IMAGES: Record<string, string> = {
-  'Jawinder Schahal': '/avatars/men/jawinder.jpg',
-  'Dave Morrison': '/avatars/men/mobile-02.jpg',
-  'Steve Landers': '/avatars/men/mobile-03.jpg',
-  'Gary Tillman': '/avatars/men/mobile-07.jpg',
-  'Mike Hernandez': '/avatars/men/mobile-02.jpg',
-  'Herman': '/avatars/men/mobile-03.jpg',
-  'Karen Walsh': '/avatars/women/mobile-01.jpg',
-  'Lisa Torres': '/avatars/women/Random_female_face_1.jpg',
-  'Morgan': '/avatars/women/THCiUmVZcgxHodGCK3EyYo.jpg',
-  'Morgan (Forwarded)': '/avatars/women/THCiUmVZcgxHodGCK3EyYo.jpg',
+  'Jawinder Schahal': imgJawinder,
+  'Dave Morrison': imgMobile02,
+  'Steve Landers': imgMobile03,
+  'Gary Tillman': imgMobile07,
+  'Mike Hernandez': imgMobile02,
+  'Herman': imgMobile03,
+  'Karen Walsh': imgWomenMobile01,
+  'Lisa Torres': imgRandomFemale1,
+  'Morgan': imgMorgan,
+  'Morgan (Forwarded)': imgMorgan,
 };
 
 function hashName(name: string): number {

@@ -13,7 +13,6 @@ export const DEMO_DEFAULTS: Record<string, DemoBatch[]> = {
     { emailIds: ['eis-1', 'eis-1-response', 'csr-ai-1'] },
     { emailIds: ['eis-6', 'eis-6-response', 'csr-ai-2'] },
     { emailIds: ['csr-review-1'] },
-    { emailIds: ['csr-approval-hold'] },
   ],
 };
 

@@ -8,6 +8,12 @@ import {
   SvgIcon,
   Paper,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material'
 import { useAuth } from './AuthContext'
 import { checkUser, setupAccount } from './authApi'
@@ -59,10 +65,182 @@ function I2PLogo() {
   )
 }
 
+function RequestAccessModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [notes, setNotes] = useState('')
+  const [urgency, setUrgency] = useState('normal')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  const handleClose = () => {
+    onClose()
+    setTimeout(() => {
+      setFirstName('')
+      setLastName('')
+      setEmail('')
+      setNotes('')
+      setUrgency('normal')
+      setError(null)
+      setSuccess(false)
+    }, 200)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSubmitting(true)
+    try {
+      const res = await fetch('https://password-admin.vercel.app/api/access-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, email, notes, urgency, source: 'email-apex-qq' }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Request failed')
+      }
+      setSuccess(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      {success ? (
+        <Box sx={{ textAlign: 'center', py: 5, px: 3 }}>
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              bgcolor: '#e8f5e9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: 28, color: '#2e7d32', fontWeight: 700 }}>✓</Typography>
+          </Box>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, mb: 0.5 }}>Request Submitted</Typography>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 3 }}>
+            An administrator has been notified
+          </Typography>
+          <Button onClick={handleClose} variant="outlined" sx={{ textTransform: 'none' }}>
+            Close
+          </Button>
+        </Box>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <DialogTitle sx={{ fontWeight: 700 }}>Request Access</DialogTitle>
+          <DialogContent>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+              <TextField
+                label="First Name"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                required
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Last Name"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                required
+                size="small"
+                fullWidth
+              />
+            </Box>
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              size="small"
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+            <TextField
+              label="Reason for access"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              multiline
+              rows={3}
+              size="small"
+              fullWidth
+              sx={{ mt: 2 }}
+            />
+            <Box sx={{ mt: 2 }}>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 0.75 }}>Priority</Typography>
+              <ToggleButtonGroup
+                value={urgency}
+                exclusive
+                onChange={(_, v) => { if (v) setUrgency(v) }}
+                size="small"
+                fullWidth
+              >
+                <ToggleButton
+                  value="urgent"
+                  sx={{
+                    textTransform: 'none',
+                    color: '#d32f2f',
+                    '&.Mui-selected': { bgcolor: '#fbe9e7', color: '#d32f2f', borderColor: '#d32f2f' },
+                  }}
+                >
+                  Urgent
+                </ToggleButton>
+                <ToggleButton value="normal" sx={{ textTransform: 'none' }}>
+                  Normal
+                </ToggleButton>
+                <ToggleButton value="low" sx={{ textTransform: 'none' }}>
+                  Low Priority
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={handleClose} sx={{ textTransform: 'none', color: '#666' }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={submitting}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                bgcolor: '#00446a',
+                '&:hover': { bgcolor: '#003555' },
+              }}
+            >
+              {submitting ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : 'Submit Request'}
+            </Button>
+          </DialogActions>
+        </form>
+      )}
+    </Dialog>
+  )
+}
+
 type Step = 'username' | 'password' | 'setup'
 
 export default function LoginPage() {
   const { login, setSession } = useAuth()
+  const [requestOpen, setRequestOpen] = useState(false)
   const [step, setStep] = useState<Step>('username')
   const [username, setUsername] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -339,16 +517,39 @@ export default function LoginPage() {
         )}
 
         {step === 'username' && (
-          <Typography
-            component="a"
-            href="https://password-admin.vercel.app/forgot-password"
-            target="_blank"
-            rel="noopener noreferrer"
-            sx={{ display: 'block', mt: 1.5, fontSize: 13, color: '#666', textAlign: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
-          >
-            Forgot password?
-          </Typography>
+          <>
+            <Typography
+              component="a"
+              href="https://password-admin.vercel.app/forgot-password"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ display: 'block', mt: 1.5, fontSize: 13, color: '#666', textAlign: 'center', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+            >
+              Forgot password?
+            </Typography>
+            <Box sx={{ mt: 2.5, pt: 2.5, borderTop: '1px solid #eee' }}>
+              <Typography sx={{ mb: 0.75, fontSize: 13, color: 'text.secondary' }}>
+                Don&apos;t have an account?
+              </Typography>
+              <Button
+                onClick={() => setRequestOpen(true)}
+                variant="outlined"
+                fullWidth
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderColor: '#ccc',
+                  color: '#333',
+                  '&:hover': { borderColor: '#999', bgcolor: '#fafafa' },
+                }}
+              >
+                Request Access
+              </Button>
+            </Box>
+          </>
         )}
+
+        <RequestAccessModal open={requestOpen} onClose={() => setRequestOpen(false)} />
       </Paper>
     </Box>
   )

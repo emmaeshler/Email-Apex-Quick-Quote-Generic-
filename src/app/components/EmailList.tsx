@@ -406,7 +406,7 @@ export function EmailList({ emails, selectedEmailId, onSelectEmail, onDeleteEmai
   }
 
   return (
-    <div ref={scrollRef} className="w-72 flex-shrink-0 bg-card overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
+    <div ref={scrollRef} data-scroll-sync="email-list" className="w-72 flex-shrink-0 bg-card overflow-y-auto transition-all duration-200 rounded-lg shadow-lg">
       {/* Header */}
       <div className="border-b border-border">
         {/* Focused/Other segmented toggle */}

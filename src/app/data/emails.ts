@@ -537,9 +537,9 @@ export const csrReview1: Email = {
     time: '11:15 AM',
   },
   reviewReply: {
-    body: `Please provide the missing details for the items listed in the table above:\n\n[Provide corrections or clarifications for each item that needs review]\n\nFor example:\n- Item 1: [Confirm correct item number, adjust quantity if needed]\n- Item 2: [Specify correct gauge or alternative, provide quantity]\n\n- Morgan`,
+    body: `Hi Steve,\n\nThank you for the quote request. I have a couple of items I need to confirm before I can get pricing over to you:\n\n1. #27 HPL Round Tapers — you requested 15 units, but the minimum order quantity is 25. Can you do 25?\n\n2. #24 SDPZ Round Tapers — we don't carry a #24 gauge in SDPZ. The closest we have is #22.5. Would that work for your application? Also, how many units do you need?\n\nLet me know and I'll get your quote right out.\n\nBest regards,\nMorgan`,
     date: 'Jan 28, 2026',
-    time: '11:42 AM',
+    time: '11:30 AM',
   },
 };
 

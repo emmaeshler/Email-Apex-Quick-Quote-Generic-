@@ -15,6 +15,7 @@ import { getPresetBatches, savePresetOverride, isPresetCustomized, resetPresetOv
 import { computeVisibleEmails } from './data/computeVisibleEmails';
 import { EMAIL_REGISTRY } from './data/emailRegistry';
 import { executeTriggers } from './lib/workflowEngine';
+import { usePresenterEmitSync, usePresenterReceiveSync } from './lib/presenterSync';
 import {
   Search, SquarePen, Trash2, Archive, FolderInput, Flag, MailOpen,
   MessageSquare, RefreshCw, Ban, RotateCcw, MoreHorizontal, Sparkles, ChevronDown,
@@ -50,7 +51,7 @@ function getInitialDemoMode(): DemoMode {
   if (urlMode === 'short' || urlMode === 'full' || urlMode === 'walkthrough' || urlMode === 'presenter') return urlMode;
 
   const saved = localStorage.getItem('demoMode');
-  if (saved === 'short' || saved === 'full' || saved === 'walkthrough' || saved === 'presenter' || (saved && saved.startsWith('custom:'))) return saved;
+  if (saved === 'short' || saved === 'full' || saved === 'presenter' || (saved && saved.startsWith('custom:'))) return saved;
 
   return 'short';
 }
@@ -124,6 +125,17 @@ export default function App() {
     return params.get('presenterView') === 'true';
   });
 
+  // ── Presenter embed detection (true when loaded inside the presenter view iframe) ──
+  const [isPresenterEmbed] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('presenterEmbed') === 'true';
+  });
+
+  // ── Presenter mirror: emit from embed, receive on audience window ──
+  const isAudienceWindow = demoMode === 'presenter' && !isPresenterWindow && !isPresenterEmbed;
+  usePresenterEmitSync(isPresenterEmbed);
+  const mirrorCursor = usePresenterReceiveSync(isAudienceWindow);
+
   // ── Walkthrough state ──
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStepId, setWalkthroughStepId] = useState<string | null>(null);
@@ -133,7 +145,7 @@ export default function App() {
       e.preventDefault();
       setDemoVisible((v) => !v);
     }
-    if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && demoMode === 'presenter' && !isPresenterWindow) {
+    if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && demoMode === 'presenter' && !isPresenterWindow && !isPresenterEmbed) {
       e.preventDefault();
       window.open(
         window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
@@ -148,9 +160,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleKey]);
 
-  // Auto-enter fullscreen on the main display (skip for presenter controls window)
+  // Auto-enter fullscreen on the main display (skip for presenter controls window and embed)
   useEffect(() => {
-    if (isPresenterWindow) return;
+    if (isPresenterWindow || isPresenterEmbed) return;
     const go = () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -224,7 +236,7 @@ export default function App() {
       setDemoLength(mode);
     }
 
-    if (mode === 'presenter' && !isPresenterWindow) {
+    if (mode === 'presenter' && !isPresenterWindow && !isPresenterEmbed) {
       window.open(
         window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
         'PresenterView',
@@ -424,7 +436,19 @@ export default function App() {
     canGoBack: false,
     canGoForward: false,
     hintTarget: null as string | null,
+    demoMode: demoLength as 'short' | 'full',
   });
+
+  // Refs for action handlers the audience window uses to replicate embed interactions
+  const handleSelectEmailRef = useRef<((id: string) => void) | null>(null);
+  const handleForwardComposeRef = useRef<(() => void) | null>(null);
+  const handleForwardSendRef = useRef<(() => void) | null>(null);
+  const handleApprovalComposeRef = useRef<(() => void) | null>(null);
+  const handleApprovalSendRef = useRef<(() => void) | null>(null);
+  const handleReviewSendRef = useRef<(() => void) | null>(null);
+  const setReviewStageRef = useRef<((v: any) => void) | null>(null);
+  const setReviewComposeModeRef = useRef<((v: any) => void) | null>(null);
+  const setActiveFolderRef = useRef<((v: any) => void) | null>(null);
 
   useEffect(() => {
     if (isPresenterWindow || demoMode !== 'presenter') return;
@@ -439,10 +463,25 @@ export default function App() {
       if (event.data.type === 'stateRequest') {
         channel.postMessage({ type: 'stateSync', state: presenterStateRef.current });
       }
+      // Replicate specific actions from the presenter embed iframe
+      if (event.data.type === 'action' && !isPresenterEmbed) {
+        const { action, payload } = event.data;
+        if (action === 'refresh') handleRefreshRef.current?.();
+        if (action === 'back') handleBackRef.current?.();
+        if (action === 'selectEmail') handleSelectEmailRef.current?.(payload);
+        if (action === 'setActiveFolder') setActiveFolderRef.current?.(payload);
+        if (action === 'forwardCompose') handleForwardComposeRef.current?.();
+        if (action === 'forwardSend') handleForwardSendRef.current?.();
+        if (action === 'approvalCompose') handleApprovalComposeRef.current?.();
+        if (action === 'approvalSend') handleApprovalSendRef.current?.();
+        if (action === 'reviewSend') handleReviewSendRef.current?.();
+        if (action === 'setReviewStage') setReviewStageRef.current?.(payload);
+        if (action === 'setReviewComposeMode') setReviewComposeModeRef.current?.(payload);
+      }
     };
 
     return () => { channel.close(); presenterChannelRef.current = null; };
-  }, [isPresenterWindow, demoMode]);
+  }, [isPresenterWindow, demoMode, isPresenterEmbed]);
 
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
@@ -557,6 +596,7 @@ export default function App() {
       next.add(id);
       return next;
     });
+    broadcastAction('selectEmail', id);
   };
 
   // Apply read state to visible emails
@@ -599,6 +639,23 @@ export default function App() {
     });
   };
 
+
+  // ── Presenter embed: broadcast actions to audience window ──
+  const broadcastAction = useCallback((action: string, payload?: any) => {
+    if (!isPresenterEmbed) return;
+    presenterChannelRef.current?.postMessage({ type: 'action', action, payload });
+  }, [isPresenterEmbed]);
+
+  // ── Wire up action refs for audience window replication ──
+  useEffect(() => { handleSelectEmailRef.current = handleSelectEmail; });
+  useEffect(() => { handleForwardComposeRef.current = () => setForwardStage('composing'); });
+  useEffect(() => { handleForwardSendRef.current = () => {}; }); // forward send is a no-op in current code
+  useEffect(() => { handleApprovalComposeRef.current = () => setApprovalStage('composing'); });
+  useEffect(() => { handleApprovalSendRef.current = handleApprovalSend; });
+  useEffect(() => { handleReviewSendRef.current = handleReviewSend; });
+  useEffect(() => { setReviewStageRef.current = setReviewStage; });
+  useEffect(() => { setReviewComposeModeRef.current = setReviewComposeMode; });
+  useEffect(() => { setActiveFolderRef.current = setActiveFolder; });
 
   // Determine the effective folderType for EmailDetail rendering
   const getEmailFolderType = (emailId: string | null): 'csr' | 'eis' => {
@@ -661,18 +718,24 @@ export default function App() {
       activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
       canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
       hintTarget: hintTargetRef.current,
+      demoMode: demoLength,
     };
-  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages]);
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, demoLength]);
 
   // ── Broadcast full state (incl. hintTarget) to presenter window ──
   useEffect(() => {
     hintTargetRef.current = hintTarget;
-    presenterChannelRef.current?.postMessage({
-      type: 'stateSync',
-      state: { activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
-        canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages, hintTarget },
-    });
-  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, hintTarget]);
+    const statePayload = {
+      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages, hintTarget,
+      demoMode: demoLength,
+    };
+    presenterChannelRef.current?.postMessage({ type: 'stateSync', state: statePayload });
+    // If running as presenter embed, also post state to parent frame for talk track
+    if (isPresenterEmbed && window.parent !== window) {
+      window.parent.postMessage({ type: 'presenterStateSync', state: statePayload }, '*');
+    }
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, hintTarget, isPresenterEmbed, demoLength]);
 
   // Presenter controls window — render only the controller UI
   if (isPresenterWindow) {
@@ -792,7 +855,7 @@ export default function App() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex gap-1.5 p-1.5 overflow-hidden">
+      <div className="flex-1 flex gap-1.5 p-1.5 overflow-hidden" data-presenter-root="">
         <AppRail
           demoMode={demoMode}
           demoLength={demoLength}
@@ -808,7 +871,7 @@ export default function App() {
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
-          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'auto-quoted' | 'review')}
+          onFolderSelect={(id) => { setActiveFolder(id as 'csr' | 'eis' | 'auto-quoted' | 'review'); broadcastAction('setActiveFolder', id); }}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           hintTarget={hintTarget}
@@ -829,11 +892,11 @@ export default function App() {
           scrollTrigger={scrollTrigger}
           newEmailIds={newEmailIds}
           hasNewMessages={hasNewMessages}
-          onRefresh={handleRefresh}
+          onRefresh={() => { handleRefresh(); broadcastAction('refresh'); }}
           isRefreshing={isRefreshing}
           emailBatchMap={emailBatchMap}
           currentBatch={nextBatchIndex}
-          onBack={handleBack}
+          onBack={() => { handleBack(); broadcastAction('back'); }}
           canGoBack={stateHistory.length > 0}
         />
         <EmailDetail
@@ -842,18 +905,18 @@ export default function App() {
           reviewResolved={reviewResolved}
           onReviewResolve={() => setReviewResolved(true)}
           reviewStage={reviewStage}
-          onReviewStageChange={setReviewStage}
+          onReviewStageChange={(v) => { setReviewStage(v); broadcastAction('setReviewStage', v); }}
           reviewComposeMode={reviewComposeMode}
-          onReviewComposeModeChange={setReviewComposeMode}
-          onReviewSend={handleReviewSend}
+          onReviewComposeModeChange={(v) => { setReviewComposeMode(v); broadcastAction('setReviewComposeMode', v); }}
+          onReviewSend={() => { handleReviewSend(); broadcastAction('reviewSend'); }}
           reviewForwardStage={reviewForwardStage}
           forwardStage={forwardStage}
-          onForwardCompose={() => setForwardStage('composing')}
+          onForwardCompose={() => { setForwardStage('composing'); broadcastAction('forwardCompose'); }}
           onForwardSend={() => {}}
           onForwardDiscard={() => setForwardStage('pending')}
           approvalStage={approvalStage}
-          onApprovalCompose={() => setApprovalStage('composing')}
-          onApprovalSend={handleApprovalSend}
+          onApprovalCompose={() => { setApprovalStage('composing'); broadcastAction('approvalCompose'); }}
+          onApprovalSend={() => { handleApprovalSend(); broadcastAction('approvalSend'); }}
           onApprovalDiscard={() => setApprovalStage('pending')}
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
@@ -869,6 +932,18 @@ export default function App() {
       {/* Walkthrough overlay */}
       {walkthroughOpen && (
         <WalkthroughOverlay onClose={() => setWalkthroughOpen(false)} onStepChange={setWalkthroughStepId} />
+      )}
+
+      {/* Mirror cursor from presenter embed */}
+      {isAudienceWindow && mirrorCursor.visible && (
+        <div
+          className="pointer-events-none fixed z-[9999]"
+          style={{ left: mirrorCursor.x, top: mirrorCursor.y }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 3L19 12L12 13L9 20L5 3Z" fill="white" stroke="black" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+        </div>
       )}
     </>
   );

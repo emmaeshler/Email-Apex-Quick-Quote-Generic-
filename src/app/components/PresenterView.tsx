@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Pause, Play, RotateCcw, Sun, Moon, Monitor, MousePointerClick } from 'lucide-react';
+import { X, Pause, Play, RotateCcw, Sun, Moon, MousePointerClick } from 'lucide-react';
 import { cn } from '@/app/components/ui/utils';
 
 interface PresenterState {
@@ -11,15 +11,25 @@ interface PresenterState {
   canGoBack: boolean;
   canGoForward: boolean;
   hintTarget: string | null;
+  demoMode: 'short' | 'full';
 }
 
 interface PresenterNote {
+  title: string | null;
   talkTrack: string[];
   nextStep: string;
 }
 
+interface PresenterNoteConfig {
+  title: string | null;
+  talkTrack: string[];
+  nextStep: string;
+  short?: { talkTrack?: string[]; nextStep?: string };
+  full?: { talkTrack?: string[]; nextStep?: string };
+}
+
 const ACTION_LABELS: Record<string, string> = {
-  'action:refresh': 'Click Send/Receive',
+  'action:refresh': 'Click Refresh',
   'action:forward': 'Click Forward',
   'action:send': 'Click Send',
   'action:reply': 'Click Reply',
@@ -54,173 +64,239 @@ function getActionLabel(hintTarget: string | null): string | null {
   return null;
 }
 
-const PRESENTER_NOTES: Record<string, PresenterNote> = {
+function renderBold(text: string): (string | JSX.Element)[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function resolveNote(config: PresenterNoteConfig, demoMode: 'short' | 'full'): PresenterNote {
+  const override = config[demoMode];
+  return {
+    title: config.title,
+    talkTrack: override?.talkTrack ?? config.talkTrack,
+    nextStep: override?.nextStep ?? config.nextStep,
+  };
+}
+
+const PRESENTER_NOTES: Record<string, PresenterNoteConfig> = {
   // ── Phase 0: Initial ──
   'initial': {
+    title: null,
     talkTrack: [
-      'Welcome to the Email Apex Quick Quote demo. What you\'re seeing is our CSR\'s Outlook inbox — the same interface they use every day.',
-      'Let\'s load today\'s incoming quote requests and see how the system handles them.',
+      '**Outlook inbox** — This is the CSR\'s actual email interface, the same one they work in every day. Nothing new to learn.',
+      '**AI engine** — Behind the scenes, the quoting engine is watching for incoming requests and processing them automatically.',
     ],
-    nextStep: 'New quote request emails will arrive in the CSR inbox.',
+    nextStep: 'Click Refresh to load the first batch of quote requests.',
+    short: {
+      talkTrack: [
+        '**Outlook inbox** — This is the CSR\'s actual email interface, the same one they work in every day.',
+        '**Short demo** — We\'ll cover three key scenarios: auto-quoting, multi-product quotes, and the human review handoff.',
+      ],
+    },
+    full: {
+      talkTrack: [
+        '**Outlook inbox** — This is the CSR\'s actual email interface, the same one they work in every day.',
+        '**Full demo** — We\'ll walk through auto-quoting, customer-specific pricing, rush orders, specialist review, manager approval, and daily reporting.',
+      ],
+    },
   },
 
   // ── Phase 1: Adhesive Auto-Quote ──
   'csr-ai-1': {
+    title: 'Jawinder Schahal — Adhesive & Activator Pricing',
     talkTrack: [
-      'This is a CC notification — the AI has already processed this quote automatically. The CSR never had to touch it.',
-      'Notice the quote details are right in the email. The customer gets a response in seconds, not hours.',
+      '**Auto-quoted** — Jawinder from RCSCA sent a standard adhesive request. The AI recognized the products, pulled pricing history, and generated the quote automatically.',
+      '**Zero touch** — This CC confirms the quote was already sent before the CSR even opened their inbox. No human intervention needed for routine reorders.',
     ],
-    nextStep: 'Load the next batch of emails to see more auto-quote examples.',
+    nextStep: 'Load next batch to see a multi-line request.',
   },
 
   // ── Phase 2: Tapered Reels Auto-Quote ──
   'csr-ai-2': {
+    title: 'Dave Morrison — Tapered Reel & Spool Packaging',
     talkTrack: [
-      'Here\'s another auto-processed quote, this time for multiple products. The ML model handles multi-line quotes just as easily.',
-      'Each line item gets individually priced based on historical data, margin targets, and customer-specific agreements.',
+      '**Multi-line** — Six different reel and spool configurations in one request. This used to take 20+ minutes manually — looking up each SKU, checking inventory, calculating per-unit pricing.',
+      '**Instant** — The AI handled all six line items simultaneously and sent the quote back in seconds.',
     ],
-    nextStep: 'Load more emails to continue the workflow.',
+    nextStep: 'Load more emails for nuanced scenarios.',
+    short: {
+      nextStep: 'Load the review workflow — not every request can be auto-quoted.',
+    },
+    full: {
+      nextStep: 'Load more emails for customer-specific pricing and rush orders.',
+    },
   },
 
-  // ── Phase 2.5: Customer-Specific Pricing ──
+  // ── Phase 2.5: Customer-Specific Pricing (full only) ──
   'csr-ai-4': {
+    title: 'Karen Walsh — Adhesive & Activator (Northeast Motor)',
     talkTrack: [
-      'This is where it gets interesting — same products, different customer. Northeast Motor gets their negotiated pricing.',
-      'The ML model factors in the customer relationship, volume history, and contract terms automatically.',
+      '**Same products, different price** — Karen from Northeast Motor ordered the same adhesive products as Jawinder, but Northeast Motor has negotiated distributor rates.',
+      '**Contract pricing** — The AI automatically applies their specific agreement. No one had to look up a pricing schedule or cross-reference a spreadsheet.',
     ],
-    nextStep: 'View the second customer-specific quote to compare pricing.',
+    nextStep: 'Open Gulf Coast\'s quote to compare pricing for the same products.',
   },
   'csr-ai-5': {
+    title: 'Mike Hernandez — Adhesive & Activator Reorder (Gulf Coast)',
     talkTrack: [
-      'Now look at Gulf Coast\'s pricing for the exact same products. Different customer, different price — all automated.',
-      'This is one of our biggest time-savers. Manually looking up customer-specific pricing used to take 10+ minutes per quote.',
+      '**Third customer, third price** — Same products again, but Gulf Coast Rebuilders gets their own account-specific pricing based on volume history and contract terms.',
+      '**Time saved** — Manually cross-referencing customer agreements used to take 10+ minutes per quote. The AI handles it instantly.',
     ],
-    nextStep: 'Load the next batch to see rush orders and quantity breaks.',
+    nextStep: 'Load next batch for rush orders and quantity breaks.',
   },
 
-  // ── Phase 3: Rush + Qty-Break ──
+  // ── Phase 3: Rush + Qty-Break (full only) ──
   'csr-rush-cc': {
+    title: 'Jawinder Schahal — Rush Adhesive & Activator Reorder',
     talkTrack: [
-      'This quote was flagged as a rush order. The system automatically applied expedited shipping and adjusted the pricing.',
-      'Rush orders are a common scenario — the AI handles the surcharge calculation and delivery timeline automatically.',
+      '**Rush detected** — Same adhesive order, but Jawinder flagged it urgent — she needs Friday delivery. The AI detected the rush language and auto-applied expedited shipping with the surcharge.',
+      '**No manual calc** — Rush orders used to require manual intervention for every surcharge calculation and timeline adjustment.',
     ],
-    nextStep: 'View the quantity-break quote to see tiered pricing.',
+    nextStep: 'Open the quantity-break quote to see tiered pricing.',
   },
   'csr-ai-3': {
+    title: 'Lisa Torres — Silicone Rescue Tape Q1 Restock',
     talkTrack: [
-      'Quantity breaks are another key scenario. This customer ordered enough to hit a price tier.',
-      'The ML model applies the correct discount tier and recalculates margins automatically.',
+      '**Volume discount** — Lisa ordered enough silicone rescue tape to trigger a quantity break tier. The AI recognized the threshold and applied the correct discount automatically.',
+      '**Error-prone** — Tiered pricing was one of the most common sources of manual quoting errors. The system eliminates that risk.',
     ],
-    nextStep: 'Load the review workflow — this is where human expertise comes in.',
+    nextStep: 'Load the review workflow — human expertise needed.',
   },
 
   // ── Phase 4: Review Workflow ──
   'review-open': {
+    title: 'Steve Landers — Magnet Wire Pricing',
     talkTrack: [
-      'Not every request can be auto-quoted. Steve Landers has a complex multi-item request that needs specialist review.',
-      'The CSR has flagged this for the pricing team. Let\'s walk through the handoff process.',
+      '**Not auto-quotable** — Steve from Stonite Coil needs specialty magnet wire pricing — HPL and SDPZ round tapers. The AI doesn\'t have enough detail to quote these confidently.',
+      '**Pre-drafted reply** — Instead of guessing, the agent drafted a clarification email back to Steve asking for the missing specs.',
     ],
-    nextStep: 'Forward this email to the Apex Quote inbox for specialist review.',
+    nextStep: 'Forward the pre-drafted clarification email to Steve.',
   },
   'review-forward': {
+    title: 'Steve Landers — Requesting Clarification',
     talkTrack: [
-      'The Forward action creates a handoff to the pricing specialist team.',
-      'Notice the compose window pre-fills with context from the original request — the specialist gets everything they need.',
+      '**AI-drafted** — The agent pre-wrote this clarification request to Steve. The compose window is pre-filled — the CSR just reviews and sends.',
+      '**No manual drafting** — The CSR didn\'t have to figure out what information was missing or write the follow-up from scratch.',
     ],
-    nextStep: 'Send the forwarded email to trigger the specialist review workflow.',
+    nextStep: 'Send the clarification request to Steve.',
   },
   'review-send': {
+    title: 'Steve Landers — Awaiting Clarification',
     talkTrack: [
-      'Sending this email kicks off the specialist review process.',
-      'The pricing team will receive the request with full context attached.',
+      '**Sent** — The clarification request is on its way to Steve. Once he replies with the missing specs, the AI can generate the final quote.',
     ],
-    nextStep: 'Steve\'s clarification and the final quote will arrive shortly.',
+    nextStep: 'Steve\'s clarification reply will arrive shortly.',
+  },
+  'review-sent-waiting': {
+    title: 'Steve Landers — Clarification Received',
+    talkTrack: [
+      '**Steve replied** — Steve sent back the additional specs the AI requested. The system now has everything it needs to generate the quote.',
+    ],
+    nextStep: 'Open Steve\'s Clarification email to see the result.',
   },
   'review-clarification': {
+    title: 'Steve Landers — Magnet Wire Clarification',
     talkTrack: [
-      'Steve responded with a clarification — the system processed it automatically and generated the final quote.',
-      'This shows how AI and human expertise work together: the specialist\'s review trained the model for next time.',
+      '**Final quote** — With Steve\'s clarification in hand, the AI generated the complete magnet wire quote automatically.',
+      '**Learning loop** — Each human-in-the-loop interaction like this trains the model, so similar magnet wire requests can be handled with less back-and-forth next time.',
     ],
-    nextStep: 'Load the approval workflow to see manager sign-off.',
+    nextStep: 'Load the approval workflow for manager sign-off.',
+    short: {
+      nextStep: 'End of short demo — routine quotes auto-handled, complex ones handed off cleanly.',
+    },
   },
 
   // ── Phase 5: Approval ──
   'approval-open': {
+    title: 'Gary Tillman — Motor Rewind Materials',
     talkTrack: [
-      'Some quotes need manager approval before they go out. This one was held because of a rush delivery surcharge.',
-      'The approval hold shows the full quote breakdown so the manager can make an informed decision.',
+      '**Approval hold** — Gary\'s motor rewind materials order totals over $11,000, which is above the auto-send threshold. The system held the quote and routed it to the manager.',
+      '**Full visibility** — The manager sees a complete breakdown: line items, margins, and the specific reason for the hold.',
     ],
-    nextStep: 'Reply to approve the quote and release it to the customer.',
+    nextStep: 'Reply to approve the quote.',
   },
   'approval-reply': {
+    title: 'Gary Tillman — Motor Rewind Materials',
     talkTrack: [
-      'The manager reviews the quote details and can approve with a simple reply.',
-      'Approval thresholds are configurable — only quotes above certain amounts or with special conditions need sign-off.',
+      '**Simple approval** — The manager reviews the details and approves with a simple reply. No separate system to log into.',
+      '**Configurable** — Approval thresholds are adjustable. Only quotes above certain dollar amounts or with special conditions need sign-off — everything else flows through automatically.',
     ],
-    nextStep: 'Send the approval to release the quote to the customer.',
+    nextStep: 'Send approval to release the quote.',
   },
   'approval-send': {
+    title: 'Gary Tillman — Motor Rewind Materials',
     talkTrack: [
-      'Once approved, the system automatically sends the quote to the customer and updates the CRM.',
-      'The entire flow — from request to approved quote — took minutes instead of hours.',
+      '**Released** — The approved quote is sent to Gary and the CRM is updated automatically.',
+      '**Speed** — The entire workflow — from Gary\'s email to approved quote — took minutes instead of hours.',
     ],
-    nextStep: 'Load the daily summary to see the full picture.',
+    nextStep: 'Load the daily summary for the big-picture impact.',
   },
 
   // ── Phase 6: Daily Summary ──
   'daily-summary': {
+    title: 'Daily Quoting Summary',
     talkTrack: [
-      'The daily summary gives managers a complete overview: how many quotes were processed, approval rates, and response times.',
-      'This is the "so what" — concrete metrics showing the impact of AI-assisted quoting on the team\'s throughput.',
+      '**The "so what"** — This daily summary gives managers a complete overview: quotes processed, auto-quoted vs. specialist-reviewed, average response times, and approval rates.',
+      '**Impact** — These are the concrete metrics showing how AI-assisted quoting improves team throughput and customer responsiveness.',
     ],
     nextStep: 'End of demo — open for questions.',
   },
 
   // ── Fallback ──
   'default': {
+    title: null,
     talkTrack: [
-      'This is the Email Apex Quick Quote system — an AI-powered quoting engine that lives inside the team\'s existing Outlook workflow.',
-      'Use the navigation controls to walk through the demo step by step.',
+      '**AI quoting** — An AI-powered quoting engine that lives inside the team\'s existing Outlook workflow.',
+      '**Navigate** — Follow the highlighted actions to walk through the demo step by step.',
     ],
     nextStep: 'Follow the highlighted action to continue.',
   },
 };
 
 function getPresenterNote(state: PresenterState): PresenterNote {
+  const mode = state.demoMode;
+
   // Phase 0: No emails loaded yet
-  if (!state.hintTarget && !state.selectedEmailId) return PRESENTER_NOTES.initial;
-  if (state.hintTarget === 'action:refresh' && !state.selectedEmailId) return PRESENTER_NOTES.initial;
+  if (!state.hintTarget && !state.selectedEmailId) return resolveNote(PRESENTER_NOTES.initial, mode);
+  if (state.hintTarget === 'action:refresh' && !state.selectedEmailId) return resolveNote(PRESENTER_NOTES.initial, mode);
 
   // Phase 6: Daily summary
-  if (state.selectedEmailId === 'csr-daily-summary') return PRESENTER_NOTES['daily-summary'];
+  if (state.selectedEmailId === 'csr-daily-summary') return resolveNote(PRESENTER_NOTES['daily-summary'], mode);
 
   // Phase 5: Approval workflow
-  if (state.approvalStage === 'composing') return PRESENTER_NOTES['approval-send'];
-  if (state.approvalStage === 'pending' && state.selectedEmailId === 'csr-approval-hold') return PRESENTER_NOTES['approval-reply'];
-  if (state.selectedEmailId === 'csr-approval-hold' || state.selectedEmailId === 'csr-approval-cc') return PRESENTER_NOTES['approval-open'];
+  if (state.approvalStage === 'composing') return resolveNote(PRESENTER_NOTES['approval-send'], mode);
+  if (state.approvalStage === 'pending' && state.selectedEmailId === 'csr-approval-hold') return resolveNote(PRESENTER_NOTES['approval-reply'], mode);
+  if (state.selectedEmailId === 'csr-approval-hold' || state.selectedEmailId === 'csr-approval-cc') return resolveNote(PRESENTER_NOTES['approval-open'], mode);
 
   // Phase 4: Review workflow
-  if (state.reviewStage === 'composing') return PRESENTER_NOTES['review-send'];
-  if (state.reviewStage === 'pending' && state.selectedEmailId === 'csr-review-1' && state.hintTarget === 'action:forward') return PRESENTER_NOTES['review-forward'];
-  if (state.selectedEmailId === 'csr-steve-clarification') return PRESENTER_NOTES['review-clarification'];
-  if (state.selectedEmailId === 'csr-review-1') return PRESENTER_NOTES['review-open'];
+  if (state.reviewStage === 'composing') return resolveNote(PRESENTER_NOTES['review-send'], mode);
+  if (state.reviewStage === 'pending' && state.selectedEmailId === 'csr-review-1' && state.hintTarget === 'action:forward') return resolveNote(PRESENTER_NOTES['review-forward'], mode);
+  if (state.selectedEmailId === 'csr-steve-clarification') return resolveNote(PRESENTER_NOTES['review-clarification'], mode);
+  // Review sent, hint pointing to Steve's clarification — show transition to open it
+  if (state.hintTarget === 'email:csr-steve-clarification') return resolveNote(PRESENTER_NOTES['review-sent-waiting'], mode);
+  if (state.selectedEmailId === 'csr-review-1') return resolveNote(PRESENTER_NOTES['review-open'], mode);
 
   // Specific emails
   if (state.selectedEmailId && PRESENTER_NOTES[state.selectedEmailId]) {
-    return PRESENTER_NOTES[state.selectedEmailId];
+    return resolveNote(PRESENTER_NOTES[state.selectedEmailId], mode);
   }
 
   // Phase 0 refresh variants
   if (state.hintTarget === 'action:refresh') {
-    if (state.approvalStage === 'sent') return PRESENTER_NOTES['approval-send'];
-    if (state.selectedEmailId === 'csr-ai-3' || state.selectedEmailId === 'csr-rush-cc') return PRESENTER_NOTES[state.selectedEmailId] || PRESENTER_NOTES.default;
-    if (state.selectedEmailId === 'csr-ai-1') return PRESENTER_NOTES['csr-ai-1'];
-    if (state.selectedEmailId === 'csr-ai-2') return PRESENTER_NOTES['csr-ai-2'];
-    if (state.selectedEmailId === 'csr-ai-5') return PRESENTER_NOTES['csr-ai-5'];
-    return PRESENTER_NOTES.initial;
+    if (state.approvalStage === 'sent') return resolveNote(PRESENTER_NOTES['approval-send'], mode);
+    if (state.selectedEmailId === 'csr-ai-3' || state.selectedEmailId === 'csr-rush-cc') return resolveNote(PRESENTER_NOTES[state.selectedEmailId] || PRESENTER_NOTES.default, mode);
+    if (state.selectedEmailId === 'csr-ai-1') return resolveNote(PRESENTER_NOTES['csr-ai-1'], mode);
+    if (state.selectedEmailId === 'csr-ai-2') return resolveNote(PRESENTER_NOTES['csr-ai-2'], mode);
+    if (state.selectedEmailId === 'csr-ai-5') return resolveNote(PRESENTER_NOTES['csr-ai-5'], mode);
+    return resolveNote(PRESENTER_NOTES.initial, mode);
   }
 
-  return PRESENTER_NOTES.default;
+  return resolveNote(PRESENTER_NOTES.default, mode);
 }
 
 function formatElapsed(seconds: number) {
@@ -237,8 +313,7 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
   const [timerRunning, setTimerRunning] = useState(true);
   const [clockTime, setClockTime] = useState('');
   const timerStartRef = useRef(Date.now());
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const [connected, setConnected] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const [state, setState] = useState<PresenterState>({
     activeFolder: 'csr',
@@ -249,49 +324,31 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
     canGoBack: false,
     canGoForward: true,
     hintTarget: null,
+    demoMode: 'short',
   });
 
   const note = getPresenterNote(state);
   const actionLabel = getActionLabel(state.hintTarget);
 
+  // Listen for state from the embedded app iframe via postMessage
   useEffect(() => {
-    const channel = new BroadcastChannel('presenter-channel');
-    channelRef.current = channel;
-
-    channel.onmessage = (event) => {
-      if (event.data.type === 'stateSync') {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'presenterStateSync') {
         setState(event.data.state);
-        setConnected(true);
       }
     };
-
-    channel.postMessage({ type: 'stateRequest' });
-
-    return () => {
-      channel.close();
-      channelRef.current = null;
-    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const handleNavigate = useCallback((direction: 'prev' | 'next') => {
-    channelRef.current?.postMessage({ type: 'navigate', direction });
-  }, []);
-
+  // Escape to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        handleNavigate('prev');
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-        e.preventDefault();
-        handleNavigate('next');
-      } else if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNavigate, onClose]);
+  }, [onClose]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -322,6 +379,9 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
     timerStartRef.current = Date.now();
     setElapsed(0);
   }, []);
+
+  // Build iframe URL for the embedded interactive app
+  const embedUrl = window.location.href.split('?')[0] + '?demo=presenter&presenterEmbed=true';
 
   return (
     <div className={cn('fixed inset-0 flex flex-col transition-colors', darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-100')}>
@@ -379,52 +439,18 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
 
       {/* Content area */}
       <div className="flex min-h-0 flex-1">
-        {/* Left: Controller display */}
-        <div className="flex flex-1 flex-col items-center justify-center p-8">
-          <div className={cn('flex flex-col items-center gap-5 rounded-2xl border p-12', darkMode ? 'border-white/10 bg-white/[0.03]' : 'border-black/10 bg-white')}>
-            <Monitor className={cn('size-16', darkMode ? 'text-white/20' : 'text-gray-300')} />
-            <div className="text-center">
-              <h2 className={cn('text-xl font-semibold mb-1', darkMode ? 'text-white/80' : 'text-gray-700')}>
-                Presenting on External Display
-              </h2>
-              <p className={cn('text-sm', darkMode ? 'text-white/40' : 'text-gray-400')}>
-                {connected ? 'Connected — controls are live' : 'Waiting for main window…'}
-              </p>
-            </div>
-
-            <div className={cn('rounded-lg px-4 py-2 text-sm font-medium', darkMode ? 'bg-white/10 text-white/60' : 'bg-gray-100 text-gray-600')}>
-              {state.activeFolder.toUpperCase()} Inbox
-              {state.selectedEmailId && ` — ${state.selectedEmailId}`}
-            </div>
-          </div>
-
-          {/* Navigation controls */}
-          <div className="mt-8 flex items-center gap-6">
-            <button
-              onClick={() => handleNavigate('prev')}
-              disabled={!state.canGoBack}
-              className={cn('flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30', darkMode ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-gray-200 text-gray-800 hover:bg-gray-300')}
-            >
-              <ChevronLeft className="size-4" />
-              Back
-            </button>
-            <button
-              onClick={() => handleNavigate('next')}
-              disabled={!state.canGoForward}
-              className={cn('flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30', 'bg-blue-600 text-white hover:bg-blue-500')}
-            >
-              Next
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-
-          <p className={cn('mt-4 text-xs', darkMode ? 'text-white/30' : 'text-gray-400')}>
-            Use arrow keys or spacebar to navigate
-          </p>
+        {/* Left: Interactive app embed */}
+        <div className="flex-1 min-w-0">
+          <iframe
+            ref={iframeRef}
+            src={embedUrl}
+            className="size-full border-0"
+            title="Demo preview"
+          />
         </div>
 
         {/* Right panel — action + talk track + next step */}
-        <div className={cn('flex w-[400px] shrink-0 flex-col border-l transition-colors', darkMode ? 'border-white/10 bg-[#111]' : 'border-black/10 bg-white')}>
+        <div className={cn('flex w-[380px] shrink-0 flex-col border-l transition-colors', darkMode ? 'border-white/10 bg-[#111]' : 'border-black/10 bg-white')}>
           {/* Action snack bar */}
           {actionLabel && (
             <div className={cn('shrink-0 border-b px-5 py-4', darkMode ? 'border-white/10' : 'border-black/10')}>
@@ -437,49 +463,35 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* Talk track */}
+          {/* Talk track + transition (flows together) */}
           <div className="flex-1 overflow-y-auto p-5">
-            <h3 className={cn('mb-4 text-[10px] font-bold uppercase tracking-[0.15em]', darkMode ? 'text-white/40' : 'text-gray-400')}>
-              Talk Track
-            </h3>
-            <div className="space-y-3">
-              {note.talkTrack.map((line, i) => (
-                <p key={i} className={cn('text-[15px] leading-relaxed', darkMode ? 'text-white/70' : 'text-gray-600')}>
-                  {line}
+            <div className="mb-4">
+              <h3 className={cn('text-[10px] font-bold uppercase tracking-[0.15em]', darkMode ? 'text-white/40' : 'text-gray-400')}>
+                Talk Track
+              </h3>
+              {note.title && (
+                <p className={cn('mt-1.5 text-[13px] font-semibold', darkMode ? 'text-white/80' : 'text-gray-700')}>
+                  {note.title}
                 </p>
-              ))}
+              )}
             </div>
-          </div>
+            <ul className="space-y-2">
+              {note.talkTrack.map((line, i) => (
+                <li key={i} className={cn('flex gap-2.5 text-[14px] leading-relaxed', darkMode ? 'text-white/70' : 'text-gray-600')}>
+                  <span className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', darkMode ? 'bg-white/30' : 'bg-gray-400')} />
+                  <span>{renderBold(line)}</span>
+                </li>
+              ))}
+            </ul>
 
-          {/* Next step */}
-          <div className={cn('shrink-0 border-t px-5 py-4', darkMode ? 'border-white/10' : 'border-black/10')}>
-            <h3 className={cn('mb-2 text-[10px] font-bold uppercase tracking-[0.15em]', darkMode ? 'text-white/40' : 'text-gray-400')}>
-              Next
-            </h3>
-            <p className={cn('text-[14px] leading-relaxed', darkMode ? 'text-white/50' : 'text-gray-500')}>
-              {note.nextStep}
-            </p>
-          </div>
-
-          {/* Bottom navigation */}
-          <div className={cn('border-t px-4 py-3', darkMode ? 'border-white/10' : 'border-black/10')}>
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => handleNavigate('prev')}
-                disabled={!state.canGoBack}
-                className={cn('flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30', darkMode ? 'text-white/60 hover:bg-white/10 hover:text-white' : 'text-gray-500 hover:bg-black/5 hover:text-gray-800')}
-              >
-                <ChevronLeft className="size-4" />
-                Back
-              </button>
-              <button
-                onClick={() => handleNavigate('next')}
-                disabled={!state.canGoForward}
-                className={cn('flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-30', darkMode ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-black/10 text-gray-800 hover:bg-black/15')}
-              >
-                Next
-                <ChevronRight className="size-4" />
-              </button>
+            {/* Transition — sits right below the last bullet */}
+            <div className={cn('mt-5 rounded-lg px-4 py-3', darkMode ? 'bg-white/5' : 'bg-gray-50')}>
+              <h3 className={cn('mb-1.5 text-[10px] font-bold uppercase tracking-[0.15em]', darkMode ? 'text-white/40' : 'text-gray-400')}>
+                Transition
+              </h3>
+              <p className={cn('text-[14px] italic leading-relaxed', darkMode ? 'text-white/50' : 'text-gray-500')}>
+                {note.nextStep}
+              </p>
             </div>
           </div>
         </div>

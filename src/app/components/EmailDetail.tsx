@@ -1067,7 +1067,7 @@ export function EmailDetail({ email, folderType, reviewResolved, onReviewResolve
           }}
         />
       )}
-      <div className="absolute inset-0 overflow-y-auto" ref={contentScrollRef}>
+      <div className="absolute inset-0 overflow-y-auto" ref={contentScrollRef} data-scroll-sync="email-detail">
         {/* ── Approval hold composing: Reply with "Approved" ── */}
         {isApprovalHold && approvalStage === 'composing' && (
           <ComposeBox

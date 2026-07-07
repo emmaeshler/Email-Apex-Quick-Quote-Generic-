@@ -163,46 +163,6 @@ export default function App() {
     return () => document.removeEventListener('click', go);
   }, [isPresenterWindow]);
 
-  // ── BroadcastChannel: let the presenter controls window drive navigation ──
-  const handleBackRef = useRef<(() => void) | null>(null);
-  const handleRefreshRef = useRef<(() => void) | null>(null);
-  useEffect(() => { handleBackRef.current = handleBack; }, [handleBack]);
-  useEffect(() => { handleRefreshRef.current = handleRefresh; }, [handleRefresh]);
-
-  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
-  const hintTargetRef = useRef<string | null>(null);
-  const presenterStateRef = useRef({
-    activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
-    canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
-    hintTarget: null as string | null,
-  });
-
-  useEffect(() => {
-    presenterStateRef.current = {
-      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
-      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
-      hintTarget: hintTargetRef.current,
-    };
-  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages]);
-
-  useEffect(() => {
-    if (isPresenterWindow || demoMode !== 'presenter') return;
-    const channel = new BroadcastChannel('presenter-channel');
-    presenterChannelRef.current = channel;
-
-    channel.onmessage = (event: MessageEvent) => {
-      if (event.data.type === 'navigate') {
-        if (event.data.direction === 'prev') handleBackRef.current?.();
-        else handleRefreshRef.current?.();
-      }
-      if (event.data.type === 'stateRequest') {
-        channel.postMessage({ type: 'stateSync', state: presenterStateRef.current });
-      }
-    };
-
-    return () => { channel.close(); presenterChannelRef.current = null; };
-  }, [isPresenterWindow, demoMode]);
-
   // Auto-open walkthrough in walkthrough mode
   useEffect(() => {
     if (demoMode === 'walkthrough') {
@@ -447,6 +407,38 @@ export default function App() {
     });
   }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot, isRefreshing]);
 
+  // ── BroadcastChannel: let the presenter controls window drive navigation ──
+  const handleBackRef = useRef<(() => void) | null>(null);
+  const handleRefreshRef = useRef<(() => void) | null>(null);
+  useEffect(() => { handleBackRef.current = handleBack; }, [handleBack]);
+  useEffect(() => { handleRefreshRef.current = handleRefresh; }, [handleRefresh]);
+
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+  const hintTargetRef = useRef<string | null>(null);
+  const presenterStateRef = useRef({
+    activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+    canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+    hintTarget: null as string | null,
+  });
+
+  useEffect(() => {
+    if (isPresenterWindow || demoMode !== 'presenter') return;
+    const channel = new BroadcastChannel('presenter-channel');
+    presenterChannelRef.current = channel;
+
+    channel.onmessage = (event: MessageEvent) => {
+      if (event.data.type === 'navigate') {
+        if (event.data.direction === 'prev') handleBackRef.current?.();
+        else handleRefreshRef.current?.();
+      }
+      if (event.data.type === 'stateRequest') {
+        channel.postMessage({ type: 'stateSync', state: presenterStateRef.current });
+      }
+    };
+
+    return () => { channel.close(); presenterChannelRef.current = null; };
+  }, [isPresenterWindow, demoMode]);
+
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
       const next = new Set(prev);
@@ -658,6 +650,14 @@ export default function App() {
       });
     }
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
+
+  useEffect(() => {
+    presenterStateRef.current = {
+      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+      hintTarget: hintTargetRef.current,
+    };
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages]);
 
   // ── Broadcast full state (incl. hintTarget) to presenter window ──
   useEffect(() => {

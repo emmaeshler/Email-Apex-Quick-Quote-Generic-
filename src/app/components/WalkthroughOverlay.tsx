@@ -5,9 +5,9 @@ interface WalkthroughStep {
   id: string;
   title: string;
   description: string;
-  targetSelector?: string; // CSS selector for the element to highlight
+  targetSelector?: string | string[];
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
-  action?: string; // Optional instruction for what to click
+  action?: string;
 }
 
 interface WalkthroughPath {
@@ -33,8 +33,8 @@ const WALKTHROUGH_PATHS: WalkthroughPath[] = [
         id: 'mail-icon',
         title: 'Mail Icon Menu',
         description: 'This Mail icon opens the menu shown above. You can switch between Short Demo, Full Demo, Walkthrough, and Presenter Mode here.',
-        targetSelector: '[title="Mail"]',
-        position: 'bottom',
+        targetSelector: ['[title="Mail"]', '[data-walkthrough-target="mail-menu"]'],
+        position: 'right',
       },
       {
         id: 'refresh-button',
@@ -219,7 +219,7 @@ interface WalkthroughOverlayProps {
 export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlayProps) {
   const [currentPath, setCurrentPath] = useState<WalkthroughPath | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [highlightedElement, setHighlightedElement] = useState<HTMLElement | null>(null);
+  const [highlightedElements, setHighlightedElements] = useState<HTMLElement[]>([]);
 
   const currentStep = currentPath?.steps[currentStepIndex];
 
@@ -229,17 +229,24 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
     return () => onStepChange?.(null);
   }, [currentStep, onStepChange]);
 
-  // Highlight target element
+  // Highlight target element(s)
   useEffect(() => {
     if (!currentStep?.targetSelector) {
-      setHighlightedElement(null);
+      setHighlightedElements([]);
       return;
     }
 
-    const element = document.querySelector(currentStep.targetSelector) as HTMLElement;
-    if (element) {
-      setHighlightedElement(element);
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const selectors = Array.isArray(currentStep.targetSelector)
+      ? currentStep.targetSelector
+      : [currentStep.targetSelector];
+
+    const elements = selectors
+      .map(sel => document.querySelector(sel) as HTMLElement)
+      .filter(Boolean);
+
+    if (elements.length > 0) {
+      setHighlightedElements(elements);
+      elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [currentStep]);
 
@@ -263,7 +270,7 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
   const handleReset = () => {
     setCurrentPath(null);
     setCurrentStepIndex(0);
-    setHighlightedElement(null);
+    setHighlightedElements([]);
   };
 
   // Keyboard navigation
@@ -290,53 +297,50 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
   if (!currentPath) {
     // Path selection screen
     return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="relative w-full max-w-3xl mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
+        <div className="relative w-full max-w-md mx-4 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-primary/10 to-primary/5">
-            <div className="flex items-center justify-between">
+          <div className="px-5 pt-5 pb-3">
+            <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">Interactive Walkthrough</h2>
-                <p className="text-sm text-muted-foreground mt-1">Choose your learning path</p>
+                <h2 className="text-base font-semibold text-foreground">Interactive Walkthrough</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Choose your learning path</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                 aria-label="Close walkthrough"
               >
-                <X size={24} />
+                <X size={18} />
               </button>
             </div>
           </div>
 
           {/* Path options */}
-          <div className="p-6 space-y-4">
+          <div className="px-5 pb-4 space-y-2">
             {WALKTHROUGH_PATHS.map((path) => (
               <button
                 key={path.id}
                 onClick={() => handleSelectPath(path)}
-                className="w-full text-left p-5 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                className="w-full text-left px-4 py-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                       {path.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground mt-1">{path.description}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-2">
-                      {path.steps.length} steps
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{path.description}</p>
                   </div>
-                  <ChevronRight className="text-muted-foreground group-hover:text-primary transition-colors" size={24} />
+                  <ChevronRight className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 ml-3" size={16} />
                 </div>
               </button>
             ))}
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 bg-muted/30 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center">
-              Use <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-[10px] font-mono">←</kbd> <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-[10px] font-mono">→</kbd> arrow keys to navigate • <kbd className="px-1.5 py-0.5 bg-muted border border-border rounded text-[10px] font-mono">ESC</kbd> to close
+          <div className="px-5 py-3 border-t border-border">
+            <p className="text-[10px] text-muted-foreground/70 text-center">
+              <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">←</kbd> <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">→</kbd> navigate · <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">ESC</kbd> close
             </p>
           </div>
         </div>
@@ -348,59 +352,80 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
   return (
     <>
       {/* Highlight overlay */}
-      {highlightedElement && (
-        <div className="fixed inset-0 z-[199] pointer-events-none">
-          <svg className="absolute inset-0 w-full h-full">
-            <defs>
-              <mask id="highlight-mask">
-                <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                <rect
-                  x={highlightedElement.getBoundingClientRect().x - 8}
-                  y={highlightedElement.getBoundingClientRect().y - 8}
-                  width={highlightedElement.getBoundingClientRect().width + 16}
-                  height={highlightedElement.getBoundingClientRect().height + 16}
-                  rx="8"
-                  fill="black"
-                />
-              </mask>
-            </defs>
-            <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#highlight-mask)" />
-          </svg>
+      {highlightedElements.length > 0 && (() => {
+        const rects = highlightedElements.map(el => el.getBoundingClientRect());
+        const combined = {
+          x: Math.min(...rects.map(r => r.x)) - 8,
+          y: Math.min(...rects.map(r => r.y)) - 8,
+          right: Math.max(...rects.map(r => r.right)) + 8,
+          bottom: Math.max(...rects.map(r => r.bottom)) + 8,
+        };
+        const combinedWidth = combined.right - combined.x;
+        const combinedHeight = combined.bottom - combined.y;
 
-          {/* Highlight border */}
-          <div
-            className="absolute border-4 border-primary rounded-lg animate-pulse"
-            style={{
-              left: highlightedElement.getBoundingClientRect().x - 8,
-              top: highlightedElement.getBoundingClientRect().y - 8,
-              width: highlightedElement.getBoundingClientRect().width + 16,
-              height: highlightedElement.getBoundingClientRect().height + 16,
-            }}
-          />
-        </div>
-      )}
+        return (
+          <div className="fixed inset-0 z-[199] pointer-events-none">
+            <svg className="absolute inset-0 w-full h-full">
+              <defs>
+                <mask id="highlight-mask">
+                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                  {rects.map((rect, i) => (
+                    <rect
+                      key={i}
+                      x={rect.x - 8}
+                      y={rect.y - 8}
+                      width={rect.width + 16}
+                      height={rect.height + 16}
+                      rx="8"
+                      fill="black"
+                    />
+                  ))}
+                </mask>
+              </defs>
+              <rect x="0" y="0" width="100%" height="100%" fill="rgba(0,0,0,0.5)" mask="url(#highlight-mask)" />
+            </svg>
+
+            {/* Highlight border around combined area */}
+            <div
+              className="absolute border-4 border-primary rounded-lg animate-pulse"
+              style={{
+                left: combined.x,
+                top: combined.y,
+                width: combinedWidth,
+                height: combinedHeight,
+              }}
+            />
+          </div>
+        );
+      })()}
 
       {/* Step card */}
       <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center p-4">
         <div
-          className={`pointer-events-auto w-full max-w-md bg-card border-2 border-primary rounded-2xl shadow-2xl ${
+          className={`pointer-events-auto w-full max-w-md bg-card border-2 border-primary rounded-2xl shadow-2xl overflow-hidden ${
             currentStep?.position === 'center' ? '' : 'absolute'
           }`}
           style={
-            currentStep?.position !== 'center' && highlightedElement
+            currentStep?.position !== 'center' && highlightedElements.length > 0
               ? (() => {
-                  const rect = highlightedElement.getBoundingClientRect();
+                  const rects = highlightedElements.map(el => el.getBoundingClientRect());
+                  const combined = {
+                    top: Math.min(...rects.map(r => r.top)),
+                    left: Math.min(...rects.map(r => r.left)),
+                    right: Math.max(...rects.map(r => r.right)),
+                    bottom: Math.max(...rects.map(r => r.bottom)),
+                  };
                   const gap = 16;
                   switch (currentStep?.position) {
                     case 'right':
-                      return { top: rect.top, left: rect.right + gap };
+                      return { top: combined.top, left: combined.right + gap };
                     case 'left':
-                      return { top: rect.top, right: window.innerWidth - rect.left + gap };
+                      return { top: combined.top, right: window.innerWidth - combined.left + gap };
                     case 'top':
-                      return { bottom: window.innerHeight - rect.top + gap, left: rect.left };
+                      return { bottom: window.innerHeight - combined.top + gap, left: combined.left };
                     case 'bottom':
                     default:
-                      return { top: rect.bottom + gap, left: rect.left };
+                      return { top: combined.bottom + gap, left: combined.left };
                   }
                 })()
               : {}

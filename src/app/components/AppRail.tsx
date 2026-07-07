@@ -151,9 +151,11 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
             {label === 'Mail' && showPicker && (
               <div
                 ref={pickerRef}
+                data-walkthrough-target="mail-menu"
                 className="absolute left-full ml-2 top-0 bg-card border border-border rounded-lg shadow-xl z-50 w-64 overflow-hidden"
               >
                 {/* Demo Mode Section */}
+                <div className="bg-muted/40">
                 <div className="px-3 py-2 border-b border-border">
                   <p className="text-size-xs font-w-semibold uppercase tracking-wider text-foreground/50">Demo Mode</p>
                 </div>
@@ -206,13 +208,14 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                 </div>
 
                 {/* Edit or Add Demo Sequence */}
-                <div className="border-b border-border/50">
+                <div className="border-b border-border">
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenBuilder(); setShowPicker(false); }}
                     className="w-full text-left px-3 py-2.5 text-size-sm text-primary hover:bg-primary/5 transition-colors"
                   >
                     Edit or Add Demo Sequence
                   </button>
+                </div>
                 </div>
 
                 {/* Custom sequences */}
@@ -259,7 +262,10 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                 )}
 
                 {/* Walkthrough & Presenter items */}
-                <div className="border-t border-border/50">
+                <div className="px-3 pt-2.5 pb-1">
+                  <p className="text-size-xs font-w-semibold uppercase tracking-wider text-foreground/50">Delivery Tools</p>
+                </div>
+                <div>
                   <button
                     onClick={(e) => { e.stopPropagation(); onDemoModeChange('walkthrough'); setShowPicker(false); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm transition-colors ${

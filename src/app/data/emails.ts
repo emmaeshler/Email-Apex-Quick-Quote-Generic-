@@ -191,7 +191,7 @@ const rcscaQuote: QuoteTable = {
   ],
   total: 86.05,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Pricing reflects your current account pricing, valid as of January 2026.',
@@ -207,7 +207,7 @@ const stoniteFinalQuote: QuoteTable = {
   ],
   total: 2091.25,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Pricing reflects your current account pricing, valid as of January 2026.',
@@ -222,7 +222,7 @@ const motionQuote: QuoteTable = {
   ],
   total: 563.00,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Pricing per your current agreement, valid as of January 2026.',
@@ -242,7 +242,7 @@ const taperedReelQuote: QuoteTable = {
   ],
   total: 955.40,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Quoted at current standard pricing, valid through Mar 14, 2026.',
@@ -327,7 +327,7 @@ const rushRcscaQuote: QuoteTable = {
   shipping: {
     method: 'Overnight Shipping',
     cost: 85.00,
-    standardMethod: 'Shipping',
+    standardMethod: 'Standard Shipping',
     standardCost: 45.00,
   },
   pricingNote: 'Your account pricing applies. Rush surcharge added per expedite policy.',
@@ -686,7 +686,7 @@ const northeastMotorQuote: QuoteTable = {
   ],
   total: 250.90,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Quoted at current standard pricing, valid as of January 2026.',
@@ -702,7 +702,7 @@ const gulfCoastQuote: QuoteTable = {
   ],
   total: 193.90,
   shipping: {
-    method: 'Shipping',
+    method: 'Standard Shipping',
     cost: 45.00,
   },
   pricingNote: 'Pricing reflects your current account pricing, valid as of December 2025.',

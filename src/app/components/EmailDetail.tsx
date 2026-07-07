@@ -111,7 +111,7 @@ function QuoteTableView({ table }: { table: QuoteTable }) {
                 </tr>
                 <tr>
                   <td colSpan={colCount - 1} className="py-2 pr-4 text-size-sm text-foreground/70">
-                    <span>Shipping</span>
+                    <span>{table.shipping.method}</span>
                   </td>
                   <td className="py-2 pl-4 text-right text-size-sm text-foreground/70">{fmt(table.shipping.cost)}</td>
                 </tr>

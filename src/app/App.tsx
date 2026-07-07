@@ -416,8 +416,13 @@ export default function App() {
   const presenterChannelRef = useRef<BroadcastChannel | null>(null);
   const hintTargetRef = useRef<string | null>(null);
   const presenterStateRef = useRef({
-    activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
-    canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+    activeFolder,
+    selectedEmailId: null as string | null,
+    reviewStage,
+    forwardStage,
+    approvalStage,
+    canGoBack: false,
+    canGoForward: false,
     hintTarget: null as string | null,
   });
 

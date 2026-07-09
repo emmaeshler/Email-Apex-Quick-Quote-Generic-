@@ -42,7 +42,7 @@
   /* The default color for text or elements that appear on top of destructive colored elements. */
   --destructive-foreground: rgba(255, 255, 255, 1.00);
   /* The default border color for elements such as inputs, buttons, and other containers. */
-  --border: rgba(0, 0, 0, 0.23);
+  --border: rgba(0, 0, 0, 0.10);
   /* The default background color for input fields once the text has been filled. Should be either transparent or match the input-background. */
   --input: rgba(0, 0, 0, 0);
   /* The default background color for input fields, text areas, and other input elements. */
@@ -66,13 +66,13 @@
   /* The color for another chart element, such as a bar or line in a chart. */
   --chart-5: rgba(255, 88, 93, 1.00);
   /* The default border radius for elements such as buttons, tooltip, and other containers. */
-  --radius: 4px;
+  --radius: 8px;
   /* Border radius for buttons. */
-  --radius-button: 4px;
+  --radius-button: 20px;
   /* Border radius for cards. */
-  --radius-card: 4px;
+  --radius-card: 12px;
   /* Border radius for modals. */
-  --radius-modal: 6px;
+  --radius-modal: 16px;
   /* The background color for sidebars, navigation menus, and other persistent elements. */
   --sidebar: rgba(255, 255, 255, 1.00);
   /* The default color for text or elements that appear on top of sidebars, navigation menus, and other persistent elements. */

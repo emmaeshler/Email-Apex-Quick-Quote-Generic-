@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
 import { AppRail } from '@/app/components/AppRail';
 import { SequenceBuilder } from '@/app/components/SequenceBuilder';
+import { PresenterView } from '@/app/components/PresenterView';
+import { WalkthroughOverlay } from '@/app/components/WalkthroughOverlay';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
 import { loadCustomSequences, addCustomSequence, deleteCustomSequence, type CustomSequence } from './data/customSequences';
 import { inboxFolders } from './data/emails';
@@ -13,6 +15,12 @@ import { getPresetBatches, savePresetOverride, isPresetCustomized, resetPresetOv
 import { computeVisibleEmails } from './data/computeVisibleEmails';
 import { EMAIL_REGISTRY } from './data/emailRegistry';
 import { executeTriggers } from './lib/workflowEngine';
+import { usePresenterEmitSync, usePresenterReceiveSync } from './lib/presenterSync';
+import {
+  Search, SquarePen, Trash2, Archive, FolderInput, Flag, MailOpen,
+  MessageSquare, RefreshCw, Ban, RotateCcw, MoreHorizontal, Sparkles, ChevronDown,
+  Share2, Bell, Menu, LayoutGrid, Maximize2,
+} from 'lucide-react';
 
 // Re-export types so existing imports from './App' still work
 export type { Email, EmailThread, QuoteTable, QuoteLineItem } from './data/emails';
@@ -35,21 +43,25 @@ interface StateSnapshot {
   readIds: Set<string>;
 }
 
-export type DemoMode = 'short' | 'full' | (string & {});
+export type DemoMode = 'short' | 'full' | 'walkthrough' | 'presenter' | (string & {});
 
 function getInitialDemoMode(): DemoMode {
   const params = new URLSearchParams(window.location.search);
   const urlMode = params.get('demo');
-  if (urlMode === 'short' || urlMode === 'full') return urlMode;
+  if (urlMode === 'short' || urlMode === 'full' || urlMode === 'walkthrough' || urlMode === 'presenter') return urlMode;
 
   const saved = localStorage.getItem('demoMode');
-  if (saved === 'short' || saved === 'full' || (saved && saved.startsWith('custom:'))) return saved;
+  if (saved === 'short' || saved === 'full' || saved === 'presenter' || (saved && saved.startsWith('custom:'))) return saved;
 
-  return 'full';
+  return 'short';
 }
 
 export default function App() {
   const [demoMode, setDemoMode] = useState<DemoMode>(getInitialDemoMode);
+  const [demoLength, setDemoLength] = useState<'short' | 'full'>(() => {
+    const initial = getInitialDemoMode();
+    return initial === 'full' ? 'full' : 'short';
+  });
   const [activeFolder, setActiveFolder] = useState<'csr' | 'eis' | 'auto-quoted' | 'review'>('csr');
   const [selectedCsrEmailId, setSelectedCsrEmailId] = useState<string | null>(null);
   const [selectedEisEmailId, setSelectedEisEmailId] = useState<string | null>(null);
@@ -107,17 +119,68 @@ export default function App() {
   // ── Scroll-to-top trigger — increments whenever new emails appear at the top ──
   const [scrollTrigger, setScrollTrigger] = useState(0);
 
+  // ── Presenter window detection (true in the pop-out controls window) ──
+  const [isPresenterWindow] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('presenterView') === 'true';
+  });
+
+  // ── Presenter embed detection (true when loaded inside the presenter view iframe) ──
+  const [isPresenterEmbed] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('presenterEmbed') === 'true';
+  });
+
+  // ── Presenter mirror: emit from embed, receive on audience window ──
+  const isAudienceWindow = demoMode === 'presenter' && !isPresenterWindow && !isPresenterEmbed;
+  usePresenterEmitSync(isPresenterEmbed);
+  const mirrorCursor = usePresenterReceiveSync(isAudienceWindow);
+
+  // ── Walkthrough state ──
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+  const [walkthroughStepId, setWalkthroughStepId] = useState<string | null>(null);
+
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === '`' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       setDemoVisible((v) => !v);
     }
-  }, []);
+    if (e.key === 'p' && !e.ctrlKey && !e.metaKey && !e.altKey && demoMode === 'presenter' && !isPresenterWindow && !isPresenterEmbed) {
+      e.preventDefault();
+      window.open(
+        window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
+        'PresenterView',
+        'width=1280,height=720'
+      );
+    }
+  }, [demoMode, isPresenterWindow]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [handleKey]);
+
+  // Auto-enter fullscreen on the main display (skip for presenter controls window and embed)
+  useEffect(() => {
+    if (isPresenterWindow || isPresenterEmbed) return;
+    const go = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+      document.removeEventListener('click', go);
+    };
+    document.documentElement.requestFullscreen().catch(() => {
+      document.addEventListener('click', go);
+    });
+    return () => document.removeEventListener('click', go);
+  }, [isPresenterWindow]);
+
+  // Auto-open walkthrough in walkthrough mode
+  useEffect(() => {
+    if (demoMode === 'walkthrough') {
+      setWalkthroughOpen(true);
+    }
+  }, [demoMode]);
 
   // Sync reviewStage when reviewResolved changes
   useEffect(() => {
@@ -126,7 +189,7 @@ export default function App() {
 
   // ── Mark review as resolved when user views final quote ──
   useEffect(() => {
-    if (selectedCsrEmailId === 'csr-stonite-final-cc' && reviewForwardStage === 'quoted' && !reviewResolved) {
+    if ((selectedCsrEmailId === 'csr-stonite-final-cc' || selectedCsrEmailId === 'csr-steve-clarification') && reviewForwardStage === 'quoted' && !reviewResolved) {
       setReviewResolved(true);
     }
   }, [selectedCsrEmailId, reviewForwardStage, reviewResolved]);
@@ -168,6 +231,19 @@ export default function App() {
   // ── Switch demo mode — full reset ──
   const handleDemoModeChange = useCallback((mode: DemoMode) => {
     setDemoMode(mode);
+
+    if (mode === 'short' || mode === 'full') {
+      setDemoLength(mode);
+    }
+
+    if (mode === 'presenter' && !isPresenterWindow && !isPresenterEmbed) {
+      window.open(
+        window.location.href.split('?')[0] + '?demo=presenter&presenterView=true',
+        'PresenterView',
+        'width=1280,height=720'
+      );
+    }
+
     setActiveFolder('csr');
     setSelectedCsrEmailId(null);
     setSelectedEisEmailId(null);
@@ -196,7 +272,7 @@ export default function App() {
     }
     window.history.replaceState({}, '', url.toString());
     localStorage.setItem('demoMode', mode);
-  }, []);
+  }, [isPresenterWindow]);
 
   const handleOpenBuilder = useCallback((sequenceId?: string) => {
     setEditingSequenceId(sequenceId || null);
@@ -289,6 +365,8 @@ export default function App() {
   // ── Refresh queue — driven by DEMO_PRESETS or custom sequences ──
   const refreshBatches = useMemo(() => {
     if (demoMode === 'short' || demoMode === 'full') return getPresetBatches(demoMode);
+    if (demoMode === 'walkthrough') return getPresetBatches('full');
+    if (demoMode === 'presenter') return getPresetBatches(demoLength);
     if (demoMode.startsWith('custom:')) {
       const seqId = demoMode.slice(7);
       const seq = customSequences.find(s => s.id === seqId);
@@ -297,7 +375,7 @@ export default function App() {
     }
     return getPresetBatches('full');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [demoMode, customSequences, presetVersion]);
+  }, [demoMode, demoLength, customSequences, presetVersion]);
 
   // ── Handle refresh — reveal next batch of emails ──
   const handleRefresh = useCallback(() => {
@@ -340,6 +418,70 @@ export default function App() {
       }, delay);
     });
   }, [nextBatchIndex, refreshBatches, markEmailArrived, captureSnapshot, isRefreshing]);
+
+  // ── BroadcastChannel: let the presenter controls window drive navigation ──
+  const handleBackRef = useRef<(() => void) | null>(null);
+  const handleRefreshRef = useRef<(() => void) | null>(null);
+  useEffect(() => { handleBackRef.current = handleBack; }, [handleBack]);
+  useEffect(() => { handleRefreshRef.current = handleRefresh; }, [handleRefresh]);
+
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+  const hintTargetRef = useRef<string | null>(null);
+  const presenterStateRef = useRef({
+    activeFolder,
+    selectedEmailId: null as string | null,
+    reviewStage,
+    forwardStage,
+    approvalStage,
+    canGoBack: false,
+    canGoForward: false,
+    hintTarget: null as string | null,
+    demoMode: demoLength as 'short' | 'full',
+  });
+
+  // Refs for action handlers the audience window uses to replicate embed interactions
+  const handleSelectEmailRef = useRef<((id: string) => void) | null>(null);
+  const handleForwardComposeRef = useRef<(() => void) | null>(null);
+  const handleForwardSendRef = useRef<(() => void) | null>(null);
+  const handleApprovalComposeRef = useRef<(() => void) | null>(null);
+  const handleApprovalSendRef = useRef<(() => void) | null>(null);
+  const handleReviewSendRef = useRef<(() => void) | null>(null);
+  const setReviewStageRef = useRef<((v: any) => void) | null>(null);
+  const setReviewComposeModeRef = useRef<((v: any) => void) | null>(null);
+  const setActiveFolderRef = useRef<((v: any) => void) | null>(null);
+
+  useEffect(() => {
+    if (isPresenterWindow || demoMode !== 'presenter') return;
+    const channel = new BroadcastChannel('presenter-channel');
+    presenterChannelRef.current = channel;
+
+    channel.onmessage = (event: MessageEvent) => {
+      if (event.data.type === 'navigate') {
+        if (event.data.direction === 'prev') handleBackRef.current?.();
+        else handleRefreshRef.current?.();
+      }
+      if (event.data.type === 'stateRequest') {
+        channel.postMessage({ type: 'stateSync', state: presenterStateRef.current });
+      }
+      // Replicate specific actions from the presenter embed iframe
+      if (event.data.type === 'action' && !isPresenterEmbed) {
+        const { action, payload } = event.data;
+        if (action === 'refresh') handleRefreshRef.current?.();
+        if (action === 'back') handleBackRef.current?.();
+        if (action === 'selectEmail') handleSelectEmailRef.current?.(payload);
+        if (action === 'setActiveFolder') setActiveFolderRef.current?.(payload);
+        if (action === 'forwardCompose') handleForwardComposeRef.current?.();
+        if (action === 'forwardSend') handleForwardSendRef.current?.();
+        if (action === 'approvalCompose') handleApprovalComposeRef.current?.();
+        if (action === 'approvalSend') handleApprovalSendRef.current?.();
+        if (action === 'reviewSend') handleReviewSendRef.current?.();
+        if (action === 'setReviewStage') setReviewStageRef.current?.(payload);
+        if (action === 'setReviewComposeMode') setReviewComposeModeRef.current?.(payload);
+      }
+    };
+
+    return () => { channel.close(); presenterChannelRef.current = null; };
+  }, [isPresenterWindow, demoMode, isPresenterEmbed]);
 
   const hideEmail = (id: string) => {
     setHiddenIds((prev) => {
@@ -454,6 +596,7 @@ export default function App() {
       next.add(id);
       return next;
     });
+    broadcastAction('selectEmail', id);
   };
 
   // Apply read state to visible emails
@@ -496,6 +639,23 @@ export default function App() {
     });
   };
 
+
+  // ── Presenter embed: broadcast actions to audience window ──
+  const broadcastAction = useCallback((action: string, payload?: any) => {
+    if (!isPresenterEmbed) return;
+    presenterChannelRef.current?.postMessage({ type: 'action', action, payload });
+  }, [isPresenterEmbed]);
+
+  // ── Wire up action refs for audience window replication ──
+  useEffect(() => { handleSelectEmailRef.current = handleSelectEmail; });
+  useEffect(() => { handleForwardComposeRef.current = () => setForwardStage('composing'); });
+  useEffect(() => { handleForwardSendRef.current = () => {}; }); // forward send is a no-op in current code
+  useEffect(() => { handleApprovalComposeRef.current = () => setApprovalStage('composing'); });
+  useEffect(() => { handleApprovalSendRef.current = handleApprovalSend; });
+  useEffect(() => { handleReviewSendRef.current = handleReviewSend; });
+  useEffect(() => { setReviewStageRef.current = setReviewStage; });
+  useEffect(() => { setReviewComposeModeRef.current = setReviewComposeMode; });
+  useEffect(() => { setActiveFolderRef.current = setActiveFolder; });
 
   // Determine the effective folderType for EmailDetail rendering
   const getEmailFolderType = (emailId: string | null): 'csr' | 'eis' => {
@@ -553,6 +713,35 @@ export default function App() {
     }
   }, [hintTarget, selectedEmailId, reviewResolved, reviewForwardStage, forwardStage, arrivedEmails, hasNewMessages, isRefreshing]);
 
+  useEffect(() => {
+    presenterStateRef.current = {
+      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages,
+      hintTarget: hintTargetRef.current,
+      demoMode: demoLength,
+    };
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, demoLength]);
+
+  // ── Broadcast full state (incl. hintTarget) to presenter window ──
+  useEffect(() => {
+    hintTargetRef.current = hintTarget;
+    const statePayload = {
+      activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage,
+      canGoBack: stateHistory.length > 0, canGoForward: hasNewMessages, hintTarget,
+      demoMode: demoLength,
+    };
+    presenterChannelRef.current?.postMessage({ type: 'stateSync', state: statePayload });
+    // If running as presenter embed, also post state to parent frame for talk track
+    if (isPresenterEmbed && window.parent !== window) {
+      window.parent.postMessage({ type: 'presenterStateSync', state: statePayload }, '*');
+    }
+  }, [activeFolder, selectedEmailId, reviewStage, forwardStage, approvalStage, stateHistory.length, hasNewMessages, hintTarget, isPresenterEmbed, demoLength]);
+
+  // Presenter controls window — render only the controller UI
+  if (isPresenterWindow) {
+    return <PresenterView onClose={() => window.close()} />;
+  }
+
   if (currentView === 'sequence-builder') {
     let editingSeq: CustomSequence | null = null;
     if (editingPresetId) {
@@ -576,12 +765,113 @@ export default function App() {
     );
   }
 
-  return (
-    <div className="size-full flex gap-2 p-2 bg-background overflow-hidden">
+  // Main content component that can be rendered in both normal and presenter view
+  const mainContent = (
+    <div className="size-full flex flex-col bg-background overflow-hidden">
+      {/* Outlook-style grey title bar */}
+      <div className="flex items-center px-3 py-1" style={{ backgroundColor: '#e5e5e5' }}>
+        <div className="flex items-center gap-1.5 mr-3 flex-shrink-0">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ff5f57' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ffbd2e' }} />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#28c840' }} />
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full w-full max-w-lg cursor-text" style={{ backgroundColor: 'rgba(0,0,0,0.06)' }}>
+            <Search size={12} className="text-neutral-500" />
+            <span className="text-size-xs text-neutral-500">Search</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 ml-3 flex-shrink-0">
+          <Share2 size={14} className="text-neutral-500 cursor-pointer" />
+          <Maximize2
+            size={12}
+            className="text-neutral-500 cursor-pointer hover:text-neutral-700 transition-colors"
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                document.documentElement.requestFullscreen().catch(() => {});
+              }
+            }}
+          />
+          <div className="relative cursor-pointer">
+            <Bell size={14} className="text-neutral-500" />
+            <span className="absolute -top-1.5 -right-2 min-w-3.5 h-3.5 rounded-full flex items-center justify-center font-w-medium" style={{ backgroundColor: '#3b82f6', color: 'white', fontSize: '9px' }}>2</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Outlook-style toolbar ribbon */}
+      <div className="flex items-center gap-0.5 px-2 py-1 bg-background border-b border-border">
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors mr-0.5">
+          <Menu size={15} />
+        </button>
+        <button className="flex items-center gap-1 px-4 py-1 border-2 border-primary text-primary bg-card rounded-full text-size-xs hover:bg-primary/5 transition-colors shadow-sm">
+          <SquarePen size={13} /> New Mail
+        </button>
+        <div className="w-px h-4 bg-border mx-1.5" />
+        <button
+          onClick={() => selectedEmailId && handleDeleteEmail(selectedEmailId)}
+          className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors"
+        >
+          <Trash2 size={13} /> Delete
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Archive size={13} /> Archive
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <FolderInput size={13} /> Move <ChevronDown size={9} className="text-foreground/40" />
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Flag size={13} /> Flag <ChevronDown size={9} className="text-foreground/40" />
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <MailOpen size={13} /> Mark Unread
+        </button>
+        <div className="w-px h-4 bg-border mx-1.5" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <MessageSquare size={13} /> Chat
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <RefreshCw size={13} /> Sync
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Ban size={13} /> Block
+        </button>
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <RotateCcw size={13} /> Recall
+        </button>
+        <div className="w-px h-4 bg-border mx-1.5" />
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
+          <MoreHorizontal size={13} />
+        </button>
+        <div className="flex-1" />
+        <button className="flex items-center gap-1 px-2 py-1 text-foreground/70 hover:bg-muted rounded-[var(--radius)] text-size-xs transition-colors">
+          <Sparkles size={13} /> Copilot <ChevronDown size={9} className="text-foreground/40" />
+        </button>
+        <button className="p-1.5 text-foreground/70 hover:bg-muted rounded-[var(--radius)] transition-colors">
+          <LayoutGrid size={13} />
+        </button>
+      </div>
+
+      {/* Main content area */}
+      <div className="flex-1 flex gap-1.5 p-1.5 overflow-hidden" data-presenter-root="">
+        <AppRail
+          demoMode={demoMode}
+          demoLength={demoLength}
+          onDemoModeChange={handleDemoModeChange}
+          customSequences={customSequences}
+          onOpenBuilder={() => handleOpenBuilder()}
+          onEditSequence={(id) => handleOpenBuilder(id)}
+          onDeleteSequence={handleDeleteSequence}
+          onEditPreset={handleEditPreset}
+          onResetPreset={handleResetPreset}
+          forceShowPicker={walkthroughStepId === 'mail-icon' ? true : undefined}
+        />
         <InboxSidebar
           folders={dynamicFolders}
           activeFolderId={activeFolder}
-          onFolderSelect={(id) => setActiveFolder(id as 'csr' | 'eis' | 'auto-quoted' | 'review')}
+          onFolderSelect={(id) => { setActiveFolder(id as 'csr' | 'eis' | 'auto-quoted' | 'review'); broadcastAction('setActiveFolder', id); }}
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           hintTarget={hintTarget}
@@ -602,11 +892,11 @@ export default function App() {
           scrollTrigger={scrollTrigger}
           newEmailIds={newEmailIds}
           hasNewMessages={hasNewMessages}
-          onRefresh={handleRefresh}
+          onRefresh={() => { handleRefresh(); broadcastAction('refresh'); }}
           isRefreshing={isRefreshing}
           emailBatchMap={emailBatchMap}
           currentBatch={nextBatchIndex}
-          onBack={handleBack}
+          onBack={() => { handleBack(); broadcastAction('back'); }}
           canGoBack={stateHistory.length > 0}
         />
         <EmailDetail
@@ -615,32 +905,46 @@ export default function App() {
           reviewResolved={reviewResolved}
           onReviewResolve={() => setReviewResolved(true)}
           reviewStage={reviewStage}
-          onReviewStageChange={setReviewStage}
+          onReviewStageChange={(v) => { setReviewStage(v); broadcastAction('setReviewStage', v); }}
           reviewComposeMode={reviewComposeMode}
-          onReviewComposeModeChange={setReviewComposeMode}
-          onReviewSend={handleReviewSend}
+          onReviewComposeModeChange={(v) => { setReviewComposeMode(v); broadcastAction('setReviewComposeMode', v); }}
+          onReviewSend={() => { handleReviewSend(); broadcastAction('reviewSend'); }}
           reviewForwardStage={reviewForwardStage}
           forwardStage={forwardStage}
-          onForwardCompose={() => setForwardStage('composing')}
+          onForwardCompose={() => { setForwardStage('composing'); broadcastAction('forwardCompose'); }}
           onForwardSend={() => {}}
           onForwardDiscard={() => setForwardStage('pending')}
           approvalStage={approvalStage}
-          onApprovalCompose={() => setApprovalStage('composing')}
-          onApprovalSend={handleApprovalSend}
+          onApprovalCompose={() => { setApprovalStage('composing'); broadcastAction('approvalCompose'); }}
+          onApprovalSend={() => { handleApprovalSend(); broadcastAction('approvalSend'); }}
           onApprovalDiscard={() => setApprovalStage('pending')}
           onDeleteEmail={handleDeleteEmail}
           hintTarget={hintTarget}
         />
-        <AppRail
-          demoMode={demoMode}
-          onDemoModeChange={handleDemoModeChange}
-          customSequences={customSequences}
-          onOpenBuilder={() => handleOpenBuilder()}
-          onEditSequence={(id) => handleOpenBuilder(id)}
-          onDeleteSequence={handleDeleteSequence}
-          onEditPreset={handleEditPreset}
-          onResetPreset={handleResetPreset}
-        />
+      </div>
     </div>
+  );
+
+  return (
+    <>
+      {mainContent}
+
+      {/* Walkthrough overlay */}
+      {walkthroughOpen && (
+        <WalkthroughOverlay onClose={() => setWalkthroughOpen(false)} onStepChange={setWalkthroughStepId} />
+      )}
+
+      {/* Mirror cursor from presenter embed */}
+      {isAudienceWindow && mirrorCursor.visible && (
+        <div
+          className="pointer-events-none fixed z-[9999]"
+          style={{ left: mirrorCursor.x, top: mirrorCursor.y }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 3L19 12L12 13L9 20L5 3Z" fill="white" stroke="black" strokeWidth="1.5" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+    </>
   );
 }

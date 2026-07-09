@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/((?!api/|@vite|@react-refresh|src/|node_modules/|.*\\.(?:svg|png|jpg|jpeg|gif|ico|webp|woff2?|ttf|css|js)$).*)", "destination": "/" }
+  ]
+}

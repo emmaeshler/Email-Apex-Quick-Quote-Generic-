@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Plus, Mail, Calendar, Users, Star, CheckSquare,
   GitBranch, Cloud, MoreHorizontal, Pencil, Trash2, AlertTriangle, RotateCcw,
-  BookOpen, Presentation,
+  BookOpen, Presentation, MessageSquarePlus, AlertCircle, X, Loader2, CheckCircle2,
 } from 'lucide-react';
 import type { DemoMode } from '../App';
 import type { CustomSequence } from '../data/customSequences';
@@ -96,9 +96,205 @@ function DeleteConfirmModal({ sequenceName, onConfirm, onCancel }: {
   );
 }
 
+type FeedbackType = 'demo-update' | 'report-problem';
+
+function FeedbackModal({ type, onClose }: { type: FeedbackType; onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [urgency, setUrgency] = useState('normal');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const isUpdate = type === 'demo-update';
+  const title = isUpdate ? 'Request Demo Update' : 'Report a Problem';
+  const messageLabel = isUpdate ? 'What would you like updated?' : 'Describe the problem';
+  const messagePlaceholder = isUpdate
+    ? 'e.g. Add a new email scenario, change shipping prices, update company branding...'
+    : 'e.g. Button not working, email content incorrect, layout broken on mobile...';
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const nameParts = name.trim().split(/\s+/);
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      const res = await fetch('https://password-admin.vercel.app/api/access-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          notes: `[${isUpdate ? 'Demo Update Request' : 'Problem Report'}] ${message}`,
+          urgency,
+          source: `email-apex-qq-${type}`,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Request failed');
+      }
+      setSuccess(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={handleClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {success ? (
+          <div className="px-6 py-10 text-center">
+            <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 size={28} className="text-green-600" />
+            </div>
+            <h3 className="text-size-base font-w-medium text-foreground mb-1">
+              {isUpdate ? 'Request Submitted' : 'Report Submitted'}
+            </h3>
+            <p className="text-size-sm text-foreground/70 mb-4">
+              An administrator has been notified
+            </p>
+            <button
+              onClick={handleClose}
+              className="px-4 py-1.5 text-size-sm border border-border rounded-[var(--radius-button)] hover:bg-muted transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div className="px-6 pt-5 pb-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-full ${isUpdate ? 'bg-primary/10' : 'bg-orange-500/10'} flex items-center justify-center flex-shrink-0`}>
+                    {isUpdate ? (
+                      <MessageSquarePlus size={18} className="text-primary" />
+                    ) : (
+                      <AlertCircle size={18} className="text-orange-500" />
+                    )}
+                  </div>
+                  <h2 className="text-size-base font-w-medium text-foreground">{title}</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 pb-4 space-y-3">
+              {error && (
+                <div className="px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-[var(--radius)] text-size-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-size-xs text-foreground/70 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    placeholder="Your name"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-size-xs text-foreground/70 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    placeholder="you@company.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-size-xs text-foreground/70 mb-1">{messageLabel}</label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  required
+                  rows={3}
+                  className="w-full px-3 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 resize-none"
+                  placeholder={messagePlaceholder}
+                />
+              </div>
+
+              <div>
+                <label className="block text-size-xs text-foreground/70 mb-1.5">Priority</label>
+                <div className="flex items-center bg-muted/60 rounded-[var(--radius)] p-0.5">
+                  {([
+                    { value: 'urgent', label: 'Urgent', color: 'text-destructive' },
+                    { value: 'normal', label: 'Normal', color: '' },
+                    { value: 'low', label: 'Low', color: '' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setUrgency(opt.value)}
+                      className={`flex-1 px-3 py-1.5 rounded text-size-xs font-w-medium transition-all ${
+                        urgency === opt.value
+                          ? `bg-card shadow-sm ${opt.value === 'urgent' ? 'text-destructive' : 'text-foreground'}`
+                          : `${opt.color || 'text-muted-foreground'} hover:text-foreground`
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-6 py-3 bg-muted/30 border-t border-border">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-3 py-1.5 text-size-sm border border-border rounded-[var(--radius-button)] hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-1.5 text-size-sm font-w-medium rounded-[var(--radius-button)] bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
+              >
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Submit'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequences, onOpenBuilder, onEditSequence, onDeleteSequence, onEditPreset, onResetPreset, forceShowPicker }: AppRailProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<CustomSequence | null>(null);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -161,7 +357,7 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                 </div>
 
                 {/* Toggle between Short/Full */}
-                <div className="px-3 py-3 border-b border-border/50">
+                <div className="px-3 py-3 border-b border-border/50" data-walkthrough-target="length-toggle">
                   <div className="flex items-center gap-2">
                     <span className="text-size-xs text-foreground/70 font-w-medium">Length:</span>
                     <div className="flex items-center bg-muted/60 rounded-[var(--radius)] p-0.5">
@@ -208,7 +404,7 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                 </div>
 
                 {/* Edit or Add Demo Sequence */}
-                <div className="border-b border-border">
+                <div className="border-b border-border" data-walkthrough-target="edit-sequence">
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenBuilder(); setShowPicker(false); }}
                     className="w-full text-left px-3 py-2.5 text-size-sm text-primary hover:bg-primary/5 transition-colors"
@@ -271,10 +467,10 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm transition-colors ${
                       demoMode === 'walkthrough' ? 'text-primary font-w-medium bg-primary/5' : 'text-foreground hover:bg-muted'
                     }`}
-                    title="Step-by-step guided tour of the delivery workflow"
+                    title="Learn how the demo works and get help"
                   >
                     <BookOpen size={15} className={demoMode === 'walkthrough' ? 'text-primary' : 'text-foreground/50'} />
-                    Delivery Walkthrough
+                    How It Works
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onDemoModeChange('presenter'); setShowPicker(false); }}
@@ -282,9 +478,31 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
                       demoMode === 'presenter' ? 'text-primary font-w-medium bg-primary/5' : 'text-foreground hover:bg-muted'
                     }`}
                     title="Opens a speaker notes panel for live presentations"
+                    data-walkthrough-target="presenter-view"
                   >
                     <Presentation size={15} className={demoMode === 'presenter' ? 'text-primary' : 'text-foreground/50'} />
                     Presenter View
+                  </button>
+                </div>
+
+                {/* Help & Feedback */}
+                <div className="px-3 pt-2.5 pb-1">
+                  <p className="text-size-xs font-w-semibold uppercase tracking-wider text-foreground/50">Help & Feedback</p>
+                </div>
+                <div className="pb-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFeedbackType('demo-update'); setShowPicker(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <MessageSquarePlus size={15} className="text-foreground/50" />
+                    Request Demo Update
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFeedbackType('report-problem'); setShowPicker(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-size-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <AlertCircle size={15} className="text-foreground/50" />
+                    Report a Problem
                   </button>
                 </div>
               </div>
@@ -299,6 +517,10 @@ export function AppRail({ demoMode, demoLength, onDemoModeChange, customSequence
           onConfirm={() => { onDeleteSequence(deleteTarget.id); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
         />
+      )}
+
+      {feedbackType && (
+        <FeedbackModal type={feedbackType} onClose={() => setFeedbackType(null)} />
       )}
     </>
   );

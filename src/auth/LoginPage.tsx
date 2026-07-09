@@ -65,6 +65,28 @@ function I2PLogo() {
   )
 }
 
+function EmailIcon() {
+  return (
+    <Box
+      sx={{
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        bgcolor: '#d4712a',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+      </svg>
+    </Box>
+  )
+}
+
 function RequestAccessModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -344,9 +366,12 @@ export default function LoginPage() {
         }}
       >
         <I2PLogo />
-        <Typography sx={{ mt: 2, mb: 0.5, fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>
-          Email Quoting Demo
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 2, mb: 0.5 }}>
+          <EmailIcon />
+          <Typography sx={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e' }}>
+            Email Quoting Demo
+          </Typography>
+        </Box>
         <Typography sx={{ mb: 3, fontSize: 14, color: 'text.secondary' }}>
           Sign in to access your account
         </Typography>

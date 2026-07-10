@@ -5,7 +5,7 @@ import * as api from './authApi'
 interface AuthContextValue {
   session: Session | null
   loading: boolean
-  login: (email: string, password: string) => Promise<string | null>
+  login: () => void
   logout: () => void
   setSession: (session: Session) => void
 }
@@ -23,11 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const login = useCallback(async (email: string, password: string): Promise<string | null> => {
-    const result = await api.login(email, password)
-    if ('error' in result) return result.error
-    setSession(result.session)
-    return null
+  const login = useCallback(() => {
+    api.redirectToLogin()
   }, [])
 
   const logout = useCallback(async () => {

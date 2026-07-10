@@ -3,7 +3,7 @@ import { createSessionToken, sessionCookie } from './_auth.js'
 import type { SessionPayload } from './_auth.js'
 
 const AUTH_ADMIN_URL = process.env.AUTH_ADMIN_URL || 'https://password-admin.vercel.app'
-const BASE_URL = 'https://emailapexqq-gray.vercel.app'
+const BASE_URL = 'https://emailagenticquoting.vercel.app'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

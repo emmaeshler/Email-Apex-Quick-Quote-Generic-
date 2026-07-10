@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronRight, ChevronLeft, RotateCcw } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, RotateCcw, PlayCircle } from 'lucide-react';
 
 interface WalkthroughStep {
   id: string;
@@ -8,204 +8,124 @@ interface WalkthroughStep {
   targetSelector?: string | string[];
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
   action?: string;
+  detour?: WalkthroughStep[];
+  detourOpenAction?: string;
+  detourCloseAction?: string;
 }
 
 interface WalkthroughPath {
-  id: 'short' | 'full' | 'controls';
+  id: 'controls';
   name: string;
   description: string;
   steps: WalkthroughStep[];
 }
 
+const BUILDER_DETOUR: WalkthroughStep[] = [
+  {
+    id: 'builder-overview',
+    title: 'Sequence Builder',
+    description: 'This is the Sequence Builder — a drag-and-drop editor for customizing which emails appear during your demo and in what order. You can edit the built-in Short and Full sequences, create new custom ones, and tailor email batches for specific customers or use cases.',
+    position: 'center',
+  },
+  {
+    id: 'builder-selector',
+    title: 'Sequence Selector',
+    description: 'Use this dropdown to switch between editing the built-in Short Demo, Full Demo, or any custom sequences you\'ve created. Click "New" to start a fresh sequence from scratch. Custom sequences get their own name field.',
+    targetSelector: '[data-walkthrough-target="builder-selector"]',
+    position: 'bottom',
+  },
+  {
+    id: 'builder-palette',
+    title: 'Available Emails',
+    description: 'This palette lists every email available in the demo. Filter by inbox (CSR or EIS) and drag individual emails or entire bundled threads into your sequence. Greyed-out emails are already in use. Click any email to preview it on the right.',
+    targetSelector: '[data-walkthrough-target="builder-palette"]',
+    position: 'right',
+  },
+  {
+    id: 'builder-batches',
+    title: 'Sequence Batches',
+    description: 'Each batch represents one click of the Refresh button during the demo. Drag emails from the palette into a batch, reorder them within or across batches, and label each batch to remind yourself what it covers. Add more batches with the button at the bottom.',
+    targetSelector: '[data-walkthrough-target="builder-batches"]',
+    position: 'left',
+  },
+  {
+    id: 'builder-toolbar',
+    title: 'Save & Manage',
+    description: 'When you\'re done, click Save Sequence. For presets (Short/Full), your edits override the defaults — you can reset them anytime from the Mail menu. Custom sequences appear as new options in the menu. Undo any mistake with Ctrl+Z or the Undo button.',
+    targetSelector: '[data-walkthrough-target="builder-toolbar"]',
+    position: 'bottom',
+  },
+];
+
+const PRESENTER_DETOUR: WalkthroughStep[] = [
+  {
+    id: 'presenter-overview',
+    title: 'Presenter View',
+    description: 'This is Presenter View — a live speaker-notes window that keeps you on track during demos. It shows an embedded preview of the demo on the left and your talk track on the right, all updating in real time as you navigate.',
+    position: 'center',
+  },
+  {
+    id: 'presenter-toolbar-tour',
+    title: 'Timer & Controls',
+    description: 'The top bar has a presentation timer you can pause, resume, and reset. There\'s also a live clock so you can keep track of meeting time, and a dark/light mode toggle for different presentation environments.',
+    targetSelector: '[data-walkthrough-target="presenter-toolbar"]',
+    position: 'bottom',
+  },
+  {
+    id: 'presenter-embed-tour',
+    title: 'Live Demo Preview',
+    description: 'This embedded view mirrors the audience-facing demo window. As you click through emails and folders in the main demo, this preview stays in sync so you can see exactly what your audience sees.',
+    targetSelector: '[data-walkthrough-target="presenter-embed"]',
+    position: 'right',
+  },
+  {
+    id: 'presenter-notes-tour',
+    title: 'Talk Track & Next Steps',
+    description: 'The right panel is your teleprompter. It shows contextual talking points that update based on where you are in the demo, a highlighted "Next Action" prompt telling you exactly what to click, and a transition note for moving between sections smoothly.',
+    targetSelector: '[data-walkthrough-target="presenter-notes"]',
+    position: 'left',
+  },
+];
+
 const WALKTHROUGH_PATHS: WalkthroughPath[] = [
   {
     id: 'controls',
-    name: 'App Controls',
-    description: 'Learn about the key controls and navigation',
+    name: 'Delivery Tools',
+    description: 'Learn about the demo controls, sequence editor, and presenter mode',
     steps: [
       {
-        id: 'welcome-controls',
-        title: 'Welcome to the Controls Tour',
-        description: 'Let\'s explore the main controls you\'ll use to navigate this application.',
-        position: 'center',
-      },
-      {
-        id: 'mail-icon',
-        title: 'Mail Icon Menu',
-        description: 'This Mail icon opens the menu shown above. You can switch between Short Demo, Full Demo, Walkthrough, and Presenter Mode here.',
-        targetSelector: ['[title="Mail"]', '[data-walkthrough-target="mail-menu"]'],
+        id: 'delivery-tools-overview',
+        title: 'Your Demo Toolbox',
+        description: 'This panel is your control center for everything you need to deliver the demo. From here you can configure the demo length, customize email sequences, and launch presenter mode.',
+        targetSelector: '[data-walkthrough-target="mail-menu"]',
         position: 'right',
       },
       {
-        id: 'refresh-button',
-        title: 'Refresh Button',
-        description: 'This button reveals new emails in batches, simulating how emails arrive over time. Click it to see the next batch of incoming emails.',
-        targetSelector: 'button:has(svg):has-text("New Messages")',
-        position: 'left',
-        action: 'Click to see new emails arrive',
-      },
-      {
-        id: 'folders',
-        title: 'Inbox Folders',
-        description: 'Navigate between different inboxes: CSR Inbox (customer service), Apex Quote Inbox (pricing team), Auto Quoted (ML-processed), and Flagged for Review (needs approval).',
-        targetSelector: '[data-folder-list]',
+        id: 'length-toggle',
+        title: 'Demo Length Toggle',
+        description: 'Use this toggle to switch between Short and Full demo modes. Short gives a quick 5-minute overview of the quoting workflow. Full is a comprehensive 10-minute tour covering approvals, automation, and threaded conversations. Switch anytime — emails reset to match the selected mode.',
+        targetSelector: '[data-walkthrough-target="length-toggle"]',
         position: 'right',
       },
       {
-        id: 'email-list',
-        title: 'Email List',
-        description: 'Click any email to view its details. Unread emails are shown in bold. The list updates as new emails arrive.',
-        position: 'center',
-      },
-      {
-        id: 'backtick-hint',
-        title: 'Demo Hints',
-        description: 'Press the backtick key (`) to toggle helpful hints that guide you through the demo workflows.',
-        position: 'center',
-      },
-    ],
-  },
-  {
-    id: 'short',
-    name: 'Short Demo Walkthrough',
-    description: 'Quick overview of the email quoting workflow (5 minutes)',
-    steps: [
-      {
-        id: 'welcome-short',
-        title: 'Welcome to the Short Demo',
-        description: 'This walkthrough shows you the essential workflow of how quote requests are processed.',
-        position: 'center',
-      },
-      {
-        id: 'csr-inbox',
-        title: 'CSR Inbox',
-        description: 'Customer Service Representatives receive quote requests here. These emails contain product codes and quantities that need pricing.',
-        targetSelector: '[data-folder-id="csr"]',
+        id: 'edit-sequence',
+        title: 'Edit or Add Demo Sequence',
+        description: 'Open the Sequence Builder to customize which emails appear and in what order. You can edit the built-in Short and Full sequences, or create entirely new custom sequences tailored to a specific customer or use case. Each sequence defines the email batches that arrive when you click Refresh.',
+        targetSelector: '[data-walkthrough-target="edit-sequence"]',
         position: 'right',
+        detour: BUILDER_DETOUR,
+        detourOpenAction: 'open-builder',
+        detourCloseAction: 'close-builder',
       },
       {
-        id: 'refresh-emails',
-        title: 'Refresh for New Emails',
-        description: 'Click the refresh button to simulate new emails arriving. This is how you progress through the demo.',
-        action: 'Click the refresh button now',
-      },
-      {
-        id: 'select-email',
-        title: 'Review Email',
-        description: 'Click on the first email to see a typical quote request. Notice the product details and customer information.',
-        action: 'Select the first email in the list',
-      },
-      {
-        id: 'forward-action',
-        title: 'Forward to Pricing Team',
-        description: 'CSRs can forward emails to the Apex Quote Inbox for expert pricing. Look for the "Forward to Apex Quote" button.',
-        targetSelector: '[data-action="forward"]',
-        position: 'left',
-        action: 'Click Forward to Apex Quote',
-      },
-      {
-        id: 'eis-inbox',
-        title: 'Apex Quote Inbox',
-        description: 'Switch to the Apex Quote Inbox to see how pricing specialists receive and process quotes.',
-        targetSelector: '[data-folder-id="eis"]',
+        id: 'presenter-view',
+        title: 'Presenter View',
+        description: 'Launch a separate speaker-notes window with a live talk track, step-by-step prompts, and a timer. It mirrors the main demo window in real time — as you navigate emails and folders, the talk track updates to show you exactly what to say and do next. Great for live presentations or practice runs.',
+        targetSelector: '[data-walkthrough-target="presenter-view"]',
         position: 'right',
-        action: 'Click on Apex Quote Inbox',
-      },
-      {
-        id: 'auto-quoted',
-        title: 'Auto Quoted Folder',
-        description: 'Some quotes are automatically processed by ML. Check this folder to see quotes that were generated without human intervention.',
-        targetSelector: '[data-folder-id="auto-quoted"]',
-        position: 'right',
-      },
-      {
-        id: 'complete-short',
-        title: 'Short Demo Complete!',
-        description: 'You\'ve seen the basic workflow. Try the Full Demo walkthrough for a deeper dive, or exit and explore on your own.',
-        position: 'center',
-      },
-    ],
-  },
-  {
-    id: 'full',
-    name: 'Full Demo Walkthrough',
-    description: 'Complete tour of all features and workflows (10 minutes)',
-    steps: [
-      {
-        id: 'welcome-full',
-        title: 'Welcome to the Full Demo',
-        description: 'This comprehensive walkthrough covers all workflows including review processes, approvals, and automation.',
-        position: 'center',
-      },
-      {
-        id: 'csr-inbox-full',
-        title: 'CSR Inbox - Customer Service',
-        description: 'This is where customer service reps see all incoming quote requests from customers.',
-        targetSelector: '[data-folder-id="csr"]',
-        position: 'right',
-      },
-      {
-        id: 'refresh-explained',
-        title: 'Refresh Button',
-        description: 'Click refresh to simulate emails arriving in batches throughout the day. Each click reveals the next batch.',
-        action: 'Click refresh to see the first batch',
-      },
-      {
-        id: 'review-workflow',
-        title: 'Review Workflow',
-        description: 'Some emails need management review before responding. These appear in the "Flagged for Review" folder.',
-        targetSelector: '[data-folder-id="review"]',
-        position: 'right',
-      },
-      {
-        id: 'email-details',
-        title: 'Email Details',
-        description: 'Click any email to see full details including product tables, attachments, and quote information.',
-        position: 'center',
-      },
-      {
-        id: 'quote-table',
-        title: 'Quote Tables',
-        description: 'Notice the quote table showing products, quantities, and prices. This is automatically extracted from the email.',
-        position: 'center',
-      },
-      {
-        id: 'forward-to-eis',
-        title: 'Forward to Pricing Team',
-        description: 'CSRs forward complex quotes to the pricing team (Apex Quote Inbox) for expert review.',
-        action: 'Forward the email to Apex Quote',
-      },
-      {
-        id: 'eis-processing',
-        title: 'Apex Quote Inbox',
-        description: 'Pricing specialists review forwarded requests and generate accurate quotes.',
-        targetSelector: '[data-folder-id="eis"]',
-        position: 'right',
-      },
-      {
-        id: 'approval-holds',
-        title: 'Approval Holds',
-        description: 'High-value quotes or special customers require manager approval before sending.',
-        position: 'center',
-      },
-      {
-        id: 'auto-quoted-explained',
-        title: 'Auto Quoted Magic',
-        description: 'ML models automatically process simple quotes without human intervention, saving hours of work.',
-        targetSelector: '[data-folder-id="auto-quoted"]',
-        position: 'right',
-      },
-      {
-        id: 'threaded-conversations',
-        title: 'Threaded Conversations',
-        description: 'Some emails show threaded conversations with inline quotes and responses, making complex discussions easy to follow.',
-        position: 'center',
-      },
-      {
-        id: 'complete-full',
-        title: 'Full Demo Complete!',
-        description: 'You\'ve explored all the major features. Now try exploring on your own or restart the walkthrough.',
-        position: 'center',
+        detour: PRESENTER_DETOUR,
+        detourOpenAction: 'open-presenter-preview',
+        detourCloseAction: 'close-presenter-preview',
       },
     ],
   },
@@ -214,14 +134,18 @@ const WALKTHROUGH_PATHS: WalkthroughPath[] = [
 interface WalkthroughOverlayProps {
   onClose: () => void;
   onStepChange?: (stepId: string | null) => void;
+  onAction?: (action: string) => void;
 }
 
-export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlayProps) {
+export function WalkthroughOverlay({ onClose, onStepChange, onAction }: WalkthroughOverlayProps) {
   const [currentPath, setCurrentPath] = useState<WalkthroughPath | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [highlightedElements, setHighlightedElements] = useState<HTMLElement[]>([]);
+  const [detour, setDetour] = useState<{ parentStepIndex: number; steps: WalkthroughStep[]; currentIndex: number; closeAction?: string; label: string } | null>(null);
 
-  const currentStep = currentPath?.steps[currentStepIndex];
+  const activeSteps = detour ? detour.steps : currentPath?.steps;
+  const activeIndex = detour ? detour.currentIndex : currentStepIndex;
+  const currentStep = activeSteps?.[activeIndex];
 
   // Notify parent of active step
   useEffect(() => {
@@ -229,7 +153,7 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
     return () => onStepChange?.(null);
   }, [currentStep, onStepChange]);
 
-  // Highlight target element(s)
+  // Highlight target element(s) — retry briefly for elements that render after state changes
   useEffect(() => {
     if (!currentStep?.targetSelector) {
       setHighlightedElements([]);
@@ -240,26 +164,76 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
       ? currentStep.targetSelector
       : [currentStep.targetSelector];
 
-    const elements = selectors
-      .map(sel => document.querySelector(sel) as HTMLElement)
-      .filter(Boolean);
+    const findElements = () => {
+      return selectors
+        .map(sel => document.querySelector(sel) as HTMLElement)
+        .filter(Boolean);
+    };
 
+    let elements = findElements();
     if (elements.length > 0) {
       setHighlightedElements(elements);
       elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
+
+    // Retry a few times for elements that appear after a state change (e.g. builder opening)
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts++;
+      elements = findElements();
+      if (elements.length > 0) {
+        setHighlightedElements(elements);
+        elements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        clearInterval(timer);
+      } else if (attempts >= 10) {
+        setHighlightedElements([]);
+        clearInterval(timer);
+      }
+    }, 100);
+
+    return () => clearInterval(timer);
   }, [currentStep]);
 
+  const exitDetour = () => {
+    if (detour?.closeAction) onAction?.(detour.closeAction);
+    setDetour(null);
+  };
+
   const handleNext = () => {
-    if (currentPath && currentStepIndex < currentPath.steps.length - 1) {
+    if (detour) {
+      if (detour.currentIndex < detour.steps.length - 1) {
+        setDetour({ ...detour, currentIndex: detour.currentIndex + 1 });
+      } else {
+        exitDetour();
+      }
+    } else if (currentPath && currentStepIndex < currentPath.steps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
     }
   };
 
   const handleBack = () => {
-    if (currentStepIndex > 0) {
+    if (detour) {
+      if (detour.currentIndex > 0) {
+        setDetour({ ...detour, currentIndex: detour.currentIndex - 1 });
+      } else {
+        exitDetour();
+      }
+    } else if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
     }
+  };
+
+  const handleStartDetour = () => {
+    if (!currentStep?.detour) return;
+    if (currentStep.detourOpenAction) onAction?.(currentStep.detourOpenAction);
+    setDetour({
+      parentStepIndex: currentStepIndex,
+      steps: currentStep.detour,
+      currentIndex: 0,
+      closeAction: currentStep.detourCloseAction,
+      label: currentStep.title + ' Tour',
+    });
   };
 
   const handleSelectPath = (path: WalkthroughPath) => {
@@ -268,9 +242,15 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
   };
 
   const handleReset = () => {
+    if (detour) exitDetour();
     setCurrentPath(null);
     setCurrentStepIndex(0);
     setHighlightedElements([]);
+  };
+
+  const handleClose = () => {
+    if (detour) exitDetour();
+    onClose();
   };
 
   // Keyboard navigation
@@ -286,67 +266,72 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
         handleBack();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPath, currentStepIndex, onClose]);
+  }, [currentPath, currentStepIndex, detour, onClose]);
 
   if (!currentPath) {
     // Path selection screen
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40">
-        <div className="relative w-full max-w-md mx-4 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="px-5 pt-5 pb-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Interactive Walkthrough</h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Choose your learning path</p>
+          <div className="relative w-full max-w-md mx-4 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">How It Works</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Learn the demo tools or get help</p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
               </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                aria-label="Close walkthrough"
-              >
-                <X size={18} />
-              </button>
+            </div>
+
+            {/* Path options */}
+            <div className="px-5 pb-3 space-y-2">
+              {WALKTHROUGH_PATHS.map((path) => (
+                <button
+                  key={path.id}
+                  onClick={() => handleSelectPath(path)}
+                  className="w-full text-left px-4 py-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                        {path.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{path.description}</p>
+                    </div>
+                    <ChevronRight className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 ml-3" size={16} />
+                  </div>
+                </button>
+              ))}
+            </div>
+
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-border">
+              <p className="text-[10px] text-muted-foreground/70 text-center">
+                <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">←</kbd> <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">→</kbd> navigate · <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">ESC</kbd> close
+              </p>
             </div>
           </div>
-
-          {/* Path options */}
-          <div className="px-5 pb-4 space-y-2">
-            {WALKTHROUGH_PATHS.map((path) => (
-              <button
-                key={path.id}
-                onClick={() => handleSelectPath(path)}
-                className="w-full text-left px-4 py-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                      {path.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{path.description}</p>
-                  </div>
-                  <ChevronRight className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 ml-3" size={16} />
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Footer */}
-          <div className="px-5 py-3 border-t border-border">
-            <p className="text-[10px] text-muted-foreground/70 text-center">
-              <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">←</kbd> <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">→</kbd> navigate · <kbd className="px-1 py-px bg-muted border border-border rounded text-[10px] font-mono">ESC</kbd> close
-            </p>
-          </div>
         </div>
-      </div>
     );
   }
+
+  const totalSteps = activeSteps?.length ?? 0;
+  const isLastStep = activeIndex === totalSteps - 1;
+  const isFirstStep = activeIndex === 0;
 
   // Active walkthrough
   return (
@@ -416,17 +401,37 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
                     bottom: Math.max(...rects.map(r => r.bottom)),
                   };
                   const gap = 16;
+                  const pad = 16;
+                  const cardW = 420;
+                  const cardH = 300;
+                  const vw = window.innerWidth;
+                  const vh = window.innerHeight;
+
+                  let x: number, y: number;
                   switch (currentStep?.position) {
                     case 'right':
-                      return { top: combined.top, left: combined.right + gap };
+                      x = combined.right + gap;
+                      y = combined.top;
+                      break;
                     case 'left':
-                      return { top: combined.top, right: window.innerWidth - combined.left + gap };
+                      x = combined.left - gap - cardW;
+                      y = combined.top;
+                      break;
                     case 'top':
-                      return { bottom: window.innerHeight - combined.top + gap, left: combined.left };
+                      x = combined.left;
+                      y = combined.top - gap - cardH;
+                      break;
                     case 'bottom':
                     default:
-                      return { top: combined.bottom + gap, left: combined.left };
+                      x = combined.left;
+                      y = combined.bottom + gap;
+                      break;
                   }
+
+                  x = Math.max(pad, Math.min(x, vw - cardW - pad));
+                  y = Math.max(pad, Math.min(y, vh - cardH - pad));
+
+                  return { top: y, left: x } as React.CSSProperties;
                 })()
               : {}
           }
@@ -435,7 +440,7 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
           <div className="h-1.5 bg-muted">
             <div
               className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${((currentStepIndex + 1) / currentPath.steps.length) * 100}%` }}
+              style={{ width: `${((activeIndex + 1) / totalSteps) * 100}%` }}
             />
           </div>
 
@@ -445,10 +450,10 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                    Step {currentStepIndex + 1} of {currentPath.steps.length}
+                    Step {activeIndex + 1} of {totalSteps}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {currentPath.name}
+                    {detour ? detour.label : currentPath.name}
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-foreground">{currentStep?.title}</h3>
@@ -463,7 +468,7 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
                   <RotateCcw size={16} />
                 </button>
                 <button
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                   aria-label="Close walkthrough"
                 >
@@ -483,44 +488,60 @@ export function WalkthroughOverlay({ onClose, onStepChange }: WalkthroughOverlay
                 </p>
               </div>
             )}
+            {currentStep?.detour && !detour && (
+              <button
+                onClick={handleStartDetour}
+                className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/30 rounded-lg hover:bg-primary/20 transition-colors group"
+              >
+                <PlayCircle size={16} className="text-primary" />
+                <span className="text-sm font-medium text-primary">See How It Works</span>
+              </button>
+            )}
           </div>
 
           {/* Footer navigation */}
           <div className="px-5 py-4 bg-muted/30 border-t border-border flex items-center justify-between">
             <button
               onClick={handleBack}
-              disabled={currentStepIndex === 0}
+              disabled={isFirstStep && !detour}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={16} />
-              <span className="text-sm font-medium">Back</span>
+              <span className="text-sm font-medium">{detour && isFirstStep ? 'Exit Tour' : 'Back'}</span>
             </button>
 
             <div className="flex items-center gap-1">
-              {currentPath.steps.map((_, idx) => (
+              {(activeSteps ?? []).map((_, idx) => (
                 <div
                   key={idx}
                   className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    idx === currentStepIndex ? 'bg-primary' : idx < currentStepIndex ? 'bg-primary/50' : 'bg-border'
+                    idx === activeIndex ? 'bg-primary' : idx < activeIndex ? 'bg-primary/50' : 'bg-border'
                   }`}
                 />
               ))}
             </div>
 
-            {currentStepIndex < currentPath.steps.length - 1 ? (
+            {detour && isLastStep ? (
+              <button
+                onClick={handleNext}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                <span className="text-sm font-medium">Done</span>
+              </button>
+            ) : !detour && isLastStep ? (
+              <button
+                onClick={handleReset}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+              >
+                <span className="text-sm font-medium">Choose Another Path</span>
+              </button>
+            ) : (
               <button
                 onClick={handleNext}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 <span className="text-sm font-medium">Next</span>
                 <ChevronRight size={16} />
-              </button>
-            ) : (
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                <span className="text-sm font-medium">Choose Another Path</span>
               </button>
             )}
           </div>

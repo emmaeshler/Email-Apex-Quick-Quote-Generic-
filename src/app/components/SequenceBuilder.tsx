@@ -729,27 +729,43 @@ function PaletteBundleItem({
    Main builder page
    ══════════════════════════════════════════════ */
 
+export interface SequenceEntry {
+  id: string;
+  name: string;
+  type: 'preset' | 'custom';
+  batches: { emailIds: string[]; name?: string }[];
+  createdAt?: number;
+}
+
 export function SequenceBuilder({
-  existingSequence,
+  sequences,
+  defaultSequenceId,
   onSave,
   onCancel,
 }: {
-  existingSequence?: CustomSequence | null;
-  onSave: (seq: CustomSequence) => void;
+  sequences: SequenceEntry[];
+  defaultSequenceId: string | null;
+  onSave: (seq: CustomSequence, sourceId: string | null) => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState(existingSequence?.name || '');
+  const defaultEntry = sequences.find(s => s.id === defaultSequenceId) || sequences[0];
+
+  const [activeEntryId, setActiveEntryId] = useState<string | null>(defaultEntry?.id || null);
+  const [isNewSequence, setIsNewSequence] = useState(false);
+  const [name, setName] = useState(defaultEntry?.name || '');
   const [batches, setBatches] = useState<string[][]>(
-    existingSequence?.batches.map(b => [...b.emailIds]) || [[]]
+    defaultEntry?.batches.map(b => [...b.emailIds]) || [[]]
   );
   const [batchNames, setBatchNames] = useState<string[]>(
-    existingSequence?.batches.map(b => b.name || '') || ['']
+    defaultEntry?.batches.map(b => b.name || '') || ['']
   );
   const [filterFolder, setFilterFolder] = useState<'all' | 'csr' | 'eis'>('all');
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(
-    () => existingSequence?.batches?.[0]?.emailIds?.[0] ?? null
+    () => defaultEntry?.batches?.[0]?.emailIds?.[0] ?? null
   );
   const [descriptions, setDescriptions] = useState<Record<string, string>>(loadDescriptions);
+
+  const activeEntry = isNewSequence ? undefined : sequences.find(s => s.id === activeEntryId);
 
   const MAX_UNDO = 50;
   const undoStackRef = useRef<{ batches: string[][]; batchNames: string[] }[]>([]);
@@ -901,22 +917,47 @@ export function SequenceBuilder({
     });
   }, [pushUndo]);
 
+  const handleSwitchSequence = useCallback((entryId: string) => {
+    const entry = sequences.find(s => s.id === entryId);
+    if (!entry) return;
+    setActiveEntryId(entryId);
+    setIsNewSequence(false);
+    setName(entry.name);
+    setBatches(entry.batches.map(b => [...b.emailIds]));
+    setBatchNames(entry.batches.map(b => b.name || ''));
+    undoStackRef.current = [];
+    setUndoCount(0);
+    setSelectedEmailId(entry.batches[0]?.emailIds[0] ?? null);
+  }, [sequences]);
+
+  const handleNewSequence = useCallback(() => {
+    setActiveEntryId(null);
+    setIsNewSequence(true);
+    setName('');
+    setBatches([[]]);
+    setBatchNames(['']);
+    undoStackRef.current = [];
+    setUndoCount(0);
+    setSelectedEmailId(null);
+  }, []);
+
   const handleSave = () => {
-    const trimmedName = name.trim();
-    if (!trimmedName) return;
+    const isPresetSeq = activeEntry?.type === 'preset';
+    const trimmedName = name.trim() || activeEntry?.name || '';
+    if (!isPresetSeq && !trimmedName) return;
     const nonEmptyIndices = batches.map((b, i) => ({ b, i })).filter(({ b }) => b.length > 0);
     if (nonEmptyIndices.length === 0) return;
 
     onSave({
-      id: existingSequence?.id || crypto.randomUUID(),
-      name: trimmedName,
+      id: isNewSequence ? crypto.randomUUID() : (activeEntryId || crypto.randomUUID()),
+      name: isPresetSeq ? activeEntry!.name : trimmedName,
       batches: nonEmptyIndices.map(({ b, i }) => ({
         emailIds: b,
         name: batchNames[i]?.trim() || undefined,
       })),
-      createdAt: existingSequence?.createdAt || Date.now(),
+      createdAt: activeEntry?.createdAt || Date.now(),
       updatedAt: Date.now(),
-    });
+    }, isNewSequence ? null : activeEntryId);
   };
 
   const handleGlobalMouseUp = useCallback(() => {
@@ -940,14 +981,14 @@ export function SequenceBuilder({
   }, [handleGlobalMouseUp, handleKeyDown]);
 
   const totalEmails = batches.flat().length;
-  const canSave = name.trim().length > 0 && totalEmails > 0;
+  const canSave = (activeEntry?.type === 'preset' || name.trim().length > 0) && totalEmails > 0;
   const canUndo = undoCount > 0;
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="size-full flex flex-col bg-background">
         {/* Top bar */}
-        <div className="flex items-center gap-4 px-6 py-3 border-b border-border bg-card" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+        <div className="flex items-center gap-4 px-6 py-3 border-b border-border bg-card" data-walkthrough-target="builder-toolbar" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
           <button
             onClick={onCancel}
             className="flex items-center gap-1.5 text-size-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -996,24 +1037,75 @@ export function SequenceBuilder({
           </div>
         </div>
 
-        {/* Name input */}
-        <div className="px-6 py-3 border-b border-border bg-card">
-          <label className="text-size-xs font-w-medium text-foreground/50 uppercase tracking-wider block mb-1.5">
-            Sequence Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Customer Pricing Focus, Quick 3-Min Demo..."
-            className="w-full max-w-md px-3 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
-          />
+        {/* Sequence selector */}
+        <div className="px-6 py-3 border-b border-border bg-card" data-walkthrough-target="builder-selector">
+          <div className="flex items-end gap-3">
+            <div>
+              <label className="text-size-xs font-w-medium text-foreground/50 uppercase tracking-wider block mb-1.5">
+                Editing Sequence
+              </label>
+              {isNewSequence ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-[7px] text-size-sm font-w-medium text-primary bg-primary/5 border border-primary/20 rounded-[var(--radius)]">
+                  New Sequence
+                  <button
+                    onClick={() => handleSwitchSequence(sequences[0]?.id || 'short')}
+                    className="p-0.5 rounded-sm hover:bg-primary/10 transition-colors"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={activeEntryId || ''}
+                    onChange={(e) => handleSwitchSequence(e.target.value)}
+                    className="appearance-none pl-3 pr-8 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm cursor-pointer font-w-medium min-w-[180px]"
+                  >
+                    {sequences.filter(s => s.type === 'preset').map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                    {sequences.some(s => s.type === 'custom') && (
+                      <optgroup label="Custom Sequences">
+                        {sequences.filter(s => s.type === 'custom').map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                </div>
+              )}
+            </div>
+            {!isNewSequence && (
+              <button
+                onClick={handleNewSequence}
+                className="flex items-center gap-1.5 px-3 py-2 text-size-sm border border-dashed border-foreground/20 text-muted-foreground rounded-[var(--radius)] hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              >
+                <Plus size={14} />
+                New
+              </button>
+            )}
+            {(isNewSequence || activeEntry?.type === 'custom') && (
+              <div className="flex-1 min-w-[200px] max-w-md">
+                <label className="text-size-xs font-w-medium text-foreground/50 uppercase tracking-wider block mb-1.5">
+                  Sequence Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Customer Pricing Focus, Quick 3-Min Demo..."
+                  className="w-full px-3 py-2 text-size-sm border border-border rounded-[var(--radius)] bg-input-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Three-column layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left: Available emails palette */}
-          <div className="w-72 flex-shrink-0 border-r border-border flex flex-col bg-card">
+          <div className="w-72 flex-shrink-0 border-r border-border flex flex-col bg-card" data-walkthrough-target="builder-palette">
             <div className="px-4 py-3 border-b border-border">
               <p className="text-size-sm font-w-semibold text-foreground mb-2.5">Available Emails</p>
               <div className="flex gap-1 bg-muted/50 p-0.5 rounded-full">
@@ -1058,7 +1150,7 @@ export function SequenceBuilder({
           </div>
 
           {/* Center: Sequence batches */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6" data-walkthrough-target="builder-batches">
             <div className={selectedEmailId ? '' : 'max-w-2xl'}>
               <p className="text-size-sm text-foreground/50 mb-5">
                 Drag emails from the left into batches below. Bundled emails move together as a group. Each batch is revealed on a refresh click during the demo.

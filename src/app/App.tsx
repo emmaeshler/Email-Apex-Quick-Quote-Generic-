@@ -5,7 +5,7 @@ import { InboxSidebar } from '@/app/components/InboxSidebar';
 import { EmailList } from '@/app/components/EmailList';
 import { EmailDetail } from '@/app/components/EmailDetail';
 import { AppRail } from '@/app/components/AppRail';
-import { SequenceBuilder } from '@/app/components/SequenceBuilder';
+import { SequenceBuilder, type SequenceEntry } from '@/app/components/SequenceBuilder';
 import { PresenterView } from '@/app/components/PresenterView';
 import { WalkthroughOverlay } from '@/app/components/WalkthroughOverlay';
 import { selectHint, validateHintCoverage } from './lib/hintRegistry';
@@ -108,8 +108,7 @@ export default function App() {
 
   // ── View state for sequence builder ──
   const [currentView, setCurrentView] = useState<'inbox' | 'sequence-builder'>('inbox');
-  const [editingSequenceId, setEditingSequenceId] = useState<string | null>(null);
-  const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+  const [builderDefaultId, setBuilderDefaultId] = useState<string | null>(null);
   const [customSequences, setCustomSequences] = useState<CustomSequence[]>(loadCustomSequences);
   const [presetVersion, setPresetVersion] = useState(0);
 
@@ -274,35 +273,38 @@ export default function App() {
     localStorage.setItem('demoMode', mode);
   }, [isPresenterWindow]);
 
-  const handleOpenBuilder = useCallback((sequenceId?: string) => {
-    setEditingSequenceId(sequenceId || null);
-    setEditingPresetId(null);
+  const handleOpenBuilder = useCallback((targetId?: string) => {
+    if (targetId) {
+      setBuilderDefaultId(targetId);
+    } else {
+      const id = demoMode === 'short' || demoMode === 'full' ? demoMode
+        : demoMode.startsWith('custom:') ? demoMode.slice(7)
+        : demoLength;
+      setBuilderDefaultId(id);
+    }
     setCurrentView('sequence-builder');
-  }, []);
+  }, [demoMode, demoLength]);
 
   const handleEditPreset = useCallback((presetId: string) => {
-    setEditingPresetId(presetId);
-    setEditingSequenceId(null);
+    setBuilderDefaultId(presetId);
     setCurrentView('sequence-builder');
   }, []);
 
-  const handleBuilderSave = useCallback((seq: CustomSequence) => {
-    if (editingPresetId) {
-      savePresetOverride(editingPresetId, seq.batches);
+  const handleBuilderSave = useCallback((seq: CustomSequence, sourceId: string | null) => {
+    if (sourceId === 'short' || sourceId === 'full') {
+      savePresetOverride(sourceId, seq.batches);
       setPresetVersion(v => v + 1);
-      setEditingPresetId(null);
       setCurrentView('inbox');
-      handleDemoModeChange(editingPresetId as DemoMode);
+      handleDemoModeChange(sourceId as DemoMode);
     } else {
       addCustomSequence(seq);
       setCustomSequences(loadCustomSequences());
       setCurrentView('inbox');
       handleDemoModeChange(`custom:${seq.id}`);
     }
-  }, [handleDemoModeChange, editingPresetId]);
+  }, [handleDemoModeChange]);
 
   const handleBuilderCancel = useCallback(() => {
-    setEditingPresetId(null);
     setCurrentView('inbox');
   }, []);
 
@@ -742,26 +744,44 @@ export default function App() {
     return <PresenterView onClose={() => window.close()} />;
   }
 
-  if (currentView === 'sequence-builder') {
-    let editingSeq: CustomSequence | null = null;
-    if (editingPresetId) {
-      const batches = getPresetBatches(editingPresetId);
-      editingSeq = {
-        id: editingPresetId,
-        name: editingPresetId === 'short' ? 'Short Demo' : 'Full Demo',
-        batches: batches.map(b => ({ emailIds: b.emailIds })),
-        createdAt: 0,
-        updatedAt: 0,
-      };
-    } else if (editingSequenceId) {
-      editingSeq = customSequences.find(s => s.id === editingSequenceId) ?? null;
+  const [presenterPreview, setPresenterPreview] = useState(false);
+
+  const handleWalkthroughAction = useCallback((action: string) => {
+    if (action === 'open-builder') {
+      setBuilderDefaultId(demoMode === 'short' || demoMode === 'full' ? demoMode : demoLength);
+      setCurrentView('sequence-builder');
+    } else if (action === 'close-builder') {
+      setCurrentView('inbox');
+    } else if (action === 'open-presenter-preview') {
+      setPresenterPreview(true);
+    } else if (action === 'close-presenter-preview') {
+      setPresenterPreview(false);
     }
+  }, [demoMode, demoLength]);
+
+  if (currentView === 'sequence-builder') {
+    const builderSequences: SequenceEntry[] = [
+      { id: 'short', name: 'Short Demo', type: 'preset', batches: getPresetBatches('short').map(b => ({ emailIds: b.emailIds })) },
+      { id: 'full', name: 'Full Demo', type: 'preset', batches: getPresetBatches('full').map(b => ({ emailIds: b.emailIds })) },
+      ...customSequences.map(s => ({ id: s.id, name: s.name, type: 'custom' as const, batches: s.batches, createdAt: s.createdAt })),
+    ];
+
     return (
-      <SequenceBuilder
-        existingSequence={editingSeq}
-        onSave={handleBuilderSave}
-        onCancel={handleBuilderCancel}
-      />
+      <>
+        <SequenceBuilder
+          sequences={builderSequences}
+          defaultSequenceId={builderDefaultId}
+          onSave={handleBuilderSave}
+          onCancel={handleBuilderCancel}
+        />
+        {walkthroughOpen && (
+          <WalkthroughOverlay
+            onClose={() => { setWalkthroughOpen(false); setCurrentView('inbox'); }}
+            onStepChange={setWalkthroughStepId}
+            onAction={handleWalkthroughAction}
+          />
+        )}
+      </>
     );
   }
 
@@ -866,7 +886,7 @@ export default function App() {
           onDeleteSequence={handleDeleteSequence}
           onEditPreset={handleEditPreset}
           onResetPreset={handleResetPreset}
-          forceShowPicker={walkthroughStepId === 'mail-icon' ? true : undefined}
+          forceShowPicker={['delivery-tools-overview', 'length-toggle', 'edit-sequence', 'presenter-view'].includes(walkthroughStepId ?? '') ? true : undefined}
         />
         <InboxSidebar
           folders={dynamicFolders}
@@ -929,9 +949,14 @@ export default function App() {
     <>
       {mainContent}
 
+      {/* Presenter preview for walkthrough detour */}
+      {presenterPreview && (
+        <PresenterView onClose={() => setPresenterPreview(false)} />
+      )}
+
       {/* Walkthrough overlay */}
       {walkthroughOpen && (
-        <WalkthroughOverlay onClose={() => setWalkthroughOpen(false)} onStepChange={setWalkthroughStepId} />
+        <WalkthroughOverlay onClose={() => { setWalkthroughOpen(false); setPresenterPreview(false); }} onStepChange={setWalkthroughStepId} onAction={handleWalkthroughAction} />
       )}
 
       {/* Mirror cursor from presenter embed */}

@@ -384,9 +384,9 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
   const embedUrl = window.location.href.split('?')[0] + '?demo=presenter&presenterEmbed=true';
 
   return (
-    <div className={cn('fixed inset-0 flex flex-col transition-colors', darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-100')}>
+    <div className={cn('fixed inset-0 z-[100] flex flex-col transition-colors', darkMode ? 'bg-[#0a0a0a]' : 'bg-gray-100')}>
       {/* Top bar */}
-      <div className={cn('relative flex shrink-0 items-center border-b px-4 py-2 transition-colors', darkMode ? 'border-white/10 bg-[#111]/90' : 'border-black/10 bg-white')}>
+      <div data-walkthrough-target="presenter-toolbar" className={cn('relative flex shrink-0 items-center border-b px-4 py-2 transition-colors', darkMode ? 'border-white/10 bg-[#111]/90' : 'border-black/10 bg-white')}>
         <div className="flex items-center gap-2">
           <button
             onClick={onClose}
@@ -440,7 +440,7 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
       {/* Content area */}
       <div className="flex min-h-0 flex-1">
         {/* Left: Interactive app embed */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" data-walkthrough-target="presenter-embed">
           <iframe
             ref={iframeRef}
             src={embedUrl}
@@ -450,7 +450,7 @@ export function PresenterView({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Right panel — action + talk track + next step */}
-        <div className={cn('flex w-[380px] shrink-0 flex-col border-l transition-colors', darkMode ? 'border-white/10 bg-[#111]' : 'border-black/10 bg-white')}>
+        <div data-walkthrough-target="presenter-notes" className={cn('flex w-[380px] shrink-0 flex-col border-l transition-colors', darkMode ? 'border-white/10 bg-[#111]' : 'border-black/10 bg-white')}>
           {/* Action snack bar */}
           {actionLabel && (
             <div className={cn('shrink-0 border-b px-5 py-4', darkMode ? 'border-white/10' : 'border-black/10')}>
